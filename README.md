@@ -1,78 +1,70 @@
 # Tektra AI Assistant
 
-A comprehensive AI assistant that integrates voice interaction, computer vision, and robotic control capabilities. Tektra uses the Qwen2.5-Omni-7B model for language processing and Pi0 for physical action understanding.
+A modern desktop AI assistant built with Rust/Tauri, featuring an animated avatar and MLX-powered AI on Apple Silicon. Tektra provides real-time conversation with visual feedback through a sophisticated 2D avatar system.
 
 ## Features
 
+- **Modern Desktop App**: Built with Tauri (Rust + React) for optimal performance
+- **Animated Avatar**: Real-time lip-sync and facial animations
+- **MLX Integration**: Native Apple Silicon acceleration for AI models
 - **Multimodal Capabilities**:
-  - Voice input via microphone
-  - Camera input for vision
-  - Voice output via text-to-speech
-  - Robot control via FAST action tokens
+  - Text conversation with AI models
+  - Animated avatar with lip-sync
+  - Voice input/output (coming soon)
+  - Camera integration (coming soon)
+  - Robot control via FAST tokens (coming soon)
 
-- **Core AI Models**:
-  - Qwen2.5-Omni-7B: Text, voice, and image processing
-  - Pi0 with FAST processor: Physical task understanding
+## Architecture
 
-- **Advanced Features**:
-  - Continuous fine-tuning pipeline using LoRA adapters
-  - Episode logging for reinforcement learning
-  - Apple Silicon MPS (Metal Performance Shaders) acceleration
-  - Seamless input/output method switching
+- **Frontend**: React TypeScript with Canvas-based avatar rendering
+- **Backend**: Rust with Tauri for native performance
+- **AI Engine**: MLX bridge for Apple Silicon optimization
+- **Models**: MLX-compatible Hugging Face models
 
 ## Requirements
 
-- Python 3.11 or higher
-- UV package manager (https://github.com/astral-sh/uv)
-- Dependencies (automatically installed by UV):
-  - transformers, torch, accelerate, huggingface-hub
-  - peft (for fine-tuning)
-  - sounddevice, soundfile, scipy (for audio processing)
-  - opencv-python (for camera input)
-  - psutil, numpy, pillow, einops
+- macOS with Apple Silicon (M1/M2/M3/M4) - recommended
+- Rust and Cargo
+- Node.js and npm
+- Python 3.11+ (for MLX bridge)
 
 ## Installation & Usage
 
-The script is self-contained and uses UV to manage dependencies. You can run it directly with the provided shell script:
+### Quick Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tektra.git
+git clone https://github.com/dirvine/tektra.git
 cd tektra
 
-# Make the run script executable
-chmod +x run_tektra.sh
+# Install MLX dependencies (for Apple Silicon)
+./install_mlx.sh
 
-# Run with the interactive menu (default)
-./run_tektra.sh
+# Install frontend dependencies
+npm install
 
-# Run with voice input and camera enabled
-./run_tektra.sh --chat --voice-input
+# Run in development mode
+npm run tauri dev
 
-# Run with text input only (no voice or camera)
-./run_tektra.sh --text-only
-
-# Start continuous chat mode
-./run_tektra.sh --continuous
-
-# Fine-tune the model on collected action data
-./run_tektra.sh --fine-tune
-
-# Display system information
-./run_tektra.sh --info
-
-# Show all available options
-./run_tektra.sh --help
+# Build for production
+npm run build
+npm run tauri build
 ```
 
-Alternatively, you can run the script directly with UV:
+### Development Commands
 
 ```bash
-# Run with the interactive menu
-uv run tektra.py --menu
+# Frontend development
+npm run dev          # Start Vite dev server
+npm run build        # Build frontend for production
 
-# Run with chat mode
-uv run tektra.py --chat
+# Tauri development  
+npm run tauri dev    # Run app in development mode
+npm run tauri build  # Build app for production
+
+# Rust backend
+cd src-tauri && cargo check    # Check Rust code
+cd src-tauri && cargo test     # Run tests
 ```
 
 ### Troubleshooting Model Loading Issues
