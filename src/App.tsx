@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import Chat from "./components/Chat";
 import Avatar from "./components/Avatar";
 import Controls from "./components/Controls";
+import { LoadingScreen } from "./components/LoadingScreen";
 import "./styles/App.css";
 
 interface ModelStatus {
@@ -11,16 +13,66 @@ interface ModelStatus {
   device: string;
 }
 
+interface LoadingState {
+  isVisible: boolean;
+  progress: number;
+  status: string;
+  modelName?: string;
+}
+
 function App() {
   const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [currentViseme] = useState("neutral");
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    isVisible: false,
+    progress: 0,
+    status: "Initializing...",
+  });
 
   useEffect(() => {
     // Check model status on load
     checkModelStatus();
+    
+    // Listen for model loading progress events
+    const setupEventListeners = async () => {
+      await listen<{ progress: number; status: string; model_name?: string }>(
+        'model-loading-progress', 
+        (event) => {
+          setLoadingState({
+            isVisible: true,
+            progress: event.payload.progress,
+            status: event.payload.status,
+            modelName: event.payload.model_name,
+          });
+        }
+      );
+
+      await listen<{ success: boolean; error?: string }>(
+        'model-loading-complete',
+        (event) => {
+          if (event.payload.success) {
+            setLoadingState(prev => ({
+              ...prev,
+              isVisible: false,
+              progress: 100,
+              status: "Complete!",
+            }));
+            // Refresh model status
+            checkModelStatus();
+          } else {
+            setLoadingState(prev => ({
+              ...prev,
+              status: `Error: ${event.payload.error || 'Unknown error'}`,
+            }));
+          }
+        }
+      );
+    };
+
+    setupEventListeners();
   }, []);
 
   const checkModelStatus = async () => {
@@ -33,14 +85,22 @@ function App() {
   };
 
   const loadModel = async (modelName: string) => {
-    setIsLoading(true);
+    setLoadingState({
+      isVisible: true,
+      progress: 0,
+      status: "Starting model download...",
+      modelName,
+    });
+    
     try {
       await invoke("load_model", { modelName });
-      await checkModelStatus();
+      // The completion will be handled by the event listener
     } catch (error) {
       console.error("Failed to load model:", error);
-    } finally {
-      setIsLoading(false);
+      setLoadingState(prev => ({
+        ...prev,
+        status: `Error: ${error}`,
+      }));
     }
   };
 
@@ -94,6 +154,13 @@ function App() {
 
   return (
     <div className="app">
+      <LoadingScreen
+        isLoading={loadingState.isVisible}
+        progress={loadingState.progress}
+        status={loadingState.status}
+        modelName={loadingState.modelName}
+      />
+      
       <div className="app-header">
         <h1>Tektra AI Assistant</h1>
         {modelStatus && (

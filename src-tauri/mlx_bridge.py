@@ -17,8 +17,9 @@ try:
     import mlx.core as mx
     import mlx.nn as nn
     from mlx_lm import load, generate
-    from huggingface_hub import snapshot_download, hf_hub_download
+    from huggingface_hub import snapshot_download, hf_hub_download, HfApi
     import requests
+    from tqdm import tqdm
     MLX_AVAILABLE = True
 except ImportError:
     MLX_AVAILABLE = False
@@ -33,10 +34,31 @@ class MLXBridge:
         self.model = None
         self.tokenizer = None
         self.model_name = None
-        self.cache_dir = Path.home() / ".cache" / "tektra" / "models"
+        # Use standard HuggingFace Hub cache directory
+        self.cache_dir = self.get_hf_cache_dir()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         
-    def download_model(self, model_name: str, force: bool = False) -> dict:
+    def get_hf_cache_dir(self) -> Path:
+        """Get the HuggingFace Hub cache directory"""
+        # Use the same logic as HuggingFace Hub
+        if "HF_HOME" in os.environ:
+            return Path(os.environ["HF_HOME"])
+        
+        if "XDG_CACHE_HOME" in os.environ:
+            return Path(os.environ["XDG_CACHE_HOME"]) / "huggingface"
+        
+        # Default location
+        return Path.home() / ".cache" / "huggingface"
+    
+    def emit_progress(self, progress: float, status: str):
+        """Emit progress information for the Rust backend to parse"""
+        progress_data = {
+            "progress": min(100, max(0, progress)),
+            "status": status
+        }
+        print(f"PROGRESS:{json.dumps(progress_data)}", flush=True)
+        
+    def download_model(self, model_name: str, force: bool = False, with_progress: bool = False) -> dict:
         """Download an MLX model with progress tracking"""
         try:
             if not MLX_AVAILABLE:
@@ -45,24 +67,75 @@ class MLXBridge:
                     "error": "MLX not available. Install with: pip install mlx-lm huggingface-hub"
                 }
             
-            model_cache_path = self.cache_dir / model_name.replace("/", "_")
+            if with_progress:
+                self.emit_progress(5, "Checking model availability...")
             
-            if model_cache_path.exists() and not force:
+            # Check if model exists in HF Hub
+            api = HfApi()
+            try:
+                repo_info = api.repo_info(repo_id=model_name)
+                if with_progress:
+                    self.emit_progress(10, f"Found model: {model_name}")
+            except Exception as e:
                 return {
-                    "success": True,
-                    "message": "Model already cached",
-                    "path": str(model_cache_path)
+                    "success": False,
+                    "error": f"Model not found in HuggingFace Hub: {model_name}"
                 }
             
+            # Check if already cached using HF Hub's native caching
+            try:
+                # This will use the standard HF cache directory
+                if with_progress:
+                    self.emit_progress(20, "Checking cache...")
+                
+                # Try to download without forcing to check if cached
+                if not force:
+                    cached_path = snapshot_download(
+                        repo_id=model_name,
+                        cache_dir=str(self.cache_dir),
+                        local_files_only=True  # Only check cache
+                    )
+                    if with_progress:
+                        self.emit_progress(100, "Model loaded from cache")
+                    return {
+                        "success": True,
+                        "message": "Model already cached",
+                        "path": cached_path
+                    }
+            except Exception:
+                # Model not in cache, proceed to download
+                pass
+            
+            if with_progress:
+                self.emit_progress(25, f"Starting download: {model_name}")
+                
             logger.info(f"Downloading model: {model_name}")
             
-            # Download model using huggingface_hub
+            # Download with progress tracking
+            class ProgressCallback:
+                def __init__(self, bridge):
+                    self.bridge = bridge
+                    self.last_progress = 25
+                
+                def __call__(self, chunk_size: int, total_size: int, downloaded: int):
+                    if total_size > 0:
+                        progress = 25 + (downloaded / total_size) * 70  # 25-95% for download
+                        if progress - self.last_progress >= 5:  # Update every 5%
+                            self.bridge.emit_progress(progress, f"Downloading... {downloaded}/{total_size} bytes")
+                            self.last_progress = progress
+            
+            progress_callback = ProgressCallback(self) if with_progress else None
+            
+            # Download model using huggingface_hub with standard caching
             downloaded_path = snapshot_download(
                 repo_id=model_name,
                 cache_dir=str(self.cache_dir),
-                local_dir=str(model_cache_path),
-                local_dir_use_symlinks=False
+                resume_download=True,
+                force_download=force
             )
+            
+            if with_progress:
+                self.emit_progress(95, "Download complete, verifying...")
             
             return {
                 "success": True,
@@ -215,6 +288,7 @@ def main():
     parser.add_argument("--force", action="store_true", help="Force download even if cached")
     parser.add_argument("--auto-download", action="store_true", default=True,
                        help="Auto-download model if not cached")
+    parser.add_argument("--progress", action="store_true", help="Enable progress reporting for downloads")
     
     args = parser.parse_args()
     
@@ -230,7 +304,7 @@ def main():
         if not args.model:
             result = {"success": False, "error": "Model name required for download command"}
         else:
-            result = bridge.download_model(args.model, force=args.force)
+            result = bridge.download_model(args.model, force=args.force, with_progress=args.progress)
     
     elif args.command == "generate":
         if not args.prompt:
