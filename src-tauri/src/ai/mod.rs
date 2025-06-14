@@ -3,9 +3,10 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Emitter};
 use serde_json::{json, Value};
 use hf_hub::api::tokio::Api;
-// use futures::StreamExt;
+use futures::StreamExt;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tokio::io::AsyncWriteExt;
 
 use crate::state::Message;
 
@@ -24,6 +25,67 @@ pub struct ModelManager {
 }
 
 impl ModelManager {
+    async fn download_file_with_progress(
+        &self,
+        url: &str,
+        local_path: &PathBuf,
+        filename: &str,
+        model_name: &str,
+        base_progress: f64,
+        progress_weight: f64,
+    ) -> Result<()> {
+        // Create parent directory if it doesn't exist
+        if let Some(parent) = local_path.parent() {
+            tokio::fs::create_dir_all(parent).await?;
+        }
+
+        let client = reqwest::Client::new();
+        let response = client.get(url).send().await?;
+        
+        if !response.status().is_success() {
+            return Err(anyhow::anyhow!("Failed to download {}: HTTP {}", filename, response.status()));
+        }
+
+        let total_size = response.content_length().unwrap_or(0);
+        let mut file = tokio::fs::File::create(local_path).await?;
+        let mut downloaded = 0u64;
+        let mut stream = response.bytes_stream();
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk?;
+            file.write_all(&chunk).await?;
+            downloaded += chunk.len() as u64;
+
+            // Emit progress update
+            if total_size > 0 {
+                let file_progress = (downloaded as f64 / total_size as f64) * progress_weight;
+                let total_progress = base_progress + file_progress;
+                
+                let _ = self.app_handle.emit("model-loading-progress", json!({
+                    "progress": total_progress.min(100.0) as u64,
+                    "status": format!("Downloading {} ({:.1} MB / {:.1} MB)", 
+                        filename,
+                        downloaded as f64 / 1_048_576.0,
+                        total_size as f64 / 1_048_576.0
+                    ),
+                    "model_name": model_name
+                }));
+            } else {
+                // If we don't know the total size, show indeterminate progress
+                let _ = self.app_handle.emit("model-loading-progress", json!({
+                    "progress": (base_progress + progress_weight * 0.5) as u64,
+                    "status": format!("Downloading {} ({:.1} MB downloaded)", 
+                        filename,
+                        downloaded as f64 / 1_048_576.0
+                    ),
+                    "model_name": model_name
+                }));
+            }
+        }
+
+        file.flush().await?;
+        Ok(())
+    }
     pub fn new(app_handle: AppHandle) -> Result<Self> {
         // Use HuggingFace Hub cache directory for model storage
         let cache_dir = Self::get_hf_cache_dir()?;
@@ -95,35 +157,84 @@ impl ModelManager {
             "model_name": model_name
         }));
         
-        let files = vec![
-            "config.json",
-            "tokenizer.json", 
-            "tokenizer_config.json",
-            "model.safetensors", // Primary model file
-            "model-00001-of-00001.safetensors", // Alternative naming
-        ];
-        
+        // Get model info to check which files exist
+        let model_info = repo.info().await?;
+        let available_files: Vec<&str> = model_info
+            .siblings
+            .iter()
+            .filter_map(|sibling| {
+                let filename = &sibling.rfilename;
+                // Only download essential files we need
+                if filename.ends_with(".json") || 
+                   filename.ends_with(".safetensors") ||
+                   filename == "tokenizer.json" ||
+                   filename == "config.json" {
+                    Some(filename.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if available_files.is_empty() {
+            return Err(anyhow::anyhow!("No compatible model files found"));
+        }
+
+        let _ = self.app_handle.emit("model-loading-progress", json!({
+            "progress": 25,
+            "status": format!("Found {} files to download", available_files.len()),
+            "model_name": model_name
+        }));
+
         let mut downloaded_files = Vec::new();
-        let total_files = files.len();
-        
-        for (i, filename) in files.iter().enumerate() {
-            let progress = 20 + ((i as f64 / total_files as f64) * 70.0) as u64;
+        let total_files = available_files.len();
+        let progress_per_file = 70.0 / total_files as f64; // 25% to 95%
+
+        for (i, filename) in available_files.iter().enumerate() {
+            let base_progress = 25.0 + (i as f64 * progress_per_file);
             
-            let _ = self.app_handle.emit("model-loading-progress", json!({
-                "progress": progress,
-                "status": format!("Downloading {}...", filename),
-                "model_name": model_name
-            }));
-            
-            // Try to download each file, some may not exist
-            match repo.get(filename).await {
-                Ok(local_path) => {
+            // Get download URL for the file
+            let download_url = format!(
+                "https://huggingface.co/{}/resolve/main/{}",
+                model_name, filename
+            );
+
+            // Create local path in HF cache format
+            let model_cache_name = model_name.replace("/", "--");
+            let local_path = self.cache_dir
+                .join("hub")
+                .join(format!("models--{}", model_cache_name))
+                .join("snapshots")
+                .join("main") // Using main branch
+                .join(filename);
+
+            // Check if file already exists
+            if local_path.exists() && !_force {
+                let _ = self.app_handle.emit("model-loading-progress", json!({
+                    "progress": (base_progress + progress_per_file) as u64,
+                    "status": format!("{} already cached", filename),
+                    "model_name": model_name
+                }));
+                downloaded_files.push((filename.to_string(), local_path));
+                continue;
+            }
+
+            // Download with progress tracking
+            match self.download_file_with_progress(
+                &download_url,
+                &local_path,
+                filename,
+                model_name,
+                base_progress,
+                progress_per_file,
+            ).await {
+                Ok(()) => {
                     tracing::info!("Downloaded: {} -> {:?}", filename, local_path);
                     downloaded_files.push((filename.to_string(), local_path));
                 }
                 Err(e) => {
                     tracing::warn!("Could not download {}: {}", filename, e);
-                    // Some files are optional, continue
+                    // Some files might be optional, continue with others
                 }
             }
         }
@@ -201,25 +312,29 @@ impl ModelManager {
             "model_name": model_name
         }));
         
-        // Load tokenizer from downloaded files
-        let api = Api::new()?;
-        let repo = api.model(model_name.to_string());
+        // Try to load tokenizer from downloaded files
+        let model_cache_name = model_name.replace("/", "--");
+        let tokenizer_path = self.cache_dir
+            .join("hub")
+            .join(format!("models--{}", model_cache_name))
+            .join("snapshots")
+            .join("main")
+            .join("tokenizer.json");
         
-        // Try to load tokenizer
-        let tokenizer = match repo.get("tokenizer.json").await {
-            Ok(tokenizer_path) => {
-                match Tokenizer::from_file(&tokenizer_path) {
-                    Ok(tok) => Some(Arc::new(Mutex::new(tok))),
-                    Err(e) => {
-                        tracing::warn!("Failed to load tokenizer: {}", e);
-                        None
-                    }
+        let tokenizer = if tokenizer_path.exists() {
+            match Tokenizer::from_file(&tokenizer_path) {
+                Ok(tok) => {
+                    tracing::info!("Loaded tokenizer from: {:?}", tokenizer_path);
+                    Some(Arc::new(Mutex::new(tok)))
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to load tokenizer: {}", e);
+                    None
                 }
             }
-            Err(e) => {
-                tracing::warn!("Tokenizer file not found: {}", e);
-                None
-            }
+        } else {
+            tracing::warn!("Tokenizer file not found at: {:?}", tokenizer_path);
+            None
         };
         
         let _ = self.app_handle.emit("model-loading-progress", json!({
