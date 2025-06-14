@@ -1,15 +1,11 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
   "productName": "Tektra",
+  "version": "0.1.0",
   "identifier": "com.tektra.app",
   "build": {
-    "frontendDist": "../dist"
-  },
-  "bundle": {
-    "active": false
+    "frontendDist": "dist"
   },
   "app": {
-    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Tektra AI Assistant",
@@ -17,14 +13,18 @@
         "height": 800,
         "decorations": true,
         "resizable": true,
-        "fullscreen": false,
-        "alwaysOnTop": false,
-        "skipTaskbar": false,
-        "transparent": false
+        "fullscreen": false
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
     }
+  },
+  "bundle": {
+    "active": false
   }
 }

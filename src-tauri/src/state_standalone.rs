@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tauri::AppHandle;
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
 
@@ -21,9 +20,13 @@ pub struct AppConfig {
     pub last_selected_model: Option<String>,
 }
 
-pub struct AppState {
-    app_handle: AppHandle,
-    model_manager: Arc<RwLock<ModelManager>>,
+pub trait EventEmitter: Send + Sync + Clone {
+    fn emit<S: serde::Serialize>(&self, event: &str, payload: S) -> Result<(), Box<dyn std::error::Error>>;
+}
+
+pub struct AppState<T: EventEmitter> {
+    app_handle: T,
+    model_manager: Arc<RwLock<ModelManager<T>>>,
     audio_manager: Arc<RwLock<AudioManager>>,
     vision_manager: Arc<RwLock<VisionManager>>,
     robot_controller: Arc<RwLock<RobotController>>,
@@ -31,17 +34,17 @@ pub struct AppState {
     config_path: std::path::PathBuf,
 }
 
-impl AppState {
-    pub fn new(app_handle: AppHandle) -> Result<Self> {
+impl<T: EventEmitter> AppState<T> {
+    pub fn new(app_handle: T) -> Result<Self> {
         let config_path = Self::get_config_path()?;
         
         Ok(Self {
-            app_handle: app_handle.clone(),
             model_manager: Arc::new(RwLock::new(ModelManager::new(app_handle.clone())?)),
             audio_manager: Arc::new(RwLock::new(AudioManager::new()?)),
             vision_manager: Arc::new(RwLock::new(VisionManager::new()?)),
             robot_controller: Arc::new(RwLock::new(RobotController::new()?)),
             conversation_history: Arc::new(RwLock::new(Vec::new())),
+            app_handle,
             config_path,
         })
     }
@@ -131,21 +134,6 @@ impl AppState {
         Ok(response)
     }
     
-    pub async fn start_voice_capture(&self) -> Result<()> {
-        let mut audio_manager = self.audio_manager.write().await;
-        audio_manager.start_recording().await
-    }
-    
-    pub async fn stop_voice_capture(&self) -> Result<()> {
-        let mut audio_manager = self.audio_manager.write().await;
-        audio_manager.stop_recording().await
-    }
-    
-    pub async fn capture_camera_frame(&self) -> Result<Vec<u8>> {
-        let vision_manager = self.vision_manager.read().await;
-        vision_manager.capture_frame().await
-    }
-    
     pub async fn load_model(&self, model_name: &str) -> Result<()> {
         let mut model_manager = self.model_manager.write().await;
         let result = model_manager.load_model(model_name).await;
@@ -188,26 +176,5 @@ impl AppState {
     pub async fn speak_response(&self, response: &str) -> Result<()> {
         let audio_manager = self.audio_manager.read().await;
         audio_manager.speak_text(response).await
-    }
-    
-    pub async fn transcribe_voice_input(&self) -> Result<String> {
-        let audio_manager = self.audio_manager.read().await;
-        audio_manager.transcribe_recording().await
-    }
-    
-    pub async fn clear_voice_buffer(&self) -> Result<()> {
-        let audio_manager = self.audio_manager.read().await;
-        audio_manager.clear_recording_buffer().await;
-        Ok(())
-    }
-    
-    pub async fn is_recording(&self) -> Result<bool> {
-        let audio_manager = self.audio_manager.read().await;
-        Ok(audio_manager.is_recording().await)
-    }
-    
-    pub async fn get_camera_info(&self) -> Result<String> {
-        let vision_manager = self.vision_manager.read().await;
-        vision_manager.get_camera_info().await
     }
 }

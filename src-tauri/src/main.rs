@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::Manager;
+use tauri::{Manager, Emitter};
 use tracing::{info, error};
 use tracing_subscriber;
 
@@ -131,6 +131,41 @@ async fn get_camera_info(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn cancel_download(
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    // For now, just emit a cancel event
+    // In a full implementation, this would use cancellation tokens
+    tracing::info!("Download cancellation requested");
+    Ok(())
+}
+
+#[tauri::command]
+async fn test_event_emission(
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    tracing::info!("Testing event emission");
+    let _ = app_handle.emit("test-event", "Hello from backend!");
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_last_selected_model(
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    Ok(state.get_last_selected_model().await)
+}
+
+#[tauri::command]
+async fn set_last_selected_model(
+    model_name: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    state.set_last_selected_model(&model_name).await
+        .map_err(|e| e.to_string())
+}
+
 fn main() {
     // Initialize logging
     tracing_subscriber::fmt::init();
@@ -161,6 +196,10 @@ fn main() {
             is_recording,
             speak_text,
             get_camera_info,
+            cancel_download,
+            test_event_emission,
+            get_last_selected_model,
+            set_last_selected_model,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

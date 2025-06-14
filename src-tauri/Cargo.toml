@@ -1,12 +1,30 @@
 [package]
 name = "tektra"
 version = "0.1.0"
-description = "AI Assistant with Avatar and Robotics Control"
-authors = ["David Irvine"]
+description = "AI Assistant with Avatar and Robotics Control - Native Rust implementation with Tauri frontend"
+authors = ["David Irvine <david@davidjohnirvine.com>"]
 edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/davidjohnirvine/tektra"
+homepage = "https://github.com/davidjohnirvine/tektra"
+documentation = "https://docs.rs/tektra"
+readme = "README.md"
+keywords = ["ai", "assistant", "chatbot", "robotics", "tauri"]
+categories = ["gui", "multimedia", "science::robotics"]
+include = [
+    "src/**/*",
+    "dist/**/*",
+    "gen/**/*",
+    "icons/**/*",
+    "Cargo.toml",
+    "build.rs",
+    "tauri.conf.json",
+    "README.md",
+    "LICENSE-*"
+]
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -26,25 +44,19 @@ candle-core = "0.8"
 candle-nn = "0.8"
 candle-transformers = "0.8"
 
-# Audio (simplified for initial build - will be enhanced later)
-# cpal = "0.16"
-# rodio = "0.19"
-
 # Vision (simplified for thread safety)
-# nokhwa = { version = "0.10", features = ["input-native"] }
 image = "0.25"
 
 # Networking
 axum = "0.7"
 tower = "0.5"
 
-[features]
-default = ["custom-protocol"]
-custom-protocol = ["tauri/custom-protocol"]
+# Asset embedding for standalone binary
+rust-embed = "8.0"
+mime_guess = "2.0"
 
-[lib]
-name = "tektra_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
+[features]
+default = []
 
 [[bin]]
 name = "tektra"
