@@ -26,11 +26,11 @@ candle-core = "0.8"
 candle-nn = "0.8"
 candle-transformers = "0.8"
 
-# Audio (simplified for initial build)
-# cpal = "0.14"
-# rodio = "0.17"
+# Audio (simplified for initial build - will be enhanced later)
+# cpal = "0.16"
+# rodio = "0.19"
 
-# Vision (simplified for initial build)
+# Vision (simplified for thread safety)
 # nokhwa = { version = "0.10", features = ["input-native"] }
 image = "0.25"
 

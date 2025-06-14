@@ -60,6 +60,9 @@ impl AppState {
         // Check if response contains robot actions
         if response.contains("<ACTION>") {
             self.process_robot_action(&response).await?;
+        } else {
+            // If it's a text response, speak it
+            self.speak_response(&response).await?;
         }
         
         Ok(response)
@@ -110,5 +113,31 @@ impl AppState {
             }
         }
         Ok(())
+    }
+    
+    pub async fn speak_response(&self, response: &str) -> Result<()> {
+        let audio_manager = self.audio_manager.read().await;
+        audio_manager.speak_text(response).await
+    }
+    
+    pub async fn transcribe_voice_input(&self) -> Result<String> {
+        let audio_manager = self.audio_manager.read().await;
+        audio_manager.transcribe_recording().await
+    }
+    
+    pub async fn clear_voice_buffer(&self) -> Result<()> {
+        let audio_manager = self.audio_manager.read().await;
+        audio_manager.clear_recording_buffer().await;
+        Ok(())
+    }
+    
+    pub async fn is_recording(&self) -> Result<bool> {
+        let audio_manager = self.audio_manager.read().await;
+        Ok(audio_manager.is_recording().await)
+    }
+    
+    pub async fn get_camera_info(&self) -> Result<String> {
+        let vision_manager = self.vision_manager.read().await;
+        vision_manager.get_camera_info().await
     }
 }

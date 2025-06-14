@@ -132,8 +132,19 @@ function App() {
   const toggleVoiceInput = async () => {
     try {
       if (isVoiceActive) {
+        // Stop recording and transcribe
         await invoke("stop_voice_input");
+        
+        // Get transcription and process it
+        const transcription = await invoke<string>("transcribe_voice");
+        if (transcription && transcription.trim()) {
+          await sendMessage(transcription);
+        }
+        
+        // Clear the voice buffer for next recording
+        await invoke("clear_voice_buffer");
       } else {
+        // Start recording
         await invoke("start_voice_input");
       }
       setIsVoiceActive(!isVoiceActive);

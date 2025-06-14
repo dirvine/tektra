@@ -90,6 +90,47 @@ async fn list_cached_models(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn transcribe_voice(
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    state.transcribe_voice_input().await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn clear_voice_buffer(
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    state.clear_voice_buffer().await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn is_recording(
+    state: tauri::State<'_, AppState>,
+) -> Result<bool, String> {
+    state.is_recording().await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn speak_text(
+    text: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<(), String> {
+    state.speak_response(&text).await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_camera_info(
+    state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    state.get_camera_info().await
+        .map_err(|e| e.to_string())
+}
+
 fn main() {
     // Initialize logging
     tracing_subscriber::fmt::init();
@@ -115,6 +156,11 @@ fn main() {
             get_model_status,
             download_model,
             list_cached_models,
+            transcribe_voice,
+            clear_voice_buffer,
+            is_recording,
+            speak_text,
+            get_camera_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
