@@ -1,4 +1,5 @@
 import React from 'react';
+import { invoke } from "@tauri-apps/api/core";
 import '../styles/LoadingScreen.css';
 
 interface LoadingScreenProps {
@@ -14,6 +15,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   status = 'Initializing...', 
   modelName 
 }) => {
+  const handleCancel = async () => {
+    try {
+      await invoke("cancel_download");
+    } catch (error) {
+      console.error("Failed to cancel download:", error);
+    }
+  };
   if (!isLoading) return null;
 
   return (
@@ -47,6 +55,15 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
           <div className="loading-details">
             <p>This may take a few minutes on first run.</p>
             <p>Models are cached for faster future loading.</p>
+            <div className="loading-actions">
+              <button 
+                onClick={handleCancel}
+                className="cancel-button"
+                disabled={progress > 95}
+              >
+                Cancel Download
+              </button>
+            </div>
           </div>
         </div>
       </div>

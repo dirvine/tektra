@@ -36,11 +36,7 @@ const Controls: React.FC<ControlsProps> = ({
   const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]);
   const [showSettings, setShowSettings] = useState(false);
   const [cachedModels, setCachedModels] = useState<CachedModel[]>([]);
-  const [downloadProgress, setDownloadProgress] = useState<{
-    model: string;
-    downloading: boolean;
-  } | null>(null);
-  const [showDownloadPanel, setShowDownloadPanel] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const handleLoadModel = () => {
     onLoadModel(selectedModel);
@@ -48,44 +44,65 @@ const Controls: React.FC<ControlsProps> = ({
 
   const loadCachedModels = async () => {
     try {
+      console.log('🗂️ CONTROLS: Loading cached models...');
       const result = await invoke<{ success: boolean; models: CachedModel[] }>(
         'list_cached_models'
       );
+      console.log('📋 CONTROLS: Cached models result:', result);
       if (result.success) {
+        console.log('Controls: Found', result.models.length, 'cached models');
         setCachedModels(result.models);
+      } else {
+        console.warn('Controls: Failed to load cached models - success=false');
       }
     } catch (error) {
-      console.error('Failed to load cached models:', error);
+      console.error('Controls: Failed to load cached models:', error);
     }
   };
 
-  const handleDownloadModel = async (modelName: string, force = false) => {
-    try {
-      setDownloadProgress({ model: modelName, downloading: true });
-      
-      const result = await invoke<{ success: boolean; message?: string; error?: string }>(
-        'download_model',
-        { modelName, force }
-      );
-      
-      if (result.success) {
-        console.log(`Model downloaded: ${result.message}`);
-        await loadCachedModels(); // Refresh cached models list
-      } else {
-        console.error(`Download failed: ${result.error}`);
+
+  // Load last selected model on component mount
+  useEffect(() => {
+    const loadLastSelectedModel = async () => {
+      if (!isInitialized) {
+        try {
+          console.log('🔄 CONTROLS: Loading last selected model...');
+          const lastModel = await invoke<string | null>('get_last_selected_model');
+          console.log('📋 CONTROLS: Last selected model:', lastModel);
+          
+          if (lastModel && AVAILABLE_MODELS.includes(lastModel)) {
+            console.log('✅ CONTROLS: Setting selected model to:', lastModel);
+            setSelectedModel(lastModel);
+          } else {
+            console.log('ℹ️ CONTROLS: Using default model (no valid last selection)');
+          }
+        } catch (error) {
+          console.error('❌ CONTROLS: Failed to load last selected model:', error);
+        } finally {
+          setIsInitialized(true);
+        }
       }
-    } catch (error) {
-      console.error('Download error:', error);
-    } finally {
-      setDownloadProgress(null);
-    }
-  };
+    };
+
+    loadLastSelectedModel();
+  }, [isInitialized]);
 
   useEffect(() => {
     if (showSettings) {
       loadCachedModels();
     }
   }, [showSettings]);
+
+  useEffect(() => {
+    // Listen for model load completion to refresh cached models
+    const handleModelLoadComplete = () => {
+      console.log('Controls: Model load completed, refreshing cached models');
+      loadCachedModels();
+    };
+
+    window.addEventListener('modelLoadComplete', handleModelLoadComplete);
+    return () => window.removeEventListener('modelLoadComplete', handleModelLoadComplete);
+  }, []);
 
   return (
     <div className="controls-container">
@@ -113,12 +130,6 @@ const Controls: React.FC<ControlsProps> = ({
           ⚙️ Settings
         </button>
         
-        <button
-          onClick={() => setShowDownloadPanel(!showDownloadPanel)}
-          className="control-button"
-        >
-          📥 Models
-        </button>
       </div>
       
       {showSettings && (
@@ -127,7 +138,19 @@ const Controls: React.FC<ControlsProps> = ({
           <div className="model-selector">
             <select
               value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
+              onChange={async (e) => {
+                const newModel = e.target.value;
+                console.log('🔄 CONTROLS: Model selection changed to:', newModel);
+                setSelectedModel(newModel);
+                
+                // Persist the selection immediately
+                try {
+                  await invoke('set_last_selected_model', { modelName: newModel });
+                  console.log('💾 CONTROLS: Saved model selection:', newModel);
+                } catch (error) {
+                  console.error('❌ CONTROLS: Failed to save model selection:', error);
+                }
+              }}
               disabled={isLoading}
             >
               {AVAILABLE_MODELS.map((model) => (
@@ -152,74 +175,39 @@ const Controls: React.FC<ControlsProps> = ({
               <p>Status: {modelStatus.loaded ? "✅ Loaded" : "❌ Not Loaded"}</p>
             </div>
           )}
-        </div>
-      )}
-      
-      {showDownloadPanel && (
-        <div className="download-panel">
-          <h3>Model Management</h3>
-          
-          <div className="download-section">
-            <h4>Download New Model</h4>
-            <div className="download-controls">
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                disabled={downloadProgress?.downloading}
-              >
-                {AVAILABLE_MODELS.map((model) => (
-                  <option key={model} value={model}>
-                    {model}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={() => handleDownloadModel(selectedModel)}
-                disabled={downloadProgress?.downloading}
-                className="download-button"
-              >
-                {downloadProgress?.model === selectedModel && downloadProgress.downloading
-                  ? "Downloading..."
-                  : "Download"}
-              </button>
-            </div>
-            {downloadProgress?.downloading && (
-              <div className="download-progress">
-                <p>Downloading {downloadProgress.model}...</p>
-                <div className="progress-bar">
-                  <div className="progress-fill"></div>
-                </div>
-              </div>
-            )}
-          </div>
           
           <div className="cached-models-section">
             <h4>Cached Models ({cachedModels.length})</h4>
             {cachedModels.length === 0 ? (
-              <p>No models cached yet. Download a model to get started.</p>
+              <p>No models cached yet. Load a model to cache it.</p>
             ) : (
               <div className="cached-models-list">
                 {cachedModels.map((model) => (
                   <div key={model.path} className="cached-model-item">
                     <div className="model-details">
                       <strong>{model.name}</strong>
-                      <span className="model-size">{model.size_gb} GB</span>
+                      <span className="model-size">{model.size_gb.toFixed(1)} GB</span>
                     </div>
                     <div className="model-actions">
                       <button
-                        onClick={() => onLoadModel(model.name)}
+                        onClick={async () => {
+                          console.log('🔄 CONTROLS: Loading cached model:', model.name);
+                          setSelectedModel(model.name);
+                          
+                          // Persist the selection
+                          try {
+                            await invoke('set_last_selected_model', { modelName: model.name });
+                            console.log('💾 CONTROLS: Saved cached model selection:', model.name);
+                          } catch (error) {
+                            console.error('❌ CONTROLS: Failed to save cached model selection:', error);
+                          }
+                          
+                          onLoadModel(model.name);
+                        }}
                         disabled={isLoading || modelStatus?.model === model.name}
                         className="load-cached-button"
                       >
-                        {modelStatus?.model === model.name ? "Loaded" : "Load"}
-                      </button>
-                      <button
-                        onClick={() => handleDownloadModel(model.name, true)}
-                        disabled={downloadProgress?.downloading}
-                        className="redownload-button"
-                        title="Force re-download"
-                      >
-                        🔄
+                        {modelStatus?.model === model.name ? "✅ Loaded" : "Load"}
                       </button>
                     </div>
                   </div>
@@ -229,6 +217,7 @@ const Controls: React.FC<ControlsProps> = ({
           </div>
         </div>
       )}
+      
     </div>
   );
 };
