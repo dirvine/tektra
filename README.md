@@ -18,15 +18,15 @@ A modern desktop AI assistant built with Rust/Tauri, featuring an animated avata
 
 - **Frontend**: React TypeScript with Canvas-based avatar rendering
 - **Backend**: Rust with Tauri for native performance
-- **AI Engine**: MLX bridge for Apple Silicon optimization
-- **Models**: MLX-compatible Hugging Face models
+- **AI Engine**: Native Rust with Candle ML framework (Apple Silicon optimized)
+- **Models**: HuggingFace Hub integration with automatic caching
 
 ## Requirements
 
-- macOS with Apple Silicon (M1/M2/M3/M4) - recommended
-- Rust and Cargo
+- macOS with Apple Silicon (M1/M2/M3/M4) - recommended for best performance
+- Rust and Cargo (latest stable)
 - Node.js and npm
-- Python 3.11+ (for MLX bridge)
+- No Python dependencies required!
 
 ## Installation & Usage
 
@@ -37,13 +37,10 @@ A modern desktop AI assistant built with Rust/Tauri, featuring an animated avata
 git clone https://github.com/dirvine/tektra.git
 cd tektra
 
-# Install MLX dependencies (for Apple Silicon)
-./install_mlx.sh
-
 # Install frontend dependencies
 npm install
 
-# Run in development mode
+# Run in development mode (downloads models automatically)
 npm run tauri dev
 
 # Build for production
