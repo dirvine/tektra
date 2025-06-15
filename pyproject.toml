@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tektra"
-version = "0.1.3"
+version = "0.1.4"
 description = "Advanced AI assistant with voice, vision, and robotics capabilities"
 readme = "README.md"
 license = {text = "MIT"}
@@ -37,6 +37,7 @@ dependencies = [
     "uvicorn[standard]>=0.24.0",
     "sqlalchemy>=2.0.0",
     "aiosqlite>=0.19.0",
+    "greenlet>=3.0.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
     "python-multipart>=0.0.6",
