@@ -1,3 +1,94 @@
+Metadata-Version: 2.4
+Name: tektra
+Version: 0.1.2
+Summary: Advanced AI assistant with voice, vision, and robotics capabilities
+Home-page: https://github.com/tektra/tektra
+Author: Tektra Team
+Author-email: Tektra Team <contact@tektra.ai>
+Maintainer-email: Tektra Team <contact@tektra.ai>
+License: MIT
+Project-URL: Homepage, https://tektra.ai
+Project-URL: Documentation, https://docs.tektra.ai
+Project-URL: Repository, https://github.com/tektra/tektra-ai
+Project-URL: Bug Reports, https://github.com/tektra/tektra-ai/issues
+Keywords: ai,assistant,voice,vision,robotics,ml,chatbot
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Multimedia :: Sound/Audio :: Speech
+Classifier: Topic :: Multimedia :: Graphics :: 3D Modeling
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: fastapi>=0.104.0
+Requires-Dist: uvicorn[standard]>=0.24.0
+Requires-Dist: sqlalchemy>=2.0.0
+Requires-Dist: aiosqlite>=0.19.0
+Requires-Dist: pydantic>=2.5.0
+Requires-Dist: pydantic-settings>=2.1.0
+Requires-Dist: python-multipart>=0.0.6
+Requires-Dist: websockets>=12.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: typer>=0.9.0
+Requires-Dist: rich>=13.0.0
+Requires-Dist: httpx>=0.25.0
+Requires-Dist: requests>=2.31.0
+Requires-Dist: jinja2>=3.1.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
+Requires-Dist: black>=23.0.0; extra == "dev"
+Requires-Dist: isort>=5.12.0; extra == "dev"
+Requires-Dist: flake8>=6.0.0; extra == "dev"
+Requires-Dist: mypy>=1.7.0; extra == "dev"
+Provides-Extra: ml
+Requires-Dist: torch>=2.1.0; extra == "ml"
+Requires-Dist: transformers>=4.35.0; extra == "ml"
+Requires-Dist: accelerate>=0.24.0; extra == "ml"
+Requires-Dist: optimum>=1.14.0; extra == "ml"
+Requires-Dist: numpy>=1.24.0; extra == "ml"
+Provides-Extra: audio
+Requires-Dist: soundfile>=0.12.0; extra == "audio"
+Requires-Dist: librosa>=0.10.0; extra == "audio"
+Requires-Dist: pyaudio>=0.2.11; extra == "audio"
+Requires-Dist: numpy>=1.24.0; extra == "audio"
+Provides-Extra: vision
+Requires-Dist: opencv-python>=4.8.0; extra == "vision"
+Requires-Dist: mediapipe>=0.10.0; extra == "vision"
+Requires-Dist: pillow>=10.0.0; extra == "vision"
+Requires-Dist: numpy>=1.24.0; extra == "vision"
+Provides-Extra: robotics
+Requires-Dist: pyserial>=3.5; extra == "robotics"
+Requires-Dist: pybullet>=3.2.5; extra == "robotics"
+Requires-Dist: numpy>=1.24.0; extra == "robotics"
+Provides-Extra: all
+Requires-Dist: torch>=2.1.0; extra == "all"
+Requires-Dist: transformers>=4.35.0; extra == "all"
+Requires-Dist: accelerate>=0.24.0; extra == "all"
+Requires-Dist: optimum>=1.14.0; extra == "all"
+Requires-Dist: soundfile>=0.12.0; extra == "all"
+Requires-Dist: librosa>=0.10.0; extra == "all"
+Requires-Dist: pyaudio>=0.2.11; extra == "all"
+Requires-Dist: opencv-python>=4.8.0; extra == "all"
+Requires-Dist: mediapipe>=0.10.0; extra == "all"
+Requires-Dist: pyserial>=3.5; extra == "all"
+Requires-Dist: pybullet>=3.2.5; extra == "all"
+Requires-Dist: pillow>=10.0.0; extra == "all"
+Requires-Dist: numpy>=1.24.0; extra == "all"
+Dynamic: author
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-python
+
 # Tektra AI Assistant
 
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
