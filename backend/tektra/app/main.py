@@ -67,16 +67,6 @@ app.include_router(camera.router, prefix="/api/v1/camera", tags=["Camera"])
 app.include_router(robot.router, prefix="/api/v1/robots", tags=["Robots"])
 app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 
-# Mount static files for frontend
-frontend_build_path = Path(__file__).parent.parent.parent.parent / "frontend" / ".next" / "static"
-if frontend_build_path.exists():
-    app.mount("/static", StaticFiles(directory=str(frontend_build_path)), name="static")
-
-# Serve frontend HTML
-frontend_out_path = Path(__file__).parent.parent.parent.parent / "frontend" / "out"
-if frontend_out_path.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_out_path), html=True), name="frontend")
-
 
 @app.get("/api")
 async def root() -> JSONResponse:
@@ -99,6 +89,17 @@ async def health_check() -> JSONResponse:
         "service": "tektra-backend",
         "version": settings.api_version
     })
+
+
+# Mount static files for frontend (must be after API routes)
+frontend_build_path = Path(__file__).parent.parent.parent.parent / "frontend" / ".next" / "static"
+if frontend_build_path.exists():
+    app.mount("/_next/static", StaticFiles(directory=str(frontend_build_path)), name="nextstatic")
+
+# Serve frontend HTML (must be last - catches all remaining routes)
+frontend_out_path = Path(__file__).parent.parent.parent.parent / "frontend" / "out"
+if frontend_out_path.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_out_path), html=True), name="frontend")
 
 
 if __name__ == "__main__":
