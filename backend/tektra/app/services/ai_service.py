@@ -481,3 +481,6 @@ class AIModelManager:
 
 # Global AI manager instance
 ai_manager = AIModelManager()
+
+# Alias for backward compatibility
+ai_service = ai_manager
