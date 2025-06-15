@@ -27,6 +27,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         print(f"⚠️  Database initialization failed: {e}")
         print("✅ Backend started without database")
     
+    # Auto-load Phi-4 Multimodal
+    try:
+        from .services.phi4_service import phi4_service
+        print("🧠 Loading Phi-4 Multimodal model...")
+        success = await phi4_service.load_model()
+        if success:
+            print("✅ Phi-4 Multimodal loaded successfully")
+        else:
+            print("⚠️  Phi-4 Multimodal failed to load, will use fallback")
+    except Exception as e:
+        print(f"⚠️  Phi-4 auto-load failed: {e}")
+        print("✅ Backend started with Whisper fallback")
+    
     yield
     
     # Shutdown

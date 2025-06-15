@@ -43,7 +43,7 @@ def print_banner():
 ║     ██║   ███████╗██║  ██╗   ██║   ██║  ██║██║  ██║          ║
 ║     ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝          ║
 ║                                                              ║
-║            Advanced AI Assistant v0.6.7                     ║
+║            Advanced AI Assistant v0.7.2                     ║
 ║          Voice • Vision • Robotics • Chat                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -109,7 +109,9 @@ def start(
     # Open browser
     if open_browser:
         console.print("🌐 Opening browser...", style="bold blue")
-        webbrowser.open(f"http://{host}:{port}")
+        # Use localhost instead of 0.0.0.0 for browser
+        browser_host = "localhost" if host == "0.0.0.0" else host
+        webbrowser.open(f"http://{browser_host}:{port}")
     
     try:
         start_server(host=host, port=port, reload=reload, debug=debug)
