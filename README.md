@@ -2,7 +2,7 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PyPI Version](https://img.shields.io/badge/pypi-v0.7.3-orange.svg)](https://pypi.org/project/tektra/)
+[![PyPI Version](https://img.shields.io/badge/pypi-v0.8.0-orange.svg)](https://pypi.org/project/tektra/)
 [![Phi-4 Integration](https://img.shields.io/badge/Phi--4-Multimodal-purple.svg)](https://huggingface.co/microsoft/Phi-4-multimodal-instruct)
 
 **Tektra AI Assistant** is an advanced AI assistant featuring **Microsoft Phi-4 Multimodal integration** with superior voice, vision, and robotics capabilities. It delivers state-of-the-art speech recognition, intelligent chat completion, and multimodal understanding with persistent conversation management and a beautiful web interface.
@@ -80,7 +80,19 @@ tektra enhance     # Enhanced setup with guided Phi-4 configuration
 tektra enable-phi4 # Manually enable Phi-4 if needed
 ```
 
-## 🚀 New in v0.7.3 - Unified Experience
+## 🚀 New in v0.8.0 - Streamlined Experience
+
+### 🎯 **Zero-Setup Experience**
+- **One Command Install**: `uv tool install tektra` → `tektra` → Done!
+- **Automatic Setup**: No more `tektra setup` - directories, database, and models initialize automatically
+- **Instant Start**: Just run `tektra` and everything works immediately
+- **Smart Defaults**: Optimized configuration for immediate productivity
+
+### 🚀 **UV Package Manager Integration**
+- **Modern Installation**: UV-first approach with traditional pip fallback
+- **Faster Dependencies**: UV's speed benefits for installation and development
+- **Better Development**: `uv sync --all-extras` for seamless dev setup
+- **Tool Integration**: Native UV tool installation support
 
 ### Microsoft Phi-4 Multimodal Integration
 - **Superior Speech Recognition**: #1 performance on OpenASR leaderboard
