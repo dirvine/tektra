@@ -2,7 +2,7 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PyPI Version](https://img.shields.io/badge/pypi-v0.6.0-orange.svg)](https://pypi.org/project/tektra/)
+[![PyPI Version](https://img.shields.io/badge/pypi-v0.7.3-orange.svg)](https://pypi.org/project/tektra/)
 [![Phi-4 Integration](https://img.shields.io/badge/Phi--4-Multimodal-purple.svg)](https://huggingface.co/microsoft/Phi-4-multimodal-instruct)
 
 **Tektra AI Assistant** is an advanced AI assistant featuring **Microsoft Phi-4 Multimodal integration** with superior voice, vision, and robotics capabilities. It delivers state-of-the-art speech recognition, intelligent chat completion, and multimodal understanding with persistent conversation management and a beautiful web interface.
@@ -42,49 +42,45 @@
 
 ### Installation
 
-Install Tektra with pip:
+Install Tektra with UV (recommended):
 
 ```bash
+# Install UV if you don't have it
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Basic installation
-pip install tektra
+uv tool install tektra
 
 # With all optional features
-pip install tektra[all]
+uv tool install tektra --with tektra[all]
 
-# With specific features
-pip install tektra[ml,audio,vision]
+# Alternative: Traditional pip installation also works
+pip install tektra
 ```
 
 ### Setup and First Run
 
-1. **Initial Setup** (first time only):
-   ```bash
-   tektra setup
-   ```
+**Just run Tektra - setup happens automatically!**
 
-2. **Start the Assistant**:
-   ```bash
-   tektra start
-   ```
-
-3. **Enable Phi-4 for Enhanced Performance** (Recommended):
-   ```bash
-   # In a new terminal window
-   tektra enable-phi4
-   ```
-
-4. **Open Your Browser**:
-   The web interface will automatically open at `http://localhost:8000`
+```bash
+tektra
+```
 
 That's it! 🎉
 
-### 🚀 Quick Enhanced Setup
-For the best experience in one command:
+- **Auto-Setup**: Directories, database, and dependencies are created automatically
+- **Model Loading**: Phi-4 Multimodal downloads and loads automatically on first run
+- **Browser Opens**: Web interface opens automatically at `http://localhost:8000`
+- **Ready to Use**: Start chatting, speaking, or using the camera immediately
+
+### 🚀 Alternative Commands
 ```bash
-tektra enhance  # Starts server and guides Phi-4 setup
+tektra start       # Explicit start command
+tektra enhance     # Enhanced setup with guided Phi-4 configuration
+tektra enable-phi4 # Manually enable Phi-4 if needed
 ```
 
-## 🚀 New in v0.6.0 - Phase 3.1 Features
+## 🚀 New in v0.7.3 - Unified Experience
 
 ### Microsoft Phi-4 Multimodal Integration
 - **Superior Speech Recognition**: #1 performance on OpenASR leaderboard
@@ -110,11 +106,11 @@ tektra enhance  # Starts server and guides Phi-4 setup
 ### Command Line Interface
 
 ```bash
-# Start the server (with options)
-tektra start --host 0.0.0.0 --port 8000 --browser
+# Start the server (default command)
+tektra
 
-# Setup for first use
-tektra setup
+# Start with custom options
+tektra start --host 0.0.0.0 --port 8000 --no-browser
 
 # Enhanced setup (server + Phi-4 guidance)
 tektra enhance
@@ -237,7 +233,7 @@ pip install tektra[all]
 ```bash
 git clone https://github.com/tektra/tektra.git
 cd tektra
-pip install -e .[dev,all]
+uv sync --all-extras
 ```
 
 ## 🛠️ Development
@@ -249,17 +245,17 @@ pip install -e .[dev,all]
 git clone https://github.com/tektra/tektra.git
 cd tektra
 
-# Install in development mode
-pip install -e .[dev,all]
+# Install in development mode with UV
+uv sync --all-extras
 
 # Set up pre-commit hooks
-pre-commit install
+uv run pre-commit install
 
 # Run tests
-pytest
+uv run pytest
 
 # Start development server
-tektra start --reload --debug
+uv run tektra start --reload --debug
 ```
 
 ## 🐛 Troubleshooting

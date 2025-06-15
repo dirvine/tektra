@@ -103,9 +103,9 @@ class Phi4Service:
             self.load_progress = {
                 "status": "error",
                 "progress": 0.0,
-                "message": "Phi-4 dependencies not available. Install with: pip install torch transformers"
+                "message": "Phi-4 dependencies not available. Install with: uv tool install tektra --with tektra[ml]"
             }
-            logger.error("Phi-4 dependencies not available. Install with: pip install torch transformers")
+            logger.error("Phi-4 dependencies not available. Install with: uv tool install tektra --with tektra[ml]")
             return False
         
         if self.is_loading:
