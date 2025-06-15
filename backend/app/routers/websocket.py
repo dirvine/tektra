@@ -82,28 +82,83 @@ async def websocket_endpoint(websocket: WebSocket):
 @router.websocket("/ws/chat/{user_id}")
 async def chat_websocket(websocket: WebSocket, user_id: str):
     """WebSocket endpoint for chat communication."""
+    from app.services.ai_service import ai_manager, ChatMessage as AIChatMessage
+    
     await manager.connect(websocket, user_id)
     try:
         while True:
             data = await websocket.receive_text()
             message_data = json.loads(data)
             
-            # TODO: Integrate with AI chat system
-            # For now, echo with AI-like response
             if message_data.get("type") == "chat":
-                response = {
-                    "type": "ai_response",
-                    "message": f"AI: I received your message '{message_data.get('message', '')}'",
-                    "user_id": user_id,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "tokens_used": 10,
-                    "model": "mock-ai"
-                }
-                
-                await manager.send_personal_message(
-                    json.dumps(response),
-                    websocket
-                )
+                try:
+                    # Extract message and model info
+                    user_message = message_data.get("data", {}).get("message", "")
+                    model_name = message_data.get("data", {}).get("model", "phi-3-mini")
+                    
+                    # Convert to AI service format
+                    ai_messages = [AIChatMessage(role="user", content=user_message)]
+                    
+                    # Send start of response
+                    start_response = {
+                        "type": "ai_response_start",
+                        "user_id": user_id,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "model": model_name
+                    }
+                    await manager.send_personal_message(json.dumps(start_response), websocket)
+                    
+                    # Stream AI response
+                    full_response = ""
+                    async for token in ai_manager.chat(
+                        messages=ai_messages,
+                        model_name=model_name,
+                        stream=True
+                    ):
+                        full_response += token
+                        
+                        # Send token
+                        token_response = {
+                            "type": "ai_response_token",
+                            "token": token,
+                            "user_id": user_id,
+                            "model": model_name,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                        
+                        await manager.send_personal_message(
+                            json.dumps(token_response),
+                            websocket
+                        )
+                    
+                    # Send completion
+                    completion_response = {
+                        "type": "ai_response_complete",
+                        "full_response": full_response,
+                        "user_id": user_id,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "tokens_used": len(full_response.split()),
+                        "model": model_name
+                    }
+                    
+                    await manager.send_personal_message(
+                        json.dumps(completion_response),
+                        websocket
+                    )
+                    
+                except Exception as e:
+                    # Send error response
+                    error_response = {
+                        "type": "ai_response_error",
+                        "error": str(e),
+                        "user_id": user_id,
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                    
+                    await manager.send_personal_message(
+                        json.dumps(error_response),
+                        websocket
+                    )
                 
     except WebSocketDisconnect:
         manager.disconnect(websocket, user_id)
