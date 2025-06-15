@@ -91,15 +91,54 @@ async def health_check() -> JSONResponse:
     })
 
 
-# Mount static files for frontend (must be after API routes)
-frontend_build_path = Path(__file__).parent.parent.parent.parent / "frontend" / ".next" / "static"
-if frontend_build_path.exists():
-    app.mount("/_next/static", StaticFiles(directory=str(frontend_build_path)), name="nextstatic")
+@app.get("/debug/frontend")
+async def debug_frontend() -> JSONResponse:
+    """Debug frontend path resolution."""
+    try:
+        possible_paths = [
+            Path(__file__).parent.parent.parent.parent / "frontend" / "out",
+            Path.cwd() / "frontend" / "out",
+            Path(__file__).parent / "frontend" / "out",
+        ]
+        
+        debug_info = {
+            "current_working_directory": str(Path.cwd()),
+            "main_file_location": str(Path(__file__)),
+            "possible_frontend_paths": [
+                {"path": str(p), "exists": p.exists(), "files": [str(f) for f in p.glob("*")] if p.exists() else []}
+                for p in possible_paths
+            ]
+        }
+        return JSONResponse(debug_info)
+    except Exception as e:
+        return JSONResponse({"error": str(e)})
 
-# Serve frontend HTML (must be last - catches all remaining routes)
-frontend_out_path = Path(__file__).parent.parent.parent.parent / "frontend" / "out"
-if frontend_out_path.exists():
+
+# Mount static files for frontend (must be after API routes)
+# Try multiple possible locations for frontend files
+possible_frontend_paths = [
+    Path(__file__).parent.parent.parent.parent / "frontend" / "out",  # Development
+    Path.cwd() / "frontend" / "out",  # When run from project root
+    Path(__file__).parent / "frontend" / "out",  # Package structure
+]
+
+frontend_out_path = None
+for path in possible_frontend_paths:
+    if path.exists():
+        frontend_out_path = path
+        break
+
+if frontend_out_path:
+    print(f"✅ Mounting frontend from: {frontend_out_path}")
+    # Mount Next.js static files
+    next_static_path = frontend_out_path / "_next" / "static"
+    if next_static_path.exists():
+        app.mount("/_next/static", StaticFiles(directory=str(next_static_path)), name="nextstatic")
+    
+    # Mount main frontend (must be last)
     app.mount("/", StaticFiles(directory=str(frontend_out_path), html=True), name="frontend")
+else:
+    print("⚠️  Frontend files not found - running API only")
 
 
 if __name__ == "__main__":
