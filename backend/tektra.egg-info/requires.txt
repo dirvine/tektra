@@ -13,6 +13,7 @@ rich>=13.0.0
 httpx>=0.25.0
 requests>=2.31.0
 jinja2>=3.1.0
+numpy<2.0.0,>=1.24.0
 
 [all]
 torch>=2.1.0
@@ -32,7 +33,7 @@ mediapipe>=0.10.0
 pyserial>=3.5
 pybullet>=3.2.5
 pillow>=10.0.0
-numpy>=1.24.0
+numpy<2.0.0,>=1.24.0
 
 [all:sys_platform == "darwin"]
 mlx>=0.4.0
@@ -42,7 +43,7 @@ mlx-lm>=0.4.0
 soundfile>=0.12.0
 librosa>=0.10.0
 pyaudio>=0.2.11
-numpy>=1.24.0
+numpy<2.0.0,>=1.24.0
 webrtcvad>=2.0.10
 noisereduce>=3.0.0
 edge-tts>=6.1.0
@@ -61,7 +62,7 @@ torch>=2.1.0
 transformers>=4.40.0
 accelerate>=0.24.0
 optimum>=1.14.0
-numpy>=1.24.0
+numpy<2.0.0,>=1.24.0
 huggingface-hub>=0.20.0
 
 [ml:sys_platform == "darwin"]
@@ -71,10 +72,10 @@ mlx-lm>=0.4.0
 [robotics]
 pyserial>=3.5
 pybullet>=3.2.5
-numpy>=1.24.0
+numpy<2.0.0,>=1.24.0
 
 [vision]
 opencv-python>=4.8.0
 mediapipe>=0.10.0
 pillow>=10.0.0
-numpy>=1.24.0
+numpy<2.0.0,>=1.24.0

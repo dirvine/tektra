@@ -58,6 +58,11 @@ async def init_database() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
+async def get_db_session() -> AsyncSession:
+    """Get a database session (for WebSocket use)."""
+    return async_session_factory()
+
+
 async def close_database() -> None:
     """Close database connections."""
     await engine.dispose()

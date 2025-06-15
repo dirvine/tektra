@@ -6,7 +6,7 @@ different API endpoints for user authentication and session management.
 """
 
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, WebSocket
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -96,6 +96,32 @@ async def get_admin_user(
     # For now, assume all users are admins since we don't have role-based auth
     # In the future, check if user has admin role
     return current_user
+
+
+async def get_current_user_websocket(websocket: WebSocket) -> User:
+    """
+    Get current user for WebSocket connections.
+    
+    Args:
+        websocket: WebSocket connection
+        
+    Returns:
+        User: Default user for now (future: authenticate via headers/query params)
+    """
+    # For now, return default user since WebSocket auth is not implemented
+    # In the future, this could authenticate via:
+    # - Query parameters: ?token=jwt_token
+    # - Headers during handshake
+    # - Cookies
+    
+    default_user = User(
+        id=1,
+        username="default_user",
+        email="user@tektra.ai",
+        is_active=True
+    )
+    
+    return default_user
 
 
 # Optional: Dependency for API key authentication

@@ -37,8 +37,8 @@ class ConversationSearchRequest(BaseModel):
     is_archived: Optional[bool] = None
     min_messages: Optional[int] = None
     max_messages: Optional[int] = None
-    sort_by: str = Field(default="updated_at", regex="^(created_at|updated_at|title|message_count|priority)$")
-    sort_order: str = Field(default="desc", regex="^(asc|desc)$")
+    sort_by: str = Field(default="updated_at", pattern="^(created_at|updated_at|title|message_count|priority)$")
+    sort_order: str = Field(default="desc", pattern="^(asc|desc)$")
     limit: int = Field(default=50, ge=1, le=100)
     offset: int = Field(default=0, ge=0)
 
@@ -65,13 +65,13 @@ class ConversationUpdateRequest(BaseModel):
     is_pinned: Optional[bool] = None
     is_archived: Optional[bool] = None
     priority: Optional[int] = Field(None, ge=0, le=10)
-    color: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
 
 
 class TagCreateRequest(BaseModel):
     """Request model for creating tags."""
     name: str = Field(..., min_length=1, max_length=50)
-    color: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
     description: Optional[str] = Field(None, max_length=255)
 
 
@@ -90,7 +90,7 @@ class MessageUpdateRequest(BaseModel):
 class ConversationExportRequest(BaseModel):
     """Request model for exporting conversations."""
     conversation_ids: Optional[List[int]] = None
-    format: str = Field(default="json", regex="^(json|csv|markdown)$")
+    format: str = Field(default="json", pattern="^(json|csv|markdown)$")
     include_metadata: bool = True
 
 

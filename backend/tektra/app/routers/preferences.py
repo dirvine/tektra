@@ -32,7 +32,7 @@ class PreferencesUpdateRequest(BaseModel):
     language: Optional[str] = Field(None, max_length=10)
     timezone: Optional[str] = Field(None, max_length=50)
     date_format: Optional[str] = Field(None, max_length=20)
-    time_format: Optional[str] = Field(None, regex="^(12h|24h)$")
+    time_format: Optional[str] = Field(None, pattern="^(12h|24h)$")
     
     # Chat Interface Preferences
     chat_bubble_style: Optional[str] = Field(None, max_length=20)
@@ -114,7 +114,7 @@ class ConversationTemplateRequest(BaseModel):
     is_favorite: bool = False
     tags: Optional[List[str]] = None
     icon: Optional[str] = Field(None, max_length=50)
-    color: Optional[str] = Field(None, regex="^#[0-9A-Fa-f]{6}$")
+    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
 
 
 class APIKeyRequest(BaseModel):

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tektra"
-version = "0.6.4"
+version = "0.6.5"
 description = "Advanced AI assistant with Microsoft Phi-4 Multimodal integration, voice, vision, and robotics capabilities"
 readme = "README.md"
 license = {text = "MIT"}
@@ -48,7 +48,7 @@ dependencies = [
     "httpx>=0.25.0",
     "requests>=2.31.0",
     "jinja2>=3.1.0",
-    "numpy>=1.24.0",
+    "numpy>=1.24.0,<2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -65,7 +65,7 @@ ml = [
     "transformers>=4.40.0",
     "accelerate>=0.24.0",
     "optimum>=1.14.0",
-    "numpy>=1.24.0",
+    "numpy>=1.24.0,<2.0.0",
     "mlx>=0.4.0; sys_platform == 'darwin'",
     "mlx-lm>=0.4.0; sys_platform == 'darwin'",
     "huggingface-hub>=0.20.0",
@@ -74,7 +74,7 @@ audio = [
     "soundfile>=0.12.0",
     "librosa>=0.10.0",
     "pyaudio>=0.2.11",
-    "numpy>=1.24.0",
+    "numpy>=1.24.0,<2.0.0",
     "webrtcvad>=2.0.10",
     "noisereduce>=3.0.0",
     "edge-tts>=6.1.0",
@@ -84,12 +84,12 @@ vision = [
     "opencv-python>=4.8.0",
     "mediapipe>=0.10.0",
     "pillow>=10.0.0",
-    "numpy>=1.24.0",
+    "numpy>=1.24.0,<2.0.0",
 ]
 robotics = [
     "pyserial>=3.5",
     "pybullet>=3.2.5",
-    "numpy>=1.24.0",
+    "numpy>=1.24.0,<2.0.0",
 ]
 all = [
     "torch>=2.1.0",
@@ -111,7 +111,7 @@ all = [
     "pyserial>=3.5",
     "pybullet>=3.2.5",
     "pillow>=10.0.0",
-    "numpy>=1.24.0",
+    "numpy>=1.24.0,<2.0.0",
 ]
 
 [project.urls]
@@ -155,6 +155,9 @@ python_version = "3.9"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+
+[tool.uv.workspace]
+members = ["test-user-install"]
 
 [dependency-groups]
 dev = [

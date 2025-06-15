@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: tektra
-Version: 0.6.0
+Version: 0.6.5
 Summary: Advanced AI assistant with Microsoft Phi-4 Multimodal integration, voice, vision, and robotics capabilities
 Home-page: https://github.com/tektra/tektra
 Author: Tektra Team
@@ -44,6 +44,7 @@ Requires-Dist: rich>=13.0.0
 Requires-Dist: httpx>=0.25.0
 Requires-Dist: requests>=2.31.0
 Requires-Dist: jinja2>=3.1.0
+Requires-Dist: numpy<2.0.0,>=1.24.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
@@ -56,7 +57,7 @@ Requires-Dist: torch>=2.1.0; extra == "ml"
 Requires-Dist: transformers>=4.40.0; extra == "ml"
 Requires-Dist: accelerate>=0.24.0; extra == "ml"
 Requires-Dist: optimum>=1.14.0; extra == "ml"
-Requires-Dist: numpy>=1.24.0; extra == "ml"
+Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "ml"
 Requires-Dist: mlx>=0.4.0; sys_platform == "darwin" and extra == "ml"
 Requires-Dist: mlx-lm>=0.4.0; sys_platform == "darwin" and extra == "ml"
 Requires-Dist: huggingface-hub>=0.20.0; extra == "ml"
@@ -64,7 +65,7 @@ Provides-Extra: audio
 Requires-Dist: soundfile>=0.12.0; extra == "audio"
 Requires-Dist: librosa>=0.10.0; extra == "audio"
 Requires-Dist: pyaudio>=0.2.11; extra == "audio"
-Requires-Dist: numpy>=1.24.0; extra == "audio"
+Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "audio"
 Requires-Dist: webrtcvad>=2.0.10; extra == "audio"
 Requires-Dist: noisereduce>=3.0.0; extra == "audio"
 Requires-Dist: edge-tts>=6.1.0; extra == "audio"
@@ -73,11 +74,11 @@ Provides-Extra: vision
 Requires-Dist: opencv-python>=4.8.0; extra == "vision"
 Requires-Dist: mediapipe>=0.10.0; extra == "vision"
 Requires-Dist: pillow>=10.0.0; extra == "vision"
-Requires-Dist: numpy>=1.24.0; extra == "vision"
+Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "vision"
 Provides-Extra: robotics
 Requires-Dist: pyserial>=3.5; extra == "robotics"
 Requires-Dist: pybullet>=3.2.5; extra == "robotics"
-Requires-Dist: numpy>=1.24.0; extra == "robotics"
+Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "robotics"
 Provides-Extra: all
 Requires-Dist: torch>=2.1.0; extra == "all"
 Requires-Dist: transformers>=4.40.0; extra == "all"
@@ -98,7 +99,7 @@ Requires-Dist: mediapipe>=0.10.0; extra == "all"
 Requires-Dist: pyserial>=3.5; extra == "all"
 Requires-Dist: pybullet>=3.2.5; extra == "all"
 Requires-Dist: pillow>=10.0.0; extra == "all"
-Requires-Dist: numpy>=1.24.0; extra == "all"
+Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "all"
 Dynamic: author
 Dynamic: home-page
 Dynamic: license-file
@@ -173,10 +174,22 @@ pip install tektra[ml,audio,vision]
    tektra start
    ```
 
-3. **Open Your Browser**:
+3. **Enable Phi-4 for Enhanced Performance** (Recommended):
+   ```bash
+   # In a new terminal window
+   tektra enable-phi4
+   ```
+
+4. **Open Your Browser**:
    The web interface will automatically open at `http://localhost:8000`
 
 That's it! 🎉
+
+### 🚀 Quick Enhanced Setup
+For the best experience in one command:
+```bash
+tektra enhance  # Starts server and guides Phi-4 setup
+```
 
 ## 🚀 New in v0.6.0 - Phase 3.1 Features
 
@@ -209,6 +222,18 @@ tektra start --host 0.0.0.0 --port 8000 --browser
 
 # Setup for first use
 tektra setup
+
+# Enhanced setup (server + Phi-4 guidance)
+tektra enhance
+
+# Enable Phi-4 Multimodal (superior AI)
+tektra enable-phi4
+
+# Check Phi-4 status
+tektra phi4-status
+
+# Disable Phi-4 (free memory)
+tektra disable-phi4
 
 # Show system information
 tektra info
