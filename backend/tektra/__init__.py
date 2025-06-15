@@ -5,7 +5,7 @@ An advanced AI assistant with voice, vision, and robotics capabilities.
 Features persistent conversation management, real-time chat, and modular architecture.
 """
 
-__version__ = "0.2.2"
+__version__ = "0.3.0"
 __author__ = "Tektra Team"
 __email__ = "contact@tektra.ai"
 
