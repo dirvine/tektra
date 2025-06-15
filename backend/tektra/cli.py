@@ -25,7 +25,7 @@ from .app.config import settings
 
 app = typer.Typer(
     name="tektra",
-    help="Tektra AI Assistant - Advanced AI with voice, vision, and robotics",
+    help="Tektra AI Assistant - Advanced AI with voice, vision, and robotics. Run 'tektra' to start the server.",
     rich_markup_mode="rich"
 )
 
@@ -60,13 +60,45 @@ def start(
     debug: bool = typer.Option(False, "--debug", help="Enable debug mode"),
 ):
     """
-    Start the Tektra AI Assistant server.
+    Start the Tektra AI Assistant server (default command).
     
     This will start both the backend API server and serve the frontend interface.
+    Setup happens automatically on first run.
     """
     print_banner()
     
     console.print("\n🚀 Starting Tektra AI Assistant...\n", style="bold green")
+    
+    # Perform setup steps
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        # Create directories
+        task1 = progress.add_task("Setting up directories...", total=None)
+        try:
+            data_dir = Path.home() / ".tektra" / "data"
+            models_dir = Path.home() / ".tektra" / "models"
+            logs_dir = Path.home() / ".tektra" / "logs"
+            
+            data_dir.mkdir(parents=True, exist_ok=True)
+            models_dir.mkdir(parents=True, exist_ok=True)
+            logs_dir.mkdir(parents=True, exist_ok=True)
+            
+            progress.update(task1, description="✅ Directories ready")
+        except Exception as e:
+            progress.update(task1, description=f"⚠️  Directory setup failed: {e}")
+        
+        # Initialize database
+        task2 = progress.add_task("Initializing database...", total=None)
+        try:
+            asyncio.run(init_database())
+            progress.update(task2, description="✅ Database initialized")
+        except Exception as e:
+            progress.update(task2, description=f"⚠️  Database initialization failed: {e}")
+        
+        time.sleep(0.5)  # Brief pause for user to see the status
     
     # Show configuration
     config_table = Table(title="Server Configuration")
@@ -83,21 +115,6 @@ def start(
     
     console.print(config_table)
     console.print()
-    
-    # Initialize database
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Initializing database...", total=None)
-        try:
-            asyncio.run(init_database())
-            progress.update(task, description="✅ Database initialized")
-        except Exception as e:
-            progress.update(task, description=f"⚠️  Database initialization failed: {e}")
-        
-        time.sleep(0.5)  # Brief pause for user to see the status
     
     # Start server
     console.print("🌟 Server starting...", style="bold yellow")
@@ -123,48 +140,13 @@ def start(
 @app.command()
 def setup():
     """
-    Set up Tektra AI Assistant for first use.
+    Legacy setup command - no longer needed.
     
-    This will initialize the database and create necessary directories.
+    Setup now happens automatically when you run 'tektra' for the first time.
     """
-    print_banner()
-    
-    console.print("\n🔧 Setting up Tektra AI Assistant...\n", style="bold blue")
-    
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        # Create directories
-        task1 = progress.add_task("Creating directories...", total=None)
-        try:
-            data_dir = Path.home() / ".tektra" / "data"
-            models_dir = Path.home() / ".tektra" / "models"
-            logs_dir = Path.home() / ".tektra" / "logs"
-            
-            data_dir.mkdir(parents=True, exist_ok=True)
-            models_dir.mkdir(parents=True, exist_ok=True)
-            logs_dir.mkdir(parents=True, exist_ok=True)
-            
-            progress.update(task1, description="✅ Directories created")
-        except Exception as e:
-            progress.update(task1, description=f"❌ Directory creation failed: {e}")
-            return
-        
-        # Initialize database
-        task2 = progress.add_task("Initializing database...", total=None)
-        try:
-            asyncio.run(init_database())
-            progress.update(task2, description="✅ Database initialized")
-        except Exception as e:
-            progress.update(task2, description=f"❌ Database initialization failed: {e}")
-            return
-        
-        time.sleep(1)  # Brief pause for user to see the status
-    
-    console.print("\n🎉 Setup complete!", style="bold green")
-    console.print("\nYou can now start Tektra with: [bold cyan]tektra start[/bold cyan]")
+    console.print("\n💡 No setup needed!", style="bold green")
+    console.print("Tektra now sets up automatically when you run it for the first time.")
+    console.print("\nJust run: [bold cyan]tektra[/bold cyan] or [bold cyan]tektra start[/bold cyan]")
 
 
 @app.command()
@@ -187,14 +169,14 @@ def info():
     if data_dir.exists():
         info_table.add_row("Data Directory", "✅ OK", str(data_dir))
     else:
-        info_table.add_row("Data Directory", "❌ Missing", "Run 'tektra setup'")
+        info_table.add_row("Data Directory", "⚠️ Will be created", "Auto-created on first run")
     
     # Check database
     db_path = Path("tektra.db")
     if db_path.exists():
         info_table.add_row("Database", "✅ OK", str(db_path))
     else:
-        info_table.add_row("Database", "❌ Missing", "Run 'tektra setup'")
+        info_table.add_row("Database", "⚠️ Will be created", "Auto-created on first run")
     
     console.print(info_table)
     
@@ -435,7 +417,12 @@ def enhance():
 def main():
     """Main entry point for the CLI."""
     try:
-        app()
+        # If no command is provided, default to start
+        if len(sys.argv) == 1:
+            # Default to start command
+            start()
+        else:
+            app()
     except KeyboardInterrupt:
         console.print("\n\n👋 Goodbye!", style="bold yellow")
         sys.exit(0)
