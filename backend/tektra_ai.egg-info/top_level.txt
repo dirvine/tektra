@@ -1,5 +1,0 @@
-core
-models
-schemas
-tektra
-utils

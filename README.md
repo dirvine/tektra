@@ -2,7 +2,7 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PyPI Version](https://img.shields.io/badge/pypi-v0.1.4-orange.svg)](https://pypi.org/project/tektra/)
+[![PyPI Version](https://img.shields.io/badge/pypi-v0.1.5-orange.svg)](https://pypi.org/project/tektra/)
 
 **Tektra AI Assistant** is an advanced AI assistant with voice, vision, and robotics capabilities. It features persistent conversation management, real-time chat, streaming responses, and a beautiful web interface.
 
