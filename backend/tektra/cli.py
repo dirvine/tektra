@@ -43,7 +43,7 @@ def print_banner():
 ║     ██║   ███████╗██║  ██╗   ██║   ██║  ██║██║  ██║          ║
 ║     ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝          ║
 ║                                                              ║
-║            Advanced AI Assistant v0.8.0                     ║
+║            Advanced AI Assistant v0.8.1                     ║
 ║          Voice • Vision • Robotics • Chat                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -105,15 +105,26 @@ def start(
     config_table.add_column("Setting", style="cyan")
     config_table.add_column("Value", style="magenta")
     
-    config_table.add_row("Host", host)
-    config_table.add_row("Port", str(port))
-    config_table.add_row("Debug Mode", "Yes" if debug else "No")
-    config_table.add_row("Auto-reload", "Yes" if reload else "No")
-    config_table.add_row("Frontend URL", f"http://{host}:{port}")
-    config_table.add_row("API URL", f"http://{host}:{port}/api/v1")
-    config_table.add_row("WebSocket URL", f"ws://{host}:{port}/ws")
-    
-    console.print(config_table)
+    try:
+        config_table.add_row("Host", str(host))
+        config_table.add_row("Port", str(port))
+        config_table.add_row("Debug Mode", "Yes" if debug else "No")
+        config_table.add_row("Auto-reload", "Yes" if reload else "No")
+        config_table.add_row("Frontend URL", f"http://{str(host)}:{str(port)}")
+        config_table.add_row("API URL", f"http://{str(host)}:{str(port)}/api/v1")
+        config_table.add_row("WebSocket URL", f"ws://{str(host)}:{str(port)}/ws")
+        
+        console.print(config_table)
+    except Exception as e:
+        # Fallback to simple text output if table rendering fails
+        console.print("📋 Server Configuration:", style="bold cyan")
+        console.print(f"   Host: {host}")
+        console.print(f"   Port: {port}")
+        console.print(f"   Debug Mode: {'Yes' if debug else 'No'}")
+        console.print(f"   Auto-reload: {'Yes' if reload else 'No'}")
+        console.print(f"   Frontend URL: http://{host}:{port}")
+        console.print(f"   API URL: http://{host}:{port}/api/v1")
+        console.print(f"   WebSocket URL: ws://{host}:{port}/ws")
     console.print()
     
     # Start server
