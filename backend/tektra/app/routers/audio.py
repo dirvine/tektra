@@ -28,7 +28,7 @@ from ..models.user import User
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/audio", tags=["audio"])
+router = APIRouter(tags=["audio"])
 
 
 # Request/Response Models
