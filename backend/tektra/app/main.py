@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from .config import settings
 from .database import init_database, close_database
@@ -65,8 +67,18 @@ app.include_router(camera.router, prefix="/api/v1/camera", tags=["Camera"])
 app.include_router(robot.router, prefix="/api/v1/robots", tags=["Robots"])
 app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 
+# Mount static files for frontend
+frontend_build_path = Path(__file__).parent.parent.parent.parent / "frontend" / ".next" / "static"
+if frontend_build_path.exists():
+    app.mount("/static", StaticFiles(directory=str(frontend_build_path)), name="static")
 
-@app.get("/")
+# Serve frontend HTML
+frontend_out_path = Path(__file__).parent.parent.parent.parent / "frontend" / "out"
+if frontend_out_path.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_out_path), html=True), name="frontend")
+
+
+@app.get("/api")
 async def root() -> JSONResponse:
     """Root endpoint with API information."""
     return JSONResponse({
