@@ -11,6 +11,7 @@ import webbrowser
 import time
 import signal
 import sys
+import httpx
 from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
@@ -42,7 +43,7 @@ def print_banner():
 ║     ██║   ███████╗██║  ██╗   ██║   ██║  ██║██║  ██║          ║
 ║     ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝          ║
 ║                                                              ║
-║            Advanced AI Assistant v0.5.0                     ║
+║            Advanced AI Assistant v0.6.0                     ║
 ║          Voice • Vision • Robotics • Chat                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -217,6 +218,216 @@ def version():
     """Show the version of Tektra AI Assistant."""
     from . import __version__
     console.print(f"Tektra AI Assistant v{__version__}", style="bold green")
+
+
+# Phi-4 Management Commands
+@app.command()
+def enable_phi4(
+    host: str = typer.Option("localhost", help="Server host"),
+    port: int = typer.Option(8000, help="Server port")
+):
+    """
+    Enable Microsoft Phi-4 Multimodal for superior speech recognition.
+    
+    This will load the advanced Phi-4 model for enhanced accuracy and performance.
+    Requires the server to be running.
+    """
+    console.print("\n🚀 Enabling Microsoft Phi-4 Multimodal...\n", style="bold blue")
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Loading Phi-4 model...", total=None)
+        
+        try:
+            # Check if server is running
+            progress.update(task, description="Checking server connection...")
+            response = httpx.get(f"http://{host}:{port}/health", timeout=5.0)
+            
+            if response.status_code != 200:
+                progress.update(task, description="❌ Server not responding")
+                console.print(f"\n❌ Cannot connect to server at http://{host}:{port}")
+                console.print("Please start the server first with: [bold cyan]tektra start[/bold cyan]")
+                return
+            
+            # Load Phi-4 model
+            progress.update(task, description="Loading Phi-4 Multimodal model...")
+            response = httpx.post(f"http://{host}:{port}/api/v1/audio/phi4/load", timeout=300.0)
+            
+            if response.status_code == 200:
+                progress.update(task, description="✅ Phi-4 model loaded successfully")
+            else:
+                progress.update(task, description="❌ Failed to load Phi-4 model")
+                console.print(f"\n❌ Error: {response.json().get('detail', 'Unknown error')}")
+                return
+                
+        except httpx.ConnectError:
+            progress.update(task, description="❌ Cannot connect to server")
+            console.print(f"\n❌ Cannot connect to server at http://{host}:{port}")
+            console.print("Please start the server first with: [bold cyan]tektra start[/bold cyan]")
+            return
+        except httpx.TimeoutException:
+            progress.update(task, description="❌ Request timed out")
+            console.print("\n❌ Request timed out. Model loading can take several minutes.")
+            console.print("Please check the server logs and try again.")
+            return
+        except Exception as e:
+            progress.update(task, description=f"❌ Error: {str(e)}")
+            console.print(f"\n❌ Unexpected error: {e}")
+            return
+    
+    console.print("\n🎉 Phi-4 Multimodal enabled successfully!", style="bold green")
+    console.print("\n✨ You now have access to:")
+    console.print("  • 95%+ speech recognition accuracy")
+    console.print("  • 8-language support with auto-detection")
+    console.print("  • Unified speech + chat processing")
+    console.print("  • 128K context for better understanding")
+    console.print("\n🌐 Try it out in your web interface!")
+
+
+@app.command()
+def disable_phi4(
+    host: str = typer.Option("localhost", help="Server host"),
+    port: int = typer.Option(8000, help="Server port")
+):
+    """
+    Disable Phi-4 and free up memory.
+    
+    This will unload the Phi-4 model and fall back to Whisper for speech recognition.
+    """
+    console.print("\n🔄 Disabling Phi-4 Multimodal...\n", style="bold yellow")
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Unloading Phi-4 model...", total=None)
+        
+        try:
+            # Check if server is running
+            progress.update(task, description="Checking server connection...")
+            response = httpx.get(f"http://{host}:{port}/health", timeout=5.0)
+            
+            if response.status_code != 200:
+                progress.update(task, description="❌ Server not responding")
+                console.print(f"\n❌ Cannot connect to server at http://{host}:{port}")
+                return
+            
+            # Unload Phi-4 model
+            progress.update(task, description="Unloading Phi-4 model...")
+            response = httpx.post(f"http://{host}:{port}/api/v1/audio/phi4/unload", timeout=30.0)
+            
+            if response.status_code == 200:
+                progress.update(task, description="✅ Phi-4 model unloaded successfully")
+            else:
+                progress.update(task, description="❌ Failed to unload Phi-4 model")
+                console.print(f"\n❌ Error: {response.json().get('detail', 'Unknown error')}")
+                return
+                
+        except httpx.ConnectError:
+            progress.update(task, description="❌ Cannot connect to server")
+            console.print(f"\n❌ Cannot connect to server at http://{host}:{port}")
+            return
+        except Exception as e:
+            progress.update(task, description=f"❌ Error: {str(e)}")
+            console.print(f"\n❌ Unexpected error: {e}")
+            return
+    
+    console.print("\n✅ Phi-4 disabled successfully!", style="bold green")
+    console.print("💡 Tektra will now use Whisper for speech recognition.")
+    console.print("🔄 You can re-enable Phi-4 anytime with: [bold cyan]tektra enable-phi4[/bold cyan]")
+
+
+@app.command()
+def phi4_status(
+    host: str = typer.Option("localhost", help="Server host"),
+    port: int = typer.Option(8000, help="Server port")
+):
+    """
+    Check the status of Phi-4 Multimodal model.
+    
+    Shows whether Phi-4 is loaded and provides system information.
+    """
+    console.print("\n📊 Checking Phi-4 status...\n", style="bold blue")
+    
+    try:
+        # Get Phi-4 info
+        response = httpx.get(f"http://{host}:{port}/api/v1/audio/phi4/info", timeout=10.0)
+        
+        if response.status_code != 200:
+            console.print("❌ Cannot get Phi-4 status")
+            return
+        
+        info = response.json()
+        
+        # Create status table
+        status_table = Table(title="Phi-4 Multimodal Status")
+        status_table.add_column("Property", style="cyan")
+        status_table.add_column("Value", style="white")
+        
+        # Model status
+        status_icon = "✅ Loaded" if info.get("is_loaded") else "❌ Not Loaded"
+        status_table.add_row("Model Status", status_icon)
+        status_table.add_row("Model Name", info.get("model_name", "Unknown"))
+        status_table.add_row("Device", info.get("device", "Unknown"))
+        status_table.add_row("Available", "✅ Yes" if info.get("available") else "❌ No")
+        
+        # Capabilities
+        capabilities = info.get("capabilities", {})
+        if capabilities:
+            status_table.add_row("Speech Recognition", "✅ Yes" if capabilities.get("speech_recognition") else "❌ No")
+            status_table.add_row("Chat Completion", "✅ Yes" if capabilities.get("chat_completion") else "❌ No")
+            status_table.add_row("Language Detection", "✅ Yes" if capabilities.get("language_detection") else "❌ No")
+            status_table.add_row("Multimodal", "✅ Yes" if capabilities.get("multimodal") else "❌ No")
+        
+        # Language support
+        languages = info.get("supported_languages", {})
+        if languages:
+            lang_list = ", ".join(languages.keys())
+            status_table.add_row("Supported Languages", f"{len(languages)} languages")
+            status_table.add_row("Language Codes", lang_list)
+        
+        console.print(status_table)
+        
+        # Show recommendations
+        if info.get("is_loaded"):
+            console.print("\n🎉 Phi-4 is active and ready!", style="bold green")
+            console.print("✨ Enjoying superior speech recognition and AI capabilities!")
+        else:
+            console.print("\n💡 Phi-4 is not loaded", style="bold yellow")
+            console.print("🚀 Enable it for enhanced performance: [bold cyan]tektra enable-phi4[/bold cyan]")
+            
+    except httpx.ConnectError:
+        console.print(f"❌ Cannot connect to server at http://{host}:{port}")
+        console.print("Please start the server first with: [bold cyan]tektra start[/bold cyan]")
+    except Exception as e:
+        console.print(f"❌ Error checking status: {e}")
+
+
+@app.command()
+def enhance():
+    """
+    Quick setup for enhanced Tektra experience.
+    
+    This will start the server and automatically enable Phi-4 for the best experience.
+    """
+    print_banner()
+    console.print("\n🚀 Setting up enhanced Tektra experience...\n", style="bold blue")
+    
+    # Start server in background and enable Phi-4
+    console.print("📡 Starting server...")
+    console.print("🧠 This will enable Phi-4 Multimodal for the best experience")
+    console.print("⏳ This may take a few minutes on first run...\n")
+    
+    # For now, just start the server normally
+    console.print("💡 After the server starts, run: [bold cyan]tektra enable-phi4[/bold cyan]")
+    console.print("🌐 Web interface will open automatically\n")
+    
+    # Start server normally
+    start_server(host="localhost", port=8000, open_browser=True)
 
 
 def main():

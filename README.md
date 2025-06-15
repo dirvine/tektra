@@ -67,10 +67,22 @@ pip install tektra[ml,audio,vision]
    tektra start
    ```
 
-3. **Open Your Browser**:
+3. **Enable Phi-4 for Enhanced Performance** (Recommended):
+   ```bash
+   # In a new terminal window
+   tektra enable-phi4
+   ```
+
+4. **Open Your Browser**:
    The web interface will automatically open at `http://localhost:8000`
 
 That's it! 🎉
+
+### 🚀 Quick Enhanced Setup
+For the best experience in one command:
+```bash
+tektra enhance  # Starts server and guides Phi-4 setup
+```
 
 ## 🚀 New in v0.6.0 - Phase 3.1 Features
 
@@ -103,6 +115,18 @@ tektra start --host 0.0.0.0 --port 8000 --browser
 
 # Setup for first use
 tektra setup
+
+# Enhanced setup (server + Phi-4 guidance)
+tektra enhance
+
+# Enable Phi-4 Multimodal (superior AI)
+tektra enable-phi4
+
+# Check Phi-4 status
+tektra phi4-status
+
+# Disable Phi-4 (free memory)
+tektra disable-phi4
 
 # Show system information
 tektra info

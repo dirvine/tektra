@@ -64,14 +64,20 @@ pip install tektra[all]
 ```bash
 tektra setup
 tektra start
+tektra enable-phi4  # Enable enhanced AI capabilities
 ```
 
-### Load Phi-4 Model (Optional but Recommended)
+### User-Friendly Commands
 ```bash
-# Via API
-curl -X POST http://localhost:8000/api/v1/audio/phi4/load
+# Check Phi-4 status
+tektra phi4-status
 
-# Or through the web interface at http://localhost:8000
+# Enable/disable Phi-4 as needed
+tektra enable-phi4
+tektra disable-phi4
+
+# Enhanced setup experience
+tektra enhance
 ```
 
 ## 📊 What Users Will Experience
