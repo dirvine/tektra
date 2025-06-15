@@ -24,6 +24,10 @@ class Settings(BaseSettings):
         default="sqlite+aiosqlite:///./tektra.db",
         description="Database connection URL"
     )
+    database_echo: bool = Field(
+        default=False,
+        description="Enable SQLAlchemy query logging"
+    )
     
     # Redis Configuration
     redis_url: str = Field(
@@ -70,7 +74,7 @@ class Settings(BaseSettings):
     @validator("database_url", pre=True)
     def validate_database_url(cls, v: str) -> str:
         """Validate database URL format."""
-        if not v.startswith(("postgresql://", "sqlite:///", "sqlite+aiosqlite:///")):
+        if not v.startswith(("postgresql://", "postgresql+asyncpg://", "sqlite:///", "sqlite+aiosqlite:///")):
             raise ValueError("Database URL must be PostgreSQL or SQLite")
         return v
     

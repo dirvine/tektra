@@ -38,7 +38,7 @@ class ModelInfo(BaseModel):
 @router.post("/chat", response_model=ChatResponse)
 async def chat(
     message: ChatMessage,
-    # db: AsyncSession = Depends(get_db)  # TODO: Re-enable when database is ready
+    db: AsyncSession = Depends(get_db)
 ) -> ChatResponse:
     """Send a message to the AI and get a response."""
     # TODO: Implement actual AI model integration

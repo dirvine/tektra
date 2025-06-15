@@ -18,15 +18,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan events."""
     # Startup
     print("🚀 Starting Tektra AI Assistant Backend...")
-    # TODO: Enable database initialization when greenlet is available
-    # await init_database()
-    print("✅ Backend started (database disabled for initial testing)")
+    try:
+        await init_database()
+        print("✅ Database initialized successfully")
+    except Exception as e:
+        print(f"⚠️  Database initialization failed: {e}")
+        print("✅ Backend started without database")
     
     yield
     
     # Shutdown
     print("🛑 Shutting down Tektra AI Assistant Backend...")
-    # await close_database()
+    try:
+        await close_database()
+        print("✅ Database connections closed")
+    except Exception as e:
+        print(f"⚠️  Database cleanup failed: {e}")
     print("✅ Backend shutdown complete")
 
 
