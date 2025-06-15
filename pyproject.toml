@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tektra"
-version = "0.8.1"
+version = "0.8.2"
 description = "Advanced AI assistant with Microsoft Phi-4 Multimodal integration, voice, vision, and robotics capabilities"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Tektra Team", email = "contact@tektra.ai"}
+    {name = "Saorsa Labs", email = "saorsalabs@gmail.com"}
 ]
 maintainers = [
-    {name = "Tektra Team", email = "contact@tektra.ai"}
+    {name = "Saorsa Labs", email = "saorsalabs@gmail.com"}
 ]
 keywords = ["ai", "assistant", "voice", "vision", "robotics", "ml", "chatbot", "phi4", "multimodal", "speech-recognition"]
 classifiers = [
@@ -115,10 +115,10 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://tektra.ai"
-Documentation = "https://docs.tektra.ai"
-Repository = "https://github.com/tektra/tektra-ai"
-"Bug Reports" = "https://github.com/tektra/tektra-ai/issues"
+Homepage = "https://github.com/dirvine/tektra"
+Documentation = "https://github.com/dirvine/tektra#readme"
+Repository = "https://github.com/dirvine/tektra"
+"Bug Reports" = "https://github.com/dirvine/tektra/issues"
 
 [project.scripts]
 tektra = "tektra.cli:main"

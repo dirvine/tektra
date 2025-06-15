@@ -243,7 +243,7 @@ pip install tektra[all]
 
 ### Development Installation
 ```bash
-git clone https://github.com/tektra/tektra.git
+git clone https://github.com/dirvine/tektra.git
 cd tektra
 uv sync --all-extras
 ```
@@ -254,7 +254,7 @@ uv sync --all-extras
 
 ```bash
 # Clone the repository
-git clone https://github.com/tektra/tektra.git
+git clone https://github.com/dirvine/tektra.git
 cd tektra
 
 # Install in development mode with UV
@@ -308,4 +308,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by the Tektra Team**
+**Made with ❤️ by Saorsa Labs**
