@@ -34,6 +34,10 @@ class User(Base):
     
     # Relationships
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    tags = relationship("Tag", back_populates="user", cascade="all, delete-orphan")
+    preferences = relationship("UserPreferences", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    conversation_templates = relationship("ConversationTemplate", back_populates="user", cascade="all, delete-orphan")
+    api_keys = relationship("APIKey", back_populates="user", cascade="all, delete-orphan")
     
     def __repr__(self) -> str:
         """String representation."""
