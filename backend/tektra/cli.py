@@ -43,7 +43,7 @@ def print_banner():
 ║     ██║   ███████╗██║  ██╗   ██║   ██║  ██║██║  ██║          ║
 ║     ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝          ║
 ║                                                              ║
-║            Advanced AI Assistant v0.8.2                     ║
+║            Advanced AI Assistant v0.8.3                     ║
 ║          Voice • Vision • Robotics • Chat                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -430,8 +430,14 @@ def main():
     try:
         # If no command is provided, default to start
         if len(sys.argv) == 1:
-            # Default to start command
-            start()
+            # Default to start command with default parameters
+            start(
+                host="0.0.0.0",
+                port=8000,
+                open_browser=True,
+                reload=False,
+                debug=False
+            )
         else:
             app()
     except KeyboardInterrupt:
