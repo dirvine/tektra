@@ -47,8 +47,14 @@ class LanguageService:
         self.translation_enabled = False
         self.auto_translate = False
         
-        # Initialize language mappings
-        asyncio.create_task(self._initialize_voice_mappings())
+        # Initialize language mappings (lazy initialization)
+        self._voice_mappings_initialized = False
+    
+    async def _ensure_initialized(self):
+        """Ensure voice mappings are initialized."""
+        if not self._voice_mappings_initialized:
+            await self._initialize_voice_mappings()
+            self._voice_mappings_initialized = True
     
     def _load_language_config(self) -> Dict[str, Dict]:
         """Load comprehensive language configuration."""
@@ -504,6 +510,9 @@ class LanguageService:
             Best matching voice ID or None
         """
         try:
+            # Ensure voice mappings are initialized
+            await self._ensure_initialized()
+            
             # Check if language is supported
             if language not in self.supported_languages:
                 language = self.default_language
@@ -554,6 +563,9 @@ class LanguageService:
             List of voice information dictionaries
         """
         try:
+            # Ensure voice mappings are initialized
+            await self._ensure_initialized()
+            
             if language not in self.language_voice_map:
                 return []
             
@@ -695,6 +707,9 @@ class LanguageService:
     
     async def get_service_info(self) -> Dict:
         """Get language service information and capabilities."""
+        # Ensure voice mappings are initialized
+        await self._ensure_initialized()
+        
         return {
             "supported_languages_count": len(self.supported_languages),
             "supported_languages": list(self.supported_languages.keys()),
