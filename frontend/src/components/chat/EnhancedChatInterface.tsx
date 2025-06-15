@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -29,7 +29,7 @@ interface Message {
   content: string
   timestamp: Date
   conversationId?: number
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 interface EnhancedChatInterfaceProps {
@@ -172,7 +172,7 @@ export default function EnhancedChatInterface({ onNavigate }: EnhancedChatInterf
           // Create new conversation
           const convResponse = await api.createConversation(undefined, selectedModel)
           if (convResponse.data) {
-            conversationId = (convResponse.data as any).id
+            conversationId = (convResponse.data as { id: number }).id
             setCurrentConversationId(conversationId)
           }
         }
@@ -381,7 +381,7 @@ export default function EnhancedChatInterface({ onNavigate }: EnhancedChatInterf
                 <Bot className="h-12 w-12 text-muted-foreground/50 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Start a conversation</h3>
                 <p className="text-muted-foreground">
-                  Ask me anything! I'm here to help with your questions and tasks.
+                  Ask me anything! I&apos;m here to help with your questions and tasks.
                 </p>
               </div>
             )}

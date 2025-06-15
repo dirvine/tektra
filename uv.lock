@@ -2668,8 +2668,6 @@ dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "numpy" },
-    { name = "pillow" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
@@ -2687,8 +2685,10 @@ all = [
     { name = "accelerate" },
     { name = "librosa" },
     { name = "mediapipe" },
+    { name = "numpy" },
     { name = "opencv-python" },
     { name = "optimum" },
+    { name = "pillow" },
     { name = "pyaudio" },
     { name = "pybullet" },
     { name = "pyserial" },
@@ -2698,6 +2698,7 @@ all = [
 ]
 audio = [
     { name = "librosa" },
+    { name = "numpy" },
     { name = "pyaudio" },
     { name = "soundfile" },
 ]
@@ -2711,17 +2712,21 @@ dev = [
 ]
 ml = [
     { name = "accelerate" },
+    { name = "numpy" },
     { name = "optimum" },
     { name = "torch" },
     { name = "transformers" },
 ]
 robotics = [
+    { name = "numpy" },
     { name = "pybullet" },
     { name = "pyserial" },
 ]
 vision = [
     { name = "mediapipe" },
+    { name = "numpy" },
     { name = "opencv-python" },
+    { name = "pillow" },
 ]
 
 [package.metadata]
@@ -2740,12 +2745,17 @@ requires-dist = [
     { name = "mediapipe", marker = "extra == 'all'", specifier = ">=0.10.0" },
     { name = "mediapipe", marker = "extra == 'vision'", specifier = ">=0.10.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.7.0" },
-    { name = "numpy", specifier = ">=1.24.0" },
+    { name = "numpy", marker = "extra == 'all'", specifier = ">=1.24.0" },
+    { name = "numpy", marker = "extra == 'audio'", specifier = ">=1.24.0" },
+    { name = "numpy", marker = "extra == 'ml'", specifier = ">=1.24.0" },
+    { name = "numpy", marker = "extra == 'robotics'", specifier = ">=1.24.0" },
+    { name = "numpy", marker = "extra == 'vision'", specifier = ">=1.24.0" },
     { name = "opencv-python", marker = "extra == 'all'", specifier = ">=4.8.0" },
     { name = "opencv-python", marker = "extra == 'vision'", specifier = ">=4.8.0" },
     { name = "optimum", marker = "extra == 'all'", specifier = ">=1.14.0" },
     { name = "optimum", marker = "extra == 'ml'", specifier = ">=1.14.0" },
-    { name = "pillow", specifier = ">=10.0.0" },
+    { name = "pillow", marker = "extra == 'all'", specifier = ">=10.0.0" },
+    { name = "pillow", marker = "extra == 'vision'", specifier = ">=10.0.0" },
     { name = "pyaudio", marker = "extra == 'all'", specifier = ">=0.2.11" },
     { name = "pyaudio", marker = "extra == 'audio'", specifier = ">=0.2.11" },
     { name = "pybullet", marker = "extra == 'all'", specifier = ">=3.2.5" },

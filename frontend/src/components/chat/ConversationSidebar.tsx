@@ -33,7 +33,7 @@ export interface ConversationWithMessages extends Conversation {
     content: string
     message_type: string
     created_at: string
-    metadata: Record<string, any>
+    metadata: Record<string, unknown>
   }>
 }
 

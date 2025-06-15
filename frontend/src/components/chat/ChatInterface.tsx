@@ -31,7 +31,7 @@ export default function ChatInterface() {
     }).catch(console.error)
 
     // Listen for AI response start
-    chatWebSocket.on('ai_response_start', (message) => {
+    chatWebSocket.on('ai_response_start', () => {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',

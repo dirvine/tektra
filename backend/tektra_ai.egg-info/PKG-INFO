@@ -41,8 +41,6 @@ Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: typer>=0.9.0
 Requires-Dist: rich>=13.0.0
 Requires-Dist: httpx>=0.25.0
-Requires-Dist: pillow>=10.0.0
-Requires-Dist: numpy>=1.24.0
 Requires-Dist: requests>=2.31.0
 Requires-Dist: jinja2>=3.1.0
 Provides-Extra: dev
@@ -57,16 +55,21 @@ Requires-Dist: torch>=2.1.0; extra == "ml"
 Requires-Dist: transformers>=4.35.0; extra == "ml"
 Requires-Dist: accelerate>=0.24.0; extra == "ml"
 Requires-Dist: optimum>=1.14.0; extra == "ml"
+Requires-Dist: numpy>=1.24.0; extra == "ml"
 Provides-Extra: audio
 Requires-Dist: soundfile>=0.12.0; extra == "audio"
 Requires-Dist: librosa>=0.10.0; extra == "audio"
 Requires-Dist: pyaudio>=0.2.11; extra == "audio"
+Requires-Dist: numpy>=1.24.0; extra == "audio"
 Provides-Extra: vision
 Requires-Dist: opencv-python>=4.8.0; extra == "vision"
 Requires-Dist: mediapipe>=0.10.0; extra == "vision"
+Requires-Dist: pillow>=10.0.0; extra == "vision"
+Requires-Dist: numpy>=1.24.0; extra == "vision"
 Provides-Extra: robotics
 Requires-Dist: pyserial>=3.5; extra == "robotics"
 Requires-Dist: pybullet>=3.2.5; extra == "robotics"
+Requires-Dist: numpy>=1.24.0; extra == "robotics"
 Provides-Extra: all
 Requires-Dist: torch>=2.1.0; extra == "all"
 Requires-Dist: transformers>=4.35.0; extra == "all"
@@ -79,6 +82,8 @@ Requires-Dist: opencv-python>=4.8.0; extra == "all"
 Requires-Dist: mediapipe>=0.10.0; extra == "all"
 Requires-Dist: pyserial>=3.5; extra == "all"
 Requires-Dist: pybullet>=3.2.5; extra == "all"
+Requires-Dist: pillow>=10.0.0; extra == "all"
+Requires-Dist: numpy>=1.24.0; extra == "all"
 Dynamic: author
 Dynamic: home-page
 Dynamic: license-file
