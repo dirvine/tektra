@@ -35,5 +35,20 @@ src-tauri/target/
 # Python archive
 python_archive/
 
-# Model files
-models/
+# AI Model files (but not Python package directories)
+*.bin
+*.onnx
+*.pt
+*.pth
+*.safetensors
+*.h5
+*.pkl
+*.joblib
+**/models/*.bin
+**/models/*.onnx
+**/models/*.pt
+**/models/*.pth
+**/models/*.safetensors
+**/models/*.h5
+**/models/*.pkl
+**/models/*.joblib
