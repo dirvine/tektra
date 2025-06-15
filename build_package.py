@@ -85,8 +85,8 @@ if ! command -v pip &> /dev/null; then
 fi
 
 # Install the package
-echo "📦 Installing tektra-ai..."
-pip install tektra-ai
+echo "📦 Installing tektra..."
+pip install tektra
 
 # Verify installation
 if command -v tektra &> /dev/null; then

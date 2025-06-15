@@ -130,7 +130,7 @@ After release, verify:
 
 ```bash
 # Install from PyPI
-pip install tektra-ai
+pip install tektra
 
 # Test functionality
 tektra setup

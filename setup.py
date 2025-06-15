@@ -20,14 +20,14 @@ def read_requirements(filename):
         return [line.strip() for line in f if line.strip() and not line.startswith('#')]
 
 setup(
-    name="tektra-ai",
+    name="tektra",
     version="0.1.0",
     author="Tektra Team",
     author_email="contact@tektra.ai",
     description="Advanced AI assistant with voice, vision, and robotics capabilities",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/tektra/tektra-ai",
+    url="https://github.com/tektra/tektra",
     packages=find_packages(where="backend"),
     package_dir={"": "backend"},
     include_package_data=True,
@@ -124,8 +124,8 @@ setup(
         ],
     },
     project_urls={
-        "Bug Reports": "https://github.com/tektra/tektra-ai/issues",
-        "Source": "https://github.com/tektra/tektra-ai",
+        "Bug Reports": "https://github.com/tektra/tektra/issues",
+        "Source": "https://github.com/tektra/tektra",
         "Documentation": "https://docs.tektra.ai",
         "Homepage": "https://tektra.ai",
     },

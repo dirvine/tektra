@@ -2,7 +2,7 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PyPI Version](https://img.shields.io/badge/pypi-v0.1.0-orange.svg)](https://pypi.org/project/tektra-ai/)
+[![PyPI Version](https://img.shields.io/badge/pypi-v0.1.0-orange.svg)](https://pypi.org/project/tektra/)
 
 **Tektra AI Assistant** is an advanced AI assistant with voice, vision, and robotics capabilities. It features persistent conversation management, real-time chat, streaming responses, and a beautiful web interface.
 
@@ -37,17 +37,17 @@
 
 ### Installation
 
-Install Tektra AI Assistant with pip:
+Install Tektra with pip:
 
 ```bash
 # Basic installation
-pip install tektra-ai
+pip install tektra
 
 # With all optional features
-pip install tektra-ai[all]
+pip install tektra[all]
 
 # With specific features
-pip install tektra-ai[ml,audio,vision]
+pip install tektra[ml,audio,vision]
 ```
 
 ### Setup and First Run
@@ -155,38 +155,38 @@ tektra/
 
 ### Basic Installation
 ```bash
-pip install tektra-ai
+pip install tektra
 ```
 
 ### With Machine Learning
 ```bash
-pip install tektra-ai[ml]
+pip install tektra[ml]
 ```
 
 ### With Audio Support
 ```bash
-pip install tektra-ai[audio]
+pip install tektra[audio]
 ```
 
 ### With Vision Support
 ```bash
-pip install tektra-ai[vision]
+pip install tektra[vision]
 ```
 
 ### With Robotics Support
 ```bash
-pip install tektra-ai[robotics]
+pip install tektra[robotics]
 ```
 
 ### Everything Included
 ```bash
-pip install tektra-ai[all]
+pip install tektra[all]
 ```
 
 ### Development Installation
 ```bash
-git clone https://github.com/tektra/tektra-ai.git
-cd tektra-ai
+git clone https://github.com/tektra/tektra.git
+cd tektra
 pip install -e .[dev,all]
 ```
 
@@ -196,8 +196,8 @@ pip install -e .[dev,all]
 
 ```bash
 # Clone the repository
-git clone https://github.com/tektra/tektra-ai.git
-cd tektra-ai
+git clone https://github.com/tektra/tektra.git
+cd tektra
 
 # Install in development mode
 pip install -e .[dev,all]
@@ -219,10 +219,10 @@ tektra start --reload --debug
 **Installation Problems:**
 ```bash
 # If you get permission errors
-pip install --user tektra-ai
+pip install --user tektra
 
 # If you have dependency conflicts
-pip install tektra-ai --no-deps
+pip install tektra --no-deps
 pip install -r requirements.txt
 ```
 
