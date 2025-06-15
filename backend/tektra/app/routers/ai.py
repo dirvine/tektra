@@ -7,8 +7,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
-from app.database import get_db
-from app.services.ai_service import ai_manager, ChatMessage as AIChatMessage, ModelInfo
+from ..database import get_db
+from ..services.ai_service import ai_manager, ChatMessage as AIChatMessage, ModelInfo
 
 router = APIRouter()
 

@@ -1,0 +1,31 @@
+# Include essential project files
+include README.md
+include LICENSE
+include pyproject.toml
+include requirements.txt
+
+# Include frontend build files
+recursive-include frontend/dist *
+recursive-include frontend/public *
+
+# Include configuration and data files  
+recursive-include backend/tektra/config *
+recursive-include backend/tektra/static *
+recursive-include backend/tektra/templates *
+
+# Include documentation
+recursive-include docs *
+
+# Exclude development and cache files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .pytest_cache
+global-exclude .coverage
+global-exclude .git*
+global-exclude *.log
+global-exclude node_modules
+global-exclude .next
+global-exclude .env
+global-exclude .DS_Store

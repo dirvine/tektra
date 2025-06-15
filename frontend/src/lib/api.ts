@@ -199,6 +199,69 @@ class ApiClient {
     })
   }
 
+  // Conversation endpoints
+  async getConversations(limit = 50, offset = 0) {
+    return this.request(`/api/v1/conversations?limit=${limit}&offset=${offset}`)
+  }
+
+  async createConversation(title?: string, modelName = 'phi-3-mini') {
+    return this.request('/api/v1/conversations', {
+      method: 'POST',
+      body: JSON.stringify({
+        title,
+        model_name: modelName,
+      }),
+    })
+  }
+
+  async getConversation(conversationId: number) {
+    return this.request(`/api/v1/conversations/${conversationId}`)
+  }
+
+  async addMessageToConversation(conversationId: number, content: string, role = 'user', messageType = 'text') {
+    return this.request(`/api/v1/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({
+        content,
+        role,
+        message_type: messageType,
+      }),
+    })
+  }
+
+  async getConversationMessages(conversationId: number, limit?: number, includeSystem = true) {
+    const params = new URLSearchParams()
+    if (limit) params.set('limit', limit.toString())
+    params.set('include_system', includeSystem.toString())
+    
+    return this.request(`/api/v1/conversations/${conversationId}/messages?${params}`)
+  }
+
+  async updateConversationTitle(conversationId: number, title: string) {
+    return this.request(`/api/v1/conversations/${conversationId}/title`, {
+      method: 'PUT',
+      body: JSON.stringify({ title }),
+    })
+  }
+
+  async deleteConversation(conversationId: number) {
+    return this.request(`/api/v1/conversations/${conversationId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async searchConversations(query: string, limit = 20) {
+    return this.request(`/api/v1/conversations/search/${encodeURIComponent(query)}?limit=${limit}`)
+  }
+
+  async getConversationStats(conversationId: number) {
+    return this.request(`/api/v1/conversations/${conversationId}/stats`)
+  }
+
+  async getConversationContext(conversationId: number, maxMessages = 50) {
+    return this.request(`/api/v1/conversations/${conversationId}/context?max_messages=${maxMessages}`)
+  }
+
   // Health check
   async healthCheck() {
     return this.request('/health')

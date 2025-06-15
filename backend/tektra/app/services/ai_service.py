@@ -266,6 +266,7 @@ class AIModelManager:
         messages: List[ChatMessage], 
         model_name: Optional[str] = None,
         stream: bool = False,
+        conversation_context: Optional[List[Dict[str, str]]] = None,
         **kwargs
     ) -> Union[ChatResponse, AsyncGenerator[str, None]]:
         """Generate a chat response."""
@@ -275,10 +276,23 @@ class AIModelManager:
         if not await self.load_model(model_name):
             raise ValueError(f"Failed to load model {model_name}")
         
+        # Combine conversation context with current messages
+        all_messages = []
+        if conversation_context:
+            for ctx_msg in conversation_context:
+                all_messages.append(ChatMessage(
+                    role=ctx_msg["role"],
+                    content=ctx_msg["content"],
+                    timestamp=ctx_msg.get("timestamp")
+                ))
+        
+        # Add current messages
+        all_messages.extend(messages)
+        
         if stream:
-            return self._generate_streaming_response(messages, model_name, **kwargs)
+            return self._generate_streaming_response(all_messages, model_name, **kwargs)
         else:
-            return await self._generate_single_response(messages, model_name, **kwargs)
+            return await self._generate_single_response(all_messages, model_name, **kwargs)
     
     async def _generate_single_response(
         self, 

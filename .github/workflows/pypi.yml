@@ -1,0 +1,363 @@
+name: Build and Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0, v1.2.3, etc.
+  release:
+    types: [published]
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e .[dev]
+    
+    - name: Lint with flake8
+      run: |
+        uv pip install --system flake8
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 backend/tektra --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 backend/tektra --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+    
+    - name: Test imports and basic functionality
+      run: |
+        python -c "import tektra; print(f'Tektra version: {tektra.__version__}')"
+        python -c "from tektra.cli import main; print('CLI import successful')"
+        python -c "from tektra.app.main import app; print('FastAPI app import successful')"
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install frontend dependencies
+      working-directory: frontend
+      run: npm ci
+    
+    - name: Build frontend
+      working-directory: frontend
+      run: npm run build
+    
+    - name: Upload frontend build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-build
+        path: frontend/.next/
+        retention-days: 1
+
+  build-package:
+    name: Build Python Package
+    runs-on: ubuntu-latest
+    needs: [test, build-frontend]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for proper version detection
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Download frontend build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-build
+        path: frontend/.next/
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine wheel setuptools
+    
+    - name: Extract version from tag
+      id: get_version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+        else
+          VERSION="0.1.0.dev$(date +%Y%m%d%H%M%S)"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+    
+    - name: Update version in pyproject.toml
+      run: |
+        sed -i 's/version = ".*"/version = "${{ steps.get_version.outputs.VERSION }}"/' pyproject.toml
+        echo "Updated version to ${{ steps.get_version.outputs.VERSION }}"
+    
+    - name: Build package
+      run: |
+        python -m build
+    
+    - name: Check package
+      run: |
+        twine check dist/*
+        echo "Package contents:"
+        ls -la dist/
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package
+        path: dist/
+        retention-days: 7
+
+  publish-test-pypi:
+    name: Publish to Test PyPI
+    runs-on: ubuntu-latest
+    needs: build-package
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    environment: test-pypi
+    
+    steps:
+    - name: Download package artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package
+        path: dist/
+    
+    - name: Publish to Test PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository-url: https://test.pypi.org/legacy/
+        verbose: true
+    
+    - name: Test installation from Test PyPI
+      run: |
+        sleep 60  # Wait for package to be available
+        pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ tektra-ai
+        python -c "import tektra; print(f'Test installation successful: {tektra.__version__}')"
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [build-package, publish-test-pypi]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment: pypi
+    
+    steps:
+    - name: Download package artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package
+        path: dist/
+    
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        verbose: true
+    
+    - name: Test installation from PyPI
+      run: |
+        sleep 120  # Wait for package to be available
+        pip install tektra-ai
+        python -c "import tektra; print(f'PyPI installation successful: {tektra.__version__}')"
+
+  create-release-assets:
+    name: Create Release Assets
+    runs-on: ubuntu-latest
+    needs: build-package
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download package artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package
+        path: dist/
+    
+    - name: Create installation script
+      run: |
+        cat > install.sh << 'EOF'
+        #!/bin/bash
+        # Tektra AI Assistant Installation Script
+        set -e
+        
+        echo "🚀 Installing Tektra AI Assistant..."
+        
+        # Check Python version
+        if ! python3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" 2>/dev/null; then
+            echo "❌ Python 3.9+ is required. Please install Python 3.9 or later."
+            exit 1
+        fi
+        
+        # Install the package
+        echo "📦 Installing tektra-ai..."
+        python3 -m pip install --user tektra-ai
+        
+        # Add user bin to PATH if not already there
+        USER_BIN="$HOME/.local/bin"
+        if [[ ":$PATH:" != *":$USER_BIN:"* ]]; then
+            echo "export PATH=\"\$PATH:$USER_BIN\"" >> ~/.bashrc
+            echo "📝 Added $USER_BIN to PATH in ~/.bashrc"
+            echo "   Please run: source ~/.bashrc"
+        fi
+        
+        # Verify installation
+        if command -v tektra &> /dev/null; then
+            echo "✅ Tektra AI Assistant installed successfully!"
+        else
+            echo "✅ Tektra AI Assistant installed!"
+            echo "   You may need to restart your terminal or run: source ~/.bashrc"
+        fi
+        
+        echo ""
+        echo "🎯 Quick start:"
+        echo "   tektra setup    # First time setup"
+        echo "   tektra start    # Start the assistant"
+        echo ""
+        echo "📖 For help: tektra --help"
+        echo "🌐 Web interface will open at: http://localhost:8000"
+        EOF
+        
+        chmod +x install.sh
+    
+    - name: Create Windows installation script
+      run: |
+        cat > install.bat << 'EOF'
+        @echo off
+        echo 🚀 Installing Tektra AI Assistant...
+        
+        REM Check if Python is available
+        python --version >nul 2>&1
+        if errorlevel 1 (
+            echo ❌ Python is not installed or not in PATH.
+            echo Please install Python 3.9+ from https://python.org
+            pause
+            exit /b 1
+        )
+        
+        REM Install the package
+        echo 📦 Installing tektra-ai...
+        python -m pip install --user tektra-ai
+        
+        REM Verify installation
+        where tektra >nul 2>&1
+        if errorlevel 1 (
+            echo ✅ Tektra AI Assistant installed!
+            echo    You may need to add Python Scripts to your PATH
+        ) else (
+            echo ✅ Tektra AI Assistant installed successfully!
+        )
+        
+        echo.
+        echo 🎯 Quick start:
+        echo    tektra setup    # First time setup
+        echo    tektra start    # Start the assistant
+        echo.
+        echo 📖 For help: tektra --help
+        echo 🌐 Web interface will open at: http://localhost:8000
+        pause
+        EOF
+    
+    - name: Get tag name
+      id: tag
+      run: echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+        name: "Tektra AI Assistant ${{ steps.tag.outputs.TAG_NAME }}"
+        body: |
+          ## 🎉 Tektra AI Assistant ${{ steps.tag.outputs.TAG_NAME }}
+          
+          ### 🚀 Quick Installation
+          
+          **Linux/macOS:**
+          ```bash
+          curl -sSL https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.TAG_NAME }}/install.sh | bash
+          ```
+          
+          **Windows:**
+          Download and run `install.bat`
+          
+          **Python/pip:**
+          ```bash
+          pip install tektra-ai
+          ```
+          
+          ### 🎯 Quick Start
+          ```bash
+          tektra setup    # First time setup
+          tektra start    # Start the assistant
+          ```
+          
+          ### 📦 What's Included
+          - 🧠 Advanced AI chat with conversation history
+          - 💬 Beautiful web interface with real-time streaming
+          - 🗂️ Conversation management and search
+          - 🎤 Voice input/output capabilities (optional)
+          - 👁️ Vision and camera integration (optional)
+          - 🤖 Robotics control support (optional)
+          
+          ### 📋 Installation Options
+          ```bash
+          pip install tektra-ai           # Basic installation
+          pip install tektra-ai[ml]       # With AI/ML features
+          pip install tektra-ai[audio]    # With audio features
+          pip install tektra-ai[vision]   # With computer vision
+          pip install tektra-ai[all]      # Everything included
+          ```
+          
+          Full documentation: [README.md](https://github.com/${{ github.repository }}/blob/${{ steps.tag.outputs.TAG_NAME }}/README.md)
+        files: |
+          dist/*
+          install.sh
+          install.bat
+        draft: false
+        prerelease: false
+
+  notify:
+    name: Notify Success
+    runs-on: ubuntu-latest
+    needs: [publish-pypi, create-release-assets]
+    if: always() && (needs.publish-pypi.result == 'success' || needs.create-release-assets.result == 'success')
+    
+    steps:
+    - name: Notify completion
+      run: |
+        echo "🎉 Tektra AI Assistant package published successfully!"
+        echo "📦 Available on PyPI: https://pypi.org/project/tektra-ai/"
+        echo "🐙 GitHub Release: https://github.com/${{ github.repository }}/releases/latest"

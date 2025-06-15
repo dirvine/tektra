@@ -1,0 +1,155 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+
+jobs:
+  test-python:
+    name: Test Python Code
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e .
+        uv pip install --system pytest flake8 black isort
+    
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 backend/tektra --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 backend/tektra --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+    
+    - name: Check code formatting with black
+      run: |
+        black --check backend/tektra
+    
+    - name: Check import sorting with isort
+      run: |
+        isort --check-only backend/tektra
+    
+    - name: Test imports and basic functionality
+      run: |
+        python -c "import tektra; print(f'Tektra version: {tektra.__version__}')"
+        python -c "from tektra.cli import main; print('CLI import successful')"
+        python -c "from tektra.app.main import app; print('FastAPI app import successful')"
+        python -c "from tektra.app.database import init_database; print('Database import successful')"
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install frontend dependencies
+      working-directory: frontend
+      run: npm ci
+    
+    - name: Lint frontend code
+      working-directory: frontend
+      run: npm run lint
+    
+    - name: Type check frontend
+      working-directory: frontend
+      run: npm run type-check
+    
+    - name: Build frontend
+      working-directory: frontend
+      run: npm run build
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [test-python, test-frontend]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Build frontend
+      working-directory: frontend
+      run: |
+        npm ci
+        npm run build
+    
+    - name: Install Python package
+      run: |
+        uv pip install --system -e .
+    
+    - name: Test database initialization
+      run: |
+        python -c "
+        import asyncio
+        from tektra.app.database import init_database
+        asyncio.run(init_database())
+        print('✅ Database initialization successful')
+        "
+    
+    - name: Test CLI commands
+      run: |
+        python -c "
+        from tektra.cli import app
+        print('✅ CLI app creation successful')
+        "
+    
+    - name: Test FastAPI app creation
+      run: |
+        python -c "
+        from tektra.app.main import app
+        print(f'✅ FastAPI app created: {app.title}')
+        "
+    
+    - name: Test package build
+      run: |
+        pip install build
+        python -m build
+        echo "✅ Package build successful"
+        ls -la dist/

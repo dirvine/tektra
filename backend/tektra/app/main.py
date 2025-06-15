@@ -8,9 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from app.config import settings
-from app.database import init_database, close_database
-from app.routers import ai, audio, avatar, camera, robot, websocket
+from .config import settings
+from .database import init_database, close_database
+from .routers import ai, audio, avatar, camera, robot, websocket, conversations
 
 
 @asynccontextmanager
@@ -58,6 +58,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI"])
+app.include_router(conversations.router, prefix="/api/v1/conversations", tags=["Conversations"])
 app.include_router(audio.router, prefix="/api/v1/audio", tags=["Audio"])
 app.include_router(avatar.router, prefix="/api/v1/avatar", tags=["Avatar"])
 app.include_router(camera.router, prefix="/api/v1/camera", tags=["Camera"])

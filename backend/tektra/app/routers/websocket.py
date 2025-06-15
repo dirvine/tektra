@@ -82,7 +82,10 @@ async def websocket_endpoint(websocket: WebSocket):
 @router.websocket("/ws/chat/{user_id}")
 async def chat_websocket(websocket: WebSocket, user_id: str):
     """WebSocket endpoint for chat communication."""
-    from app.services.ai_service import ai_manager, ChatMessage as AIChatMessage
+    from ..services.ai_service import ai_manager, ChatMessage as AIChatMessage
+    from ..services.conversation_service import conversation_manager
+    from ..models.conversation import MessageRole
+    from ..database import async_session_factory
     
     await manager.connect(websocket, user_id)
     try:
@@ -92,28 +95,67 @@ async def chat_websocket(websocket: WebSocket, user_id: str):
             
             if message_data.get("type") == "chat":
                 try:
-                    # Extract message and model info
+                    # Extract message and conversation info
                     user_message = message_data.get("data", {}).get("message", "")
                     model_name = message_data.get("data", {}).get("model", "phi-3-mini")
+                    conversation_id = message_data.get("data", {}).get("conversation_id")
                     
-                    # Convert to AI service format
-                    ai_messages = [AIChatMessage(role="user", content=user_message)]
+                    async with async_session_factory() as db:
+                        # Get or create conversation
+                        if conversation_id:
+                            conversation = await conversation_manager.get_conversation(
+                                db, conversation_id, int(user_id)
+                            )
+                        else:
+                            # Create new conversation
+                            conversation = await conversation_manager.create_conversation(
+                                db, int(user_id), model_name=model_name
+                            )
+                            conversation_id = conversation.id
+                            
+                            # Send conversation created event
+                            conv_created = {
+                                "type": "conversation_created",
+                                "conversation_id": conversation_id,
+                                "title": conversation.title,
+                                "user_id": user_id,
+                                "timestamp": datetime.utcnow().isoformat()
+                            }
+                            await manager.send_personal_message(json.dumps(conv_created), websocket)
+                        
+                        if not conversation:
+                            raise ValueError("Could not create or find conversation")
+                        
+                        # Save user message to database
+                        await conversation_manager.add_message(
+                            db, conversation_id, MessageRole.USER, user_message
+                        )
+                        
+                        # Get conversation context
+                        context = await conversation_manager.get_context_for_ai(
+                            db, conversation_id
+                        )
+                        
+                        # Convert to AI service format (only the latest message for generation)
+                        ai_messages = [AIChatMessage(role="user", content=user_message)]
                     
                     # Send start of response
                     start_response = {
                         "type": "ai_response_start",
+                        "conversation_id": conversation_id,
                         "user_id": user_id,
                         "timestamp": datetime.utcnow().isoformat(),
                         "model": model_name
                     }
                     await manager.send_personal_message(json.dumps(start_response), websocket)
                     
-                    # Stream AI response
+                    # Stream AI response with conversation context
                     full_response = ""
                     async for token in ai_manager.chat(
                         messages=ai_messages,
                         model_name=model_name,
-                        stream=True
+                        stream=True,
+                        conversation_context=context
                     ):
                         full_response += token
                         
@@ -131,9 +173,16 @@ async def chat_websocket(websocket: WebSocket, user_id: str):
                             websocket
                         )
                     
+                    # Save AI response to database
+                    async with async_session_factory() as db:
+                        await conversation_manager.add_message(
+                            db, conversation_id, MessageRole.ASSISTANT, full_response.strip()
+                        )
+                    
                     # Send completion
                     completion_response = {
                         "type": "ai_response_complete",
+                        "conversation_id": conversation_id,
                         "full_response": full_response,
                         "user_id": user_id,
                         "timestamp": datetime.utcnow().isoformat(),

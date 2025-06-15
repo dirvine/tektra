@@ -1,0 +1,4 @@
+[console_scripts]
+tektra = tektra.cli:main
+tektra-server = tektra.server:main
+tektra-setup = tektra.setup:main

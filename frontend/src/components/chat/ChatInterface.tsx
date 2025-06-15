@@ -30,15 +30,46 @@ export default function ChatInterface() {
       setIsConnected(true)
     }).catch(console.error)
 
-    // Listen for AI responses
-    chatWebSocket.on('ai_response', (message) => {
+    // Listen for AI response start
+    chatWebSocket.on('ai_response_start', (message) => {
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         role: 'assistant',
-        content: (message.data as { message?: string })?.message || 'No response',
+        content: '',
         timestamp: new Date()
       }])
+    })
+
+    // Listen for AI response tokens (streaming)
+    chatWebSocket.on('ai_response_token', (message) => {
+      const tokenData = message.data as { token?: string }
+      setMessages(prev => {
+        const updatedMessages = [...prev]
+        const lastMessage = updatedMessages[updatedMessages.length - 1]
+        if (lastMessage && lastMessage.role === 'assistant') {
+          lastMessage.content += tokenData.token || ''
+        }
+        return updatedMessages
+      })
+    })
+
+    // Listen for AI response completion
+    chatWebSocket.on('ai_response_complete', (message) => {
       setIsLoading(false)
+      const responseData = message.data as { full_response?: string; tokens_used?: number; model?: string }
+      console.log(`AI response completed. Tokens used: ${responseData.tokens_used}, Model: ${responseData.model}`)
+    })
+
+    // Listen for AI response errors
+    chatWebSocket.on('ai_response_error', (message) => {
+      setIsLoading(false)
+      const errorData = message.data as { error?: string }
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `Error: ${errorData.error || 'Unknown error occurred'}`,
+        timestamp: new Date()
+      }])
     })
 
     return () => {

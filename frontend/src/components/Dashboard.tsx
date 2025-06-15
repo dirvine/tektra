@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Activity, Bot, Camera, Mic, Settings, User } from 'lucide-react'
-import ChatInterface from '@/components/chat/ChatInterface'
+import EnhancedChatInterface from '@/components/chat/EnhancedChatInterface'
 import AvatarControl from '@/components/avatar/AvatarControl'
 import RobotControl from '@/components/robot/RobotControl'
 import { api } from '@/lib/api'
@@ -84,8 +84,6 @@ export default function Dashboard() {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'chat':
-        return <ChatInterface />
       case 'avatar':
         return <AvatarControl />
       case 'robot':
@@ -119,6 +117,11 @@ export default function Dashboard() {
       default:
         return null
     }
+  }
+
+  // For chat tab, show full-screen interface
+  if (activeTab === 'chat') {
+    return <EnhancedChatInterface onNavigate={setActiveTab} />
   }
 
   return (
