@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tektra"
-version = "0.2.0"
+version = "0.2.1"
 description = "Advanced AI assistant with voice, vision, and robotics capabilities"
 readme = "README.md"
 license = {text = "MIT"}
@@ -119,7 +119,7 @@ where = ["backend"]
 
 [tool.setuptools.package-data]
 tektra = [
-    "frontend/dist/**/*",
+    "frontend/**/*",
     "static/**/*",
     "templates/**/*",
     "config/*",

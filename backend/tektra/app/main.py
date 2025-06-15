@@ -119,7 +119,7 @@ async def debug_frontend() -> JSONResponse:
 possible_frontend_paths = [
     Path(__file__).parent.parent.parent.parent / "frontend" / "out",  # Development
     Path.cwd() / "frontend" / "out",  # When run from project root
-    Path(__file__).parent / "frontend" / "out",  # Package structure
+    Path(__file__).parent.parent / "frontend",  # Package structure
 ]
 
 frontend_out_path = None

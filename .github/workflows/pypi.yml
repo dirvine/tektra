@@ -36,6 +36,9 @@ jobs:
           uv pip install --system build twine
           # Clean any existing build artifacts
           rm -rf build/ dist/ *.egg-info backend/*.egg-info
+          # Copy frontend build to backend package
+          mkdir -p backend/tektra/frontend
+          cp -r frontend/out/* backend/tektra/frontend/
           python -m build
           twine check dist/*
       
