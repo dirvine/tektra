@@ -56,12 +56,9 @@ export default function EnhancedChatInterface({ onNavigate }: EnhancedChatInterf
       try {
         // Update WebSocket URL to include user ID
         const wsUrl = `ws://localhost:8000/ws/chat/${userId}`
-        const customChatWebSocket = {
-          ...chatWebSocket,
-          url: wsUrl
-        }
         
-        await customChatWebSocket.connect()
+        // Connect to WebSocket
+        await chatWebSocket.connect(wsUrl)
         setIsConnected(true)
       } catch (error) {
         console.error('WebSocket connection failed:', error)
