@@ -17,6 +17,7 @@ import json
 try:
     import torch
     from transformers import AutoModelForCausalLM, AutoProcessor, pipeline
+    from huggingface_hub import snapshot_download, hf_hub_download
     import numpy as np
     PHI4_AVAILABLE = True
 except ImportError:
@@ -44,6 +45,8 @@ class Phi4Service:
         self.model_name = "microsoft/Phi-4-multimodal-instruct"
         self.device = "cpu"
         self.is_loaded = False
+        self.is_loading = False
+        self.load_progress = {"status": "idle", "progress": 0.0, "message": ""}
         
         # Audio processing settings
         self.sample_rate = 16000  # Standard sample rate for speech
@@ -66,10 +69,6 @@ class Phi4Service:
         self.temperature = 0.7
         self.do_sample = True
         self.top_p = 0.9
-        
-        # Initialize model if available
-        if PHI4_AVAILABLE:
-            asyncio.create_task(self._initialize())
     
     async def _initialize(self):
         """Initialize Phi-4 model on startup."""
@@ -95,56 +94,123 @@ class Phi4Service:
     
     async def load_model(self) -> bool:
         """
-        Load Phi-4 Multimodal model.
+        Load Phi-4 Multimodal model with download progress tracking.
         
         Returns:
             bool: True if model loaded successfully
         """
         if not PHI4_AVAILABLE:
+            self.load_progress = {
+                "status": "error",
+                "progress": 0.0,
+                "message": "Phi-4 dependencies not available. Install with: pip install torch transformers"
+            }
             logger.error("Phi-4 dependencies not available. Install with: pip install torch transformers")
             return False
         
+        if self.is_loading:
+            logger.info("Phi-4 model already loading")
+            return False
+        
+        if self.is_loaded:
+            logger.info("Phi-4 model already loaded")
+            return True
+        
         try:
+            self.is_loading = True
             self.device = self._get_device()
             logger.info(f"Loading Phi-4 model on {self.device}")
+            
+            # Update progress
+            self.load_progress = {
+                "status": "downloading",
+                "progress": 0.1,
+                "message": f"Initializing download on {self.device}..."
+            }
             
             # Load model in thread pool to avoid blocking
             loop = asyncio.get_event_loop()
             
             def load_model_sync():
-                # Load processor
-                processor = AutoProcessor.from_pretrained(
-                    self.model_name,
-                    trust_remote_code=True
-                )
-                
-                # Load model with appropriate settings
-                model_kwargs = {
-                    "trust_remote_code": True,
-                    "torch_dtype": torch.bfloat16 if self.device != "cpu" else torch.float32,
-                    "device_map": "auto" if self.device == "cuda" else None
-                }
-                
-                model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name,
-                    **model_kwargs
-                )
-                
-                # Move to device if not using device_map
-                if self.device != "cuda":
-                    model = model.to(self.device)
-                
-                return model, processor
+                try:
+                    # Update progress for processor download
+                    self.load_progress = {
+                        "status": "downloading",
+                        "progress": 0.2,
+                        "message": "Downloading processor..."
+                    }
+                    
+                    # Load processor
+                    processor = AutoProcessor.from_pretrained(
+                        self.model_name,
+                        trust_remote_code=True,
+                        cache_dir=settings.model_cache_dir
+                    )
+                    
+                    # Update progress for model download
+                    self.load_progress = {
+                        "status": "downloading", 
+                        "progress": 0.4,
+                        "message": "Downloading model weights (this may take several minutes)..."
+                    }
+                    
+                    # Load model with appropriate settings
+                    model_kwargs = {
+                        "trust_remote_code": True,
+                        "torch_dtype": torch.bfloat16 if self.device != "cpu" else torch.float32,
+                        "device_map": "auto" if self.device == "cuda" else None,
+                        "cache_dir": settings.model_cache_dir
+                    }
+                    
+                    model = AutoModelForCausalLM.from_pretrained(
+                        self.model_name,
+                        **model_kwargs
+                    )
+                    
+                    # Update progress for device loading
+                    self.load_progress = {
+                        "status": "loading",
+                        "progress": 0.8,
+                        "message": f"Loading model to {self.device}..."
+                    }
+                    
+                    # Move to device if not using device_map
+                    if self.device != "cuda":
+                        model = model.to(self.device)
+                    
+                    # Final progress update
+                    self.load_progress = {
+                        "status": "ready",
+                        "progress": 1.0,
+                        "message": f"Model loaded successfully on {self.device}"
+                    }
+                    
+                    return model, processor
+                    
+                except Exception as e:
+                    self.load_progress = {
+                        "status": "error",
+                        "progress": 0.0,
+                        "message": f"Model loading failed: {str(e)}"
+                    }
+                    raise e
             
             self.model, self.processor = await loop.run_in_executor(None, load_model_sync)
             
             self.is_loaded = True
+            self.is_loading = False
             logger.info(f"Phi-4 model loaded successfully on {self.device}")
             return True
             
         except Exception as e:
             logger.error(f"Failed to load Phi-4 model: {e}")
             self.is_loaded = False
+            self.is_loading = False
+            self.load_progress = {
+                "status": "error",
+                "progress": 0.0,
+                "message": f"Failed to load model: {str(e)}"
+            }
             return False
     
     async def transcribe_audio(
@@ -513,6 +579,8 @@ class Phi4Service:
         """Get information about the loaded model."""
         return {
             "is_loaded": self.is_loaded,
+            "is_loading": self.is_loading,
+            "load_progress": self.load_progress,
             "model_name": self.model_name,
             "device": self.device,
             "supported_languages": self.supported_languages,
@@ -539,9 +607,11 @@ class Phi4Service:
             self.model = None
             self.processor = None
             self.is_loaded = False
+            self.is_loading = False
+            self.load_progress = {"status": "idle", "progress": 0.0, "message": ""}
             
             # Clear GPU cache if using CUDA
-            if self.device == "cuda" and torch.cuda.is_available():
+            if self.device == "cuda" and PHI4_AVAILABLE and torch.cuda.is_available():
                 torch.cuda.empty_cache()
             
             logger.info("Phi-4 model unloaded")

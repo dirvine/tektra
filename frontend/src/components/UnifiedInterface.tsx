@@ -40,6 +40,7 @@ export default function UnifiedInterface({ className }: UnifiedInterfaceProps) {
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [phi4Status, setPhi4Status] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [phi4Progress, setPhi4Progress] = useState({ progress: 0, message: '' })
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -106,37 +107,76 @@ export default function UnifiedInterface({ className }: UnifiedInterfaceProps) {
   }
 
   const handleWebSocketMessage = (data: any) => {
-    if (data.type === 'chat_response') {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: data.message,
-        timestamp: new Date(),
-        type: 'text'
-      }
-      setMessages(prev => [...prev, newMessage])
-    } else if (data.type === 'transcription') {
+    console.log('WebSocket message received:', data)
+    
+    if (data.type === 'connection_established') {
+      console.log('WebSocket connection established:', data.data)
+    } else if (data.type === 'ai_response_chunk') {
+      // Handle streaming AI responses
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1]
+        if (lastMessage && lastMessage.role === 'assistant' && lastMessage.id === 'streaming') {
+          // Update existing streaming message
+          return prev.slice(0, -1).concat({
+            ...lastMessage,
+            content: lastMessage.content + data.data.content
+          })
+        } else {
+          // Create new streaming message
+          return [...prev, {
+            id: 'streaming',
+            role: 'assistant',
+            content: data.data.content,
+            timestamp: new Date(),
+            type: 'text'
+          }]
+        }
+      })
+    } else if (data.type === 'ai_response_complete') {
+      // Finalize streaming message
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1]
+        if (lastMessage && lastMessage.id === 'streaming') {
+          return prev.slice(0, -1).concat({
+            ...lastMessage,
+            id: Date.now().toString()
+          })
+        }
+        return prev
+      })
+      setIsLoading(false)
+    } else if (data.type === 'transcription_final') {
       const newMessage: Message = {
         id: Date.now().toString(),
         role: 'user',
-        content: data.text,
+        content: data.data.text,
         timestamp: new Date(),
         type: 'audio'
       }
       setMessages(prev => [...prev, newMessage])
+    } else if (data.type === 'error') {
+      console.error('WebSocket error:', data.data.message)
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   const checkPhi4Status = async () => {
     try {
-      const response = await fetch('/api/v1/audio/api/v1/audio/phi4/info')
+      const response = await fetch('/api/v1/audio/phi4/info')
       if (response.ok) {
         const data = await response.json()
-        setPhi4Status(data.is_loaded ? 'ready' : 'loading')
+        setPhi4Status(data.is_loaded ? 'ready' : (data.is_loading ? 'loading' : 'error'))
         
-        // Auto-load Phi-4 if not loaded
-        if (!data.is_loaded) {
+        // Update progress information
+        if (data.load_progress) {
+          setPhi4Progress({
+            progress: data.load_progress.progress * 100,
+            message: data.load_progress.message || ''
+          })
+        }
+        
+        // Auto-load Phi-4 if not loaded and not loading
+        if (!data.is_loaded && !data.is_loading) {
           await loadPhi4()
         }
       } else {
@@ -151,13 +191,43 @@ export default function UnifiedInterface({ className }: UnifiedInterfaceProps) {
   const loadPhi4 = async () => {
     try {
       setPhi4Status('loading')
-      const response = await fetch('/api/v1/audio/api/v1/audio/phi4/load', {
+      const response = await fetch('/api/v1/audio/phi4/load', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
       
       if (response.ok) {
-        setPhi4Status('ready')
+        // Poll for progress updates
+        const pollProgress = setInterval(async () => {
+          try {
+            const statusResponse = await fetch('/api/v1/audio/phi4/info')
+            if (statusResponse.ok) {
+              const data = await statusResponse.json()
+              
+              // Update progress information
+              if (data.load_progress) {
+                setPhi4Progress({
+                  progress: data.load_progress.progress * 100,
+                  message: data.load_progress.message || ''
+                })
+              }
+              
+              if (data.is_loaded) {
+                setPhi4Status('ready')
+                clearInterval(pollProgress)
+              } else if (data.load_progress?.status === 'error') {
+                setPhi4Status('error')
+                clearInterval(pollProgress)
+              }
+              // Continue polling while loading
+            }
+          } catch (error) {
+            console.error('Error polling Phi-4 status:', error)
+          }
+        }, 2000) // Poll every 2 seconds
+        
+        // Stop polling after 5 minutes
+        setTimeout(() => clearInterval(pollProgress), 300000)
       } else {
         setPhi4Status('error')
       }
@@ -181,11 +251,16 @@ export default function UnifiedInterface({ className }: UnifiedInterfaceProps) {
     setMessages(prev => [...prev, userMessage])
     setIsLoading(true)
     
-    // Send via WebSocket
+    // Send via WebSocket with proper format
     wsRef.current.send(JSON.stringify({
       type: 'chat_message',
-      message: inputText,
-      model: 'phi-4'
+      data: {
+        content: inputText,
+        conversation_id: null,
+        model: 'phi-4',
+        temperature: 0.7,
+        stream: true
+      }
     }))
 
     setInputText('')
@@ -244,10 +319,28 @@ export default function UnifiedInterface({ className }: UnifiedInterfaceProps) {
     const reader = new FileReader()
     reader.onload = () => {
       const base64Audio = (reader.result as string).split(',')[1]
+      
+      // Send audio start signal
       wsRef.current?.send(JSON.stringify({
-        type: 'audio_message',
-        audio_data: base64Audio,
-        format: 'webm'
+        type: 'audio_start',
+        data: {}
+      }))
+      
+      // Send audio data as transcription request
+      wsRef.current?.send(JSON.stringify({
+        type: 'transcription_request',
+        data: {
+          audio_data: base64Audio,
+          format: 'webm',
+          language: null,
+          task: 'transcribe'
+        }
+      }))
+      
+      // Send audio stop signal
+      wsRef.current?.send(JSON.stringify({
+        type: 'audio_stop',
+        data: {}
       }))
     }
     reader.readAsDataURL(audioBlob)
@@ -333,7 +426,9 @@ export default function UnifiedInterface({ className }: UnifiedInterfaceProps) {
 
   const getStatusText = () => {
     if (phi4Status === 'ready' && isConnected) return 'Phi-4 Ready'
-    if (phi4Status === 'loading') return 'Loading Phi-4...'
+    if (phi4Status === 'loading') {
+      return `Loading Phi-4... ${phi4Progress.progress.toFixed(0)}%`
+    }
     if (phi4Status === 'error') return 'Phi-4 Error'
     return 'Disconnected'
   }
@@ -341,16 +436,33 @@ export default function UnifiedInterface({ className }: UnifiedInterfaceProps) {
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center space-x-2">
-          <Bot className="h-6 w-6 text-blue-600" />
-          <h1 className="text-xl font-semibold">Tektra AI Assistant</h1>
+      <div className="border-b">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-2">
+            <Bot className="h-6 w-6 text-blue-600" />
+            <h1 className="text-xl font-semibold">Tektra AI Assistant</h1>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${getStatusColor()}`} />
+            <span className="text-sm text-gray-600">{getStatusText()}</span>
+          </div>
         </div>
         
-        <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full ${getStatusColor()}`} />
-          <span className="text-sm text-gray-600">{getStatusText()}</span>
-        </div>
+        {/* Progress Bar */}
+        {phi4Status === 'loading' && (
+          <div className="px-4 pb-2">
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${phi4Progress.progress}%` }}
+              />
+            </div>
+            {phi4Progress.message && (
+              <p className="text-xs text-gray-500 mt-1">{phi4Progress.message}</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
