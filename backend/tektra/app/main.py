@@ -71,7 +71,8 @@ app.add_middleware(
     allow_headers=settings.allowed_headers,
 )
 
-# Include routers
+# Include routers - WebSocket must be included before StaticFiles
+app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI"])
 app.include_router(conversations.router, prefix="/api/v1/conversations", tags=["Conversations"])
 app.include_router(conversations_enhanced.router, prefix="/api/v1/conversations", tags=["Conversations Enhanced"])
@@ -81,7 +82,6 @@ app.include_router(audio.router, prefix="/api/v1/audio", tags=["Audio"])
 app.include_router(avatar.router, prefix="/api/v1/avatar", tags=["Avatar"])
 app.include_router(camera.router, prefix="/api/v1/camera", tags=["Camera"])
 app.include_router(robot.router, prefix="/api/v1/robots", tags=["Robots"])
-app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 
 
 @app.get("/api")
@@ -151,8 +151,28 @@ if frontend_out_path:
     if next_static_path.exists():
         app.mount("/_next/static", StaticFiles(directory=str(next_static_path)), name="nextstatic")
     
+    # Mount main frontend with custom StaticFiles to exclude WebSocket paths
+    from starlette.staticfiles import StaticFiles
+    from starlette.responses import FileResponse
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    import os
+    
+    class WebSocketAwareStaticFiles(StaticFiles):
+        async def __call__(self, scope, receive, send):
+            # Skip WebSocket requests
+            if scope["type"] == "websocket":
+                raise StarletteHTTPException(status_code=404)
+            
+            # Skip API routes 
+            path = scope.get("path", "")
+            if path.startswith("/api") or path.startswith("/ws"):
+                raise StarletteHTTPException(status_code=404)
+            
+            # Let StaticFiles handle HTTP requests
+            return await super().__call__(scope, receive, send)
+    
     # Mount main frontend (must be last)
-    app.mount("/", StaticFiles(directory=str(frontend_out_path), html=True), name="frontend")
+    app.mount("/", WebSocketAwareStaticFiles(directory=str(frontend_out_path), html=True), name="frontend")
 else:
     print("⚠️  Frontend files not found - running API only")
 

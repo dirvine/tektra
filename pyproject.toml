@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tektra"
-version = "0.8.3"
+version = "0.8.4"
 description = "Advanced AI assistant with Microsoft Phi-4 Multimodal integration, voice, vision, and robotics capabilities"
 readme = "README.md"
 license = {text = "MIT"}
