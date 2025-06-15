@@ -15,6 +15,7 @@ from typing import AsyncGenerator, Dict, List, Optional, Any, Union
 from dataclasses import dataclass
 from enum import Enum
 from .model_manager import model_manager
+from .phi4_service import phi4_service
 
 logger = logging.getLogger(__name__)
 
@@ -228,6 +229,49 @@ class AIModelManager:
         logger.info(f"Unloaded model {model_name}")
         return True
     
+    async def stream_chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """Stream chat completion - uses Phi-4 if available, otherwise fallback."""
+        try:
+            # Try Phi-4 first if available
+            if phi4_service.is_loaded:
+                logger.info("Using Phi-4 for chat completion")
+                async for chunk in phi4_service.chat_completion(
+                    messages=messages,
+                    model=model,
+                    temperature=temperature,
+                    stream=True,
+                    **kwargs
+                ):
+                    yield chunk
+                return
+            else:
+                logger.info("Phi-4 not available, falling back to local models")
+        except Exception as e:
+            logger.warning(f"Phi-4 chat completion failed: {e}, falling back to local models")
+        
+        # Fallback to existing local model system
+        chat_messages = [ChatMessage(role=msg["role"], content=msg["content"]) for msg in messages]
+        
+        # Use default model or first available model
+        model_name = model or self.default_model
+        if not await self.load_model(model_name):
+            # Use mock response if no models available
+            response = f"I understand your message: {messages[-1]['content']}"
+            for word in response.split():
+                yield f"{word} "
+                await asyncio.sleep(0.05)
+            return
+        
+        # Stream from local model
+        async for chunk in self._generate_streaming_response(chat_messages, model_name, **kwargs):
+            yield chunk
+
     async def chat(
         self, 
         messages: List[ChatMessage], 

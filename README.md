@@ -2,17 +2,20 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PyPI Version](https://img.shields.io/badge/pypi-v0.2.0-orange.svg)](https://pypi.org/project/tektra/)
+[![PyPI Version](https://img.shields.io/badge/pypi-v0.6.0-orange.svg)](https://pypi.org/project/tektra/)
+[![Phi-4 Integration](https://img.shields.io/badge/Phi--4-Multimodal-purple.svg)](https://huggingface.co/microsoft/Phi-4-multimodal-instruct)
 
-**Tektra AI Assistant** is an advanced AI assistant with voice, vision, and robotics capabilities. It features persistent conversation management, real-time chat, streaming responses, and a beautiful web interface.
+**Tektra AI Assistant** is an advanced AI assistant featuring **Microsoft Phi-4 Multimodal integration** with superior voice, vision, and robotics capabilities. It delivers state-of-the-art speech recognition, intelligent chat completion, and multimodal understanding with persistent conversation management and a beautiful web interface.
 
 ## ✨ Features
 
 ### 🧠 **Advanced AI Integration**
-- **Multiple Model Support**: Phi-3, GPT, Llama, and more
-- **Streaming Responses**: Real-time token-by-token generation
-- **Context Awareness**: Conversation history and memory management
-- **Model Management**: Load, unload, and switch between models
+- **Microsoft Phi-4 Multimodal**: Primary processor with #1 OpenASR leaderboard performance
+- **Intelligent Fallback**: Automatic fallback to OpenAI Whisper for reliability
+- **Unified Architecture**: Single model handles speech recognition and chat completion
+- **8-Language Support**: English, Chinese, German, French, Italian, Japanese, Spanish, Portuguese
+- **Streaming Responses**: Real-time token-by-token generation with 128K context
+- **Model Management**: Load, unload, and switch between models with automatic device detection
 
 ### 💬 **Rich Chat Interface**
 - **Persistent Conversations**: Full conversation history with database storage
@@ -21,11 +24,13 @@
 - **Message Actions**: Copy, regenerate, and manage individual messages
 - **Beautiful UI**: Modern, responsive web interface
 
-### 🎤 **Multimodal Capabilities**
-- **Voice Input**: Speech-to-text with real-time transcription
-- **Voice Output**: Text-to-speech with natural voices
-- **Vision**: Image analysis and computer vision
-- **Camera Integration**: Real-time video processing
+### 🎤 **Superior Voice & Multimodal Capabilities**
+- **Advanced Speech Recognition**: Phi-4 Multimodal with superior accuracy and 8-language support
+- **Real-time Transcription**: WebSocket-based streaming with voice activity detection
+- **Intelligent TTS**: Edge-TTS with 200+ neural voices and automatic language matching
+- **Noise Cancellation**: WebRTC VAD with advanced audio preprocessing
+- **Multimodal Understanding**: Vision, audio, and text processing in unified model
+- **Camera Integration**: Real-time video processing with computer vision
 
 ### 🤖 **Robotics & Automation**
 - **Robot Control**: Command and control robotic systems
@@ -66,6 +71,27 @@ pip install tektra[ml,audio,vision]
    The web interface will automatically open at `http://localhost:8000`
 
 That's it! 🎉
+
+## 🚀 New in v0.6.0 - Phase 3.1 Features
+
+### Microsoft Phi-4 Multimodal Integration
+- **Superior Speech Recognition**: #1 performance on OpenASR leaderboard
+- **Unified Processing**: Single model for both STT and chat completion
+- **8-Language Audio Support**: Enhanced multilingual capabilities
+- **128K Context Length**: Extended context for better understanding
+- **Intelligent Fallback**: Automatic Whisper fallback for reliability
+
+### Enhanced API Endpoints
+- `/api/v1/audio/phi4/load` - Load Phi-4 Multimodal model
+- `/api/v1/audio/phi4/unload` - Unload model to free memory
+- `/api/v1/audio/phi4/info` - Get model status and capabilities
+- Enhanced transcription and language detection with Phi-4 primary processing
+
+### Performance Improvements
+- **Faster Processing**: Unified model reduces latency
+- **Better Accuracy**: Superior speech recognition and understanding
+- **Memory Efficiency**: Optimized model loading and device detection
+- **Real-time Streaming**: Enhanced WebSocket processing with Phi-4
 
 ## 📖 Usage
 
