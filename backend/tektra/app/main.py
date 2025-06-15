@@ -98,7 +98,7 @@ async def debug_frontend() -> JSONResponse:
         possible_paths = [
             Path(__file__).parent.parent.parent.parent / "frontend" / "out",
             Path.cwd() / "frontend" / "out",
-            Path(__file__).parent / "frontend" / "out",
+            Path(__file__).parent.parent / "frontend",
         ]
         
         debug_info = {
