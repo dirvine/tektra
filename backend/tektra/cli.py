@@ -43,7 +43,7 @@ def print_banner():
 ║     ██║   ███████╗██║  ██╗   ██║   ██║  ██║██║  ██║          ║
 ║     ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝          ║
 ║                                                              ║
-║            Advanced AI Assistant v0.6.6                     ║
+║            Advanced AI Assistant v0.6.7                     ║
 ║          Voice • Vision • Robotics • Chat                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -254,7 +254,7 @@ def enable_phi4(
             
             # Load Phi-4 model
             progress.update(task, description="Loading Phi-4 Multimodal model...")
-            response = httpx.post(f"http://{host}:{port}/api/v1/audio/phi4/load", timeout=300.0)
+            response = httpx.post(f"http://{host}:{port}/api/v1/audio/api/v1/audio/phi4/load", timeout=300.0)
             
             if response.status_code == 200:
                 progress.update(task, description="✅ Phi-4 model loaded successfully")
@@ -318,7 +318,7 @@ def disable_phi4(
             
             # Unload Phi-4 model
             progress.update(task, description="Unloading Phi-4 model...")
-            response = httpx.post(f"http://{host}:{port}/api/v1/audio/phi4/unload", timeout=30.0)
+            response = httpx.post(f"http://{host}:{port}/api/v1/audio/api/v1/audio/phi4/unload", timeout=30.0)
             
             if response.status_code == 200:
                 progress.update(task, description="✅ Phi-4 model unloaded successfully")
@@ -355,7 +355,7 @@ def phi4_status(
     
     try:
         # Get Phi-4 info
-        response = httpx.get(f"http://{host}:{port}/api/v1/audio/phi4/info", timeout=10.0)
+        response = httpx.get(f"http://{host}:{port}/api/v1/audio/api/v1/audio/phi4/info", timeout=10.0)
         
         if response.status_code != 200:
             console.print("❌ Cannot get Phi-4 status")
