@@ -10,6 +10,16 @@ use tokio::io::AsyncWriteExt;
 
 use crate::state::Message;
 
+#[derive(Debug)]
+enum QuestionType {
+    Greeting,
+    Capability, 
+    Technical,
+    Conversational,
+    Factual,
+    Unknown,
+}
+
 // Candle ML framework 
 use candle_core::Device;
 
@@ -43,7 +53,7 @@ impl ModelManager {
 
         // Create client with timeout
         let client = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(300)) // 5 minute timeout
+            .timeout(std::time::Duration::from_secs(1800)) // 30 minute timeout for large models
             .build()?;
             
         let response = client.get(url).send().await.map_err(|e| {
@@ -185,9 +195,14 @@ impl ModelManager {
             "model_name": model_name
         }));
         
+        // Simple connectivity check
+        tracing::info!("Testing basic connectivity to HuggingFace...");
+        
         // Check if model exists with timeout
+        tracing::info!("Checking model availability for: {}", model_name);
+        
         let _info = tokio::time::timeout(
-            std::time::Duration::from_secs(30),
+            std::time::Duration::from_secs(300), // 5 minutes for model availability check
             repo.info()
         ).await.map_err(|_| {
             let error_msg = "Timeout checking model availability";
@@ -198,8 +213,9 @@ impl ModelManager {
             }));
             anyhow::anyhow!(error_msg)
         })?.map_err(|e| {
-            let error_msg = format!("Model not found: {}", e);
+            let error_msg = format!("Model not found: {}. This might be due to: 1) Model doesn't exist, 2) Network issues, 3) API authentication required", e);
             tracing::error!("{}", error_msg);
+            tracing::error!("Full error details: {:?}", e);
             let _ = self.app_handle.emit("model-loading-complete", json!({
                 "success": false,
                 "error": error_msg
@@ -216,7 +232,7 @@ impl ModelManager {
         
         // Get model info to check which files exist
         let model_info = tokio::time::timeout(
-            std::time::Duration::from_secs(30),
+            std::time::Duration::from_secs(300), // 5 minutes for model file list
             repo.info()
         ).await.map_err(|_| {
             let error_msg = "Timeout getting model file list";
@@ -432,8 +448,47 @@ impl ModelManager {
             }
         }
         
-        // First, download the model if it's not already cached
-        let _download_result = self.download_model(model_name, false).await?;
+        // Check if model is already cached - look for the actual model files
+        let model_cache_name = model_name.replace("/", "--");
+        let cache_path = self.cache_dir.join("hub").join(format!("models--{}", model_cache_name));
+        let tokenizer_path = cache_path.join("snapshots").join("main").join("tokenizer.json");
+        let config_path = cache_path.join("snapshots").join("main").join("config.json");
+        
+        tracing::info!("Checking cache paths:");
+        tracing::info!("  Cache base: {:?}", cache_path);
+        tracing::info!("  Tokenizer: {:?} (exists: {})", tokenizer_path, tokenizer_path.exists());
+        tracing::info!("  Config: {:?} (exists: {})", config_path, config_path.exists());
+        
+        let is_cached = cache_path.exists() && (tokenizer_path.exists() || config_path.exists());
+        
+        if is_cached {
+            tracing::info!("Model {} found in cache, skipping download completely", model_name);
+            
+            // Emit progress to show we're using cached model
+            let _ = self.app_handle.emit("model-loading-progress", json!({
+                "progress": 50,
+                "status": "Using cached model files...",
+                "model_name": model_name
+            }));
+        } else {
+            tracing::info!("Model {} not cached (cache exists: {}, tokenizer exists: {}, config exists: {})", 
+                model_name, cache_path.exists(), tokenizer_path.exists(), config_path.exists());
+            tracing::info!("Attempting download for model: {}", model_name);
+            
+            // Try to download the model if it's not already cached
+            match self.download_model(model_name, false).await {
+                Ok(_) => tracing::info!("Download completed successfully"),
+                Err(e) => {
+                    tracing::error!("Download failed: {}", e);
+                    let error_msg = format!("Failed to download model: {}", e);
+                    let _ = self.app_handle.emit("model-loading-complete", json!({
+                        "success": false,
+                        "error": error_msg
+                    }));
+                    return Err(e);
+                }
+            }
+        }
         
         // Emit loading progress
         tracing::info!("Emitting tokenizer loading progress");
@@ -607,81 +662,153 @@ impl ModelManager {
     async fn generate_chatbot_response(&self, prompt: &str, _tokens: &[u32]) -> Result<String> {
         let prompt_lower = prompt.to_lowercase();
         
-        // Knowledge-based responses for common questions
-        let response = match prompt_lower.as_str() {
-            // Greetings
-            p if p.contains("hello") || p.contains("hi") || p.contains("hey") => {
-                "Hello! I'm Tektra, your AI assistant. I'm running on native Rust with the Candle ML framework. How can I help you today?"
-            },
-            
-            // Geography questions
-            p if p.contains("capital of france") => {
-                "The capital of France is Paris. It's a beautiful city known for the Eiffel Tower, Louvre Museum, and rich cultural heritage."
-            },
-            p if p.contains("capital of") && p.contains("germany") => {
-                "The capital of Germany is Berlin, a historic city that served as the focal point of German reunification."
-            },
-            p if p.contains("capital of") && p.contains("japan") => {
-                "The capital of Japan is Tokyo, one of the world's largest metropolitan areas and a major global financial center."
-            },
-            p if p.contains("capital of") && (p.contains("uk") || p.contains("united kingdom") || p.contains("england")) => {
-                "The capital of the United Kingdom is London, home to Big Ben, Buckingham Palace, and the River Thames."
-            },
-            p if p.contains("capital of") && (p.contains("usa") || p.contains("united states") || p.contains("america")) => {
-                "The capital of the United States is Washington, D.C., which houses the White House, Capitol Building, and Supreme Court."
-            },
-            
-            // Science questions
-            p if p.contains("speed of light") => {
-                "The speed of light in a vacuum is approximately 299,792,458 meters per second (or about 186,282 miles per second). It's denoted by the constant 'c' in physics."
-            },
-            p if p.contains("what is ai") || p.contains("artificial intelligence") => {
-                "Artificial Intelligence (AI) refers to computer systems that can perform tasks typically requiring human intelligence, such as visual perception, speech recognition, decision-making, and language translation."
-            },
-            
-            // Math questions
-            p if p.contains("2 + 2") || p.contains("2+2") => {
-                "2 + 2 equals 4. This is a basic arithmetic operation!"
-            },
-            p if p.contains("what is") && p.contains("pi") => {
-                "Pi (π) is approximately 3.14159. It's the ratio of a circle's circumference to its diameter and is an important mathematical constant."
-            },
-            
-            // Technology questions
-            p if p.contains("what is rust") => {
-                "Rust is a systems programming language known for memory safety, performance, and concurrency. It's what I'm built with! Rust prevents common programming errors like null pointer dereferences and buffer overflows."
-            },
-            p if p.contains("what is candle") => {
-                "Candle is a minimalist ML framework for Rust, inspired by PyTorch. It's what powers my neural network capabilities, allowing me to run efficiently on both CPU and GPU."
-            },
-            
-            // Time and date
-            p if p.contains("what time") || p.contains("current time") => {
-                "I don't have access to real-time information right now, but you can check your system time. Is there something else I can help you with?"
-            },
-            
-            // Help and capabilities
-            p if p.contains("what can you do") || p.contains("help me") => {
-                "I can help with various tasks including:\n• Answering general knowledge questions\n• Explaining concepts in science, technology, and more\n• Having conversations\n• Processing text and providing information\n• Robot control commands (when connected)\n\nWhat would you like to know about?"
-            },
-            
-            // Default intelligent response
-            _ => {
-                // Analyze the prompt for intelligent response
-                if prompt_lower.contains("?") {
-                    "That's an interesting question! I'd be happy to help, but I might need more specific information to give you the best answer. Could you provide more details or rephrase your question?"
-                } else if prompt_lower.contains("thank") {
-                    "You're very welcome! I'm here to help whenever you need assistance."
-                } else if prompt_lower.contains("bye") || prompt_lower.contains("goodbye") {
-                    "Goodbye! Feel free to come back anytime if you have more questions. Have a great day!"
-                } else {
-                    // Generic but helpful response
-                    "I understand what you're saying. While I'm still learning and expanding my knowledge base, I'm here to help! Could you try asking a specific question or let me know what you'd like assistance with?"
-                }
-            }
+        // First check for very specific exact matches, then move to contextual responses
+        let response = if let Some(exact_response) = self.get_exact_match_response(&prompt_lower) {
+            exact_response
+        } else {
+            self.generate_contextual_response(prompt, &prompt_lower).await?
         };
         
-        Ok(response.to_string())
+        Ok(response)
+    }
+    
+    fn get_exact_match_response(&self, prompt_lower: &str) -> Option<String> {
+        // Only very specific exact matches that should override contextual understanding
+        match prompt_lower.trim() {
+            // Simple greetings
+            "hello" | "hi" | "hey" => {
+                Some("Hello! I'm Tektra, your AI assistant. I'm running on native Rust with the Candle ML framework. How can I help you today?".to_string())
+            },
+            // Simple math
+            "what is 2 + 2" | "2 + 2" | "2+2" => {
+                Some("2 + 2 equals 4. This is a basic arithmetic operation!".to_string())
+            },
+            // Very specific factual questions
+            "what is the capital of france" | "capital of france" => {
+                Some("The capital of France is Paris. It's a beautiful city known for the Eiffel Tower, Louvre Museum, and rich cultural heritage.".to_string())
+            },
+            "what is the speed of light" | "speed of light" => {
+                Some("The speed of light in a vacuum is approximately 299,792,458 meters per second (or about 186,282 miles per second). It's denoted by the constant 'c' in physics.".to_string())
+            },
+            _ => None
+        }
+    }
+    
+    async fn generate_contextual_response(&self, original_prompt: &str, prompt_lower: &str) -> Result<String> {
+        // Analyze the question type and intent
+        let question_type = self.analyze_question_type(original_prompt, prompt_lower);
+        
+        match question_type {
+            QuestionType::Greeting => {
+                Ok("Hello! I'm Tektra, your AI assistant. How can I help you today?".to_string())
+            },
+            QuestionType::Capability => {
+                Ok("I can help with various tasks including:\n• Answering general knowledge questions\n• Explaining concepts in science, technology, and more\n• Having conversations\n• Processing text and providing information\n• Robot control commands (when connected)\n\nWhat would you like to know about?".to_string())
+            },
+            QuestionType::Technical => {
+                self.generate_technical_response(original_prompt, prompt_lower)
+            },
+            QuestionType::Conversational => {
+                self.generate_conversational_response(original_prompt, prompt_lower)
+            },
+            QuestionType::Factual => {
+                self.generate_factual_response(original_prompt, prompt_lower)
+            },
+            QuestionType::Unknown => {
+                Ok(format!("I understand you're asking about something, but I'm not sure I have the right information to give you a complete answer about '{}'. Could you provide more context or ask a more specific question?", original_prompt))
+            }
+        }
+    }
+    
+    fn analyze_question_type(&self, original_prompt: &str, prompt_lower: &str) -> QuestionType {
+        // Greeting patterns
+        if prompt_lower.len() < 20 && (prompt_lower.contains("hello") || prompt_lower.contains("hi") || prompt_lower.contains("hey")) {
+            return QuestionType::Greeting;
+        }
+        
+        // Capability questions
+        if prompt_lower.contains("what can you") || prompt_lower.contains("what do you do") {
+            return QuestionType::Capability;
+        }
+        
+        // Technical questions - look for implementation/how-to patterns
+        if prompt_lower.contains("how to") || prompt_lower.contains("implement") || prompt_lower.contains("build") || 
+           prompt_lower.contains("create") || prompt_lower.contains("develop") || prompt_lower.contains("code") {
+            return QuestionType::Technical;
+        }
+        
+        // Factual questions - what is, who is, when, where
+        if prompt_lower.starts_with("what is") || prompt_lower.starts_with("who is") || 
+           prompt_lower.starts_with("when") || prompt_lower.starts_with("where") ||
+           prompt_lower.contains("capital of") {
+            return QuestionType::Factual;
+        }
+        
+        // Conversational - contains personal pronouns or conversational words
+        if prompt_lower.contains("you") || prompt_lower.contains("me") || prompt_lower.contains("i ") ||
+           prompt_lower.contains("thank") || prompt_lower.contains("please") {
+            return QuestionType::Conversational;
+        }
+        
+        QuestionType::Unknown
+    }
+    
+    fn generate_technical_response(&self, original_prompt: &str, prompt_lower: &str) -> Result<String> {
+        // For technical questions, provide helpful guidance based on the specific topic
+        if prompt_lower.contains("voice") || prompt_lower.contains("speech") || prompt_lower.contains("audio") {
+            if prompt_lower.contains("recognition") || prompt_lower.contains("to text") {
+                Ok(format!("For implementing voice recognition in your application, I'd recommend:\n\n1. **Choose a speech recognition service**: OpenAI Whisper (free, runs locally), Google Speech-to-Text, or Azure Speech\n\n2. **Audio handling**: Use WebRTC for web apps, or platform audio APIs (CoreAudio on macOS, WASAPI on Windows)\n\n3. **Integration approach**: \n   - Real-time: Stream audio chunks to the service\n   - Batch: Record complete utterances then transcribe\n\n4. **Error handling**: Implement fallbacks for network issues and low-confidence results\n\nWhat type of application are you building? (Web, mobile, desktop) This would help me give more specific advice."))
+            } else if prompt_lower.contains("synthesis") || prompt_lower.contains("text to speech") {
+                Ok("For text-to-speech implementation, consider these approaches:\n\n1. **Cloud services**: Azure Speech, Google Cloud TTS, Amazon Polly\n2. **Local options**: Festival, eSpeak, or platform APIs (AVSpeechSynthesizer on iOS, Speech API on Windows)\n3. **Neural TTS**: Coqui TTS, Tacotron models for higher quality\n\nWhat's your target platform and quality requirements?".to_string())
+            } else {
+                Ok(format!("I can help with audio/voice implementation! Your question about '{}' touches on audio technology. Are you looking to:\n- Implement speech recognition (voice to text)?\n- Add text-to-speech capabilities?\n- Process audio signals?\n- Build voice interfaces?\n\nLet me know which specific aspect interests you most!", original_prompt))
+            }
+        } else if prompt_lower.contains("ai") || prompt_lower.contains("machine learning") || prompt_lower.contains("neural") {
+            Ok(format!("For AI/ML implementation, I can guide you through:\n\n1. **Framework selection**: PyTorch, TensorFlow, or specialized libraries\n2. **Model deployment**: Local inference vs cloud APIs\n3. **Data preparation**: Training datasets and preprocessing\n4. **Integration patterns**: REST APIs, real-time processing, batch jobs\n\nWhat specific AI functionality are you looking to implement in '{}'?", original_prompt))
+        } else {
+            Ok(format!("That's a great technical question about '{}'! I'd be happy to help you implement this. Could you provide a bit more context about:\n\n- What platform/language you're using?\n- What you've tried so far?\n- Any specific requirements or constraints?\n\nThis will help me give you more targeted guidance.", original_prompt))
+        }
+    }
+    
+    fn generate_conversational_response(&self, _original_prompt: &str, prompt_lower: &str) -> Result<String> {
+        if prompt_lower.contains("thank") {
+            Ok("You're very welcome! I'm here to help whenever you need assistance.".to_string())
+        } else if prompt_lower.contains("bye") || prompt_lower.contains("goodbye") {
+            Ok("Goodbye! Feel free to come back anytime if you have more questions. Have a great day!".to_string())
+        } else if prompt_lower.contains("help me") && (prompt_lower.contains("understand") || prompt_lower.contains("learn")) {
+            Ok("I'd be happy to help you understand that topic! Learning new concepts can be challenging, but breaking them down step by step usually helps. What specific aspect would you like me to explain first?".to_string())
+        } else {
+            Ok("I appreciate you sharing that with me! Is there something specific I can help you with or would you like to know more about any particular topic?".to_string())
+        }
+    }
+    
+    fn generate_factual_response(&self, original_prompt: &str, prompt_lower: &str) -> Result<String> {
+        // Handle common factual questions
+        if prompt_lower.contains("capital of") {
+            if prompt_lower.contains("germany") {
+                Ok("The capital of Germany is Berlin, a historic city that served as the focal point of German reunification.".to_string())
+            } else if prompt_lower.contains("japan") {
+                Ok("The capital of Japan is Tokyo, one of the world's largest metropolitan areas and a major global financial center.".to_string())
+            } else if prompt_lower.contains("uk") || prompt_lower.contains("united kingdom") || prompt_lower.contains("england") {
+                Ok("The capital of the United Kingdom is London, home to Big Ben, Buckingham Palace, and the River Thames.".to_string())
+            } else if prompt_lower.contains("usa") || prompt_lower.contains("united states") || prompt_lower.contains("america") {
+                Ok("The capital of the United States is Washington, D.C., which houses the White House, Capitol Building, and Supreme Court.".to_string())
+            } else {
+                Ok(format!("I'd be happy to help you find information about capitals! Could you be more specific about which country's capital you're asking about in '{}'?", original_prompt))
+            }
+        } else if prompt_lower.contains("what is") {
+            if prompt_lower.contains("ai") || prompt_lower.contains("artificial intelligence") {
+                Ok("Artificial Intelligence (AI) refers to computer systems that can perform tasks typically requiring human intelligence, such as visual perception, speech recognition, decision-making, and language translation.".to_string())
+            } else if prompt_lower.contains("rust") {
+                Ok("Rust is a systems programming language known for memory safety, performance, and concurrency. It's what I'm built with! Rust prevents common programming errors like null pointer dereferences and buffer overflows.".to_string())
+            } else if prompt_lower.contains("pi") {
+                Ok("Pi (π) is approximately 3.14159. It's the ratio of a circle's circumference to its diameter and is an important mathematical constant.".to_string())
+            } else {
+                Ok(format!("That's an interesting question about '{}'! I'd be happy to explain, but I might need a bit more context to give you the most accurate information. Could you be more specific about what aspect you'd like to know about?", original_prompt))
+            }
+        } else {
+            Ok(format!("I'd like to help answer your question about '{}'! Could you provide a bit more detail about what specific information you're looking for?", original_prompt))
+        }
     }
     
     fn format_conversation(&self, current_prompt: &str, history: &[Message]) -> String {

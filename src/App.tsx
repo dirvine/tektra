@@ -88,6 +88,9 @@ function App() {
                 
                 // Trigger a refresh of cached models in controls
                 window.dispatchEvent(new CustomEvent('modelLoadComplete'));
+                
+                // Close settings panel after successful model load
+                window.dispatchEvent(new CustomEvent('closeSettings'));
               }, 1500);
               
             } else {
@@ -146,7 +149,7 @@ function App() {
         isVisible: false,
       }));
       checkModelStatus();
-    }, 15000); // 15 second timeout
+    }, 600000); // 10 minute timeout for large models
     
     try {
       console.log("App: Invoking load_model command");
@@ -213,7 +216,10 @@ function App() {
         // Get transcription and process it
         const transcription = await invoke<string>("transcribe_voice");
         if (transcription && transcription.trim()) {
+          console.log("🎤 Voice transcription:", transcription);
           await sendMessage(transcription);
+        } else {
+          console.log("🔇 No speech detected in recording");
         }
         
         // Clear the voice buffer for next recording

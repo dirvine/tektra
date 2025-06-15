@@ -68,6 +68,7 @@
 .model-selector select {
   flex: 1;
   min-width: 250px;
+  max-height: 200px;
   padding: 0.75rem;
   background: rgba(74, 158, 255, 0.1);
   border: 1px solid rgba(74, 158, 255, 0.3);
@@ -75,6 +76,7 @@
   color: white;
   font-size: 0.875rem;
   outline: none;
+  overflow-y: auto;
 }
 
 .model-selector select:focus {
@@ -225,6 +227,28 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Custom scrollbar for cached models */
+.cached-models-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cached-models-list::-webkit-scrollbar-track {
+  background: rgba(74, 158, 255, 0.1);
+  border-radius: 3px;
+}
+
+.cached-models-list::-webkit-scrollbar-thumb {
+  background: rgba(74, 158, 255, 0.5);
+  border-radius: 3px;
+}
+
+.cached-models-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 158, 255, 0.7);
 }
 
 .cached-model-item {
@@ -299,4 +323,43 @@
 .redownload-button:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.audio-status-section {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(74, 158, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(74, 158, 255, 0.2);
+  border-top: 1px solid rgba(74, 158, 255, 0.3);
+  padding-top: 1.5rem;
+}
+
+.audio-status-section h4 {
+  margin: 0 0 15px 0;
+  color: #4a9eff;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.audio-info {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.audio-info-line {
+  margin: 8px 0;
+  padding: 6px 10px;
+  background: rgba(74, 158, 255, 0.03);
+  border-radius: 4px;
+  color: #ccc;
+  border-left: 3px solid rgba(74, 158, 255, 0.3);
+}
+
+.audio-info-line:first-child {
+  margin-top: 0;
+}
+
+.audio-info-line:last-child {
+  margin-bottom: 0;
 }

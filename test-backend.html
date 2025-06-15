@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Test</title>
+</head>
+<body>
+    <h1>Testing Backend Commands</h1>
+    <button onclick="testBackend()">Test get_available_models</button>
+    <div id="result"></div>
+    
+    <script>
+        window.__TAURI_INTERNALS__ = {};
+        const { invoke } = window.__TAURI__.core;
+        
+        async function testBackend() {
+            const resultDiv = document.getElementById('result');
+            try {
+                console.log('Calling get_available_models...');
+                const models = await invoke('get_available_models');
+                console.log('Result:', models);
+                resultDiv.innerHTML = `<h2>Success!</h2><p>Models: ${JSON.stringify(models)}</p>`;
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<h2>Error!</h2><p>${error}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

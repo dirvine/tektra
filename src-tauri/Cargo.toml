@@ -24,7 +24,7 @@ include = [
 ]
 
 [dependencies]
-tauri = { version = "2", features = ["protocol-asset"] }
+tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -46,6 +46,11 @@ candle-transformers = "0.8"
 
 # Vision (simplified for thread safety)
 image = "0.25"
+
+# Audio processing and I/O (simplified for compatibility)
+# cpal = "0.15"
+# rodio = "0.18" 
+hound = "3.5"
 
 # Networking
 axum = "0.7"

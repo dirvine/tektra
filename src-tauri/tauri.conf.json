@@ -1,9 +1,7 @@
 {
-  "productName": "Tektra",
-  "version": "0.1.0",
   "identifier": "com.tektra.app",
   "build": {
-    "frontendDist": "dist"
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [
@@ -11,20 +9,8 @@
         "title": "Tektra AI Assistant",
         "width": 1200,
         "height": 800,
-        "decorations": true,
-        "resizable": true,
-        "fullscreen": false
+        "resizable": true
       }
-    ],
-    "security": {
-      "csp": null,
-      "assetProtocol": {
-        "enable": true,
-        "scope": ["**"]
-      }
-    }
-  },
-  "bundle": {
-    "active": false
+    ]
   }
 }

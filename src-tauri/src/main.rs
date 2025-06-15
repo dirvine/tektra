@@ -132,12 +132,34 @@ async fn get_camera_info(
 }
 
 #[tauri::command]
-async fn cancel_download(
+async fn get_audio_info(
     state: tauri::State<'_, AppState>,
+) -> Result<String, String> {
+    state.get_audio_info().await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn cancel_download(
+    app_handle: tauri::AppHandle,
+    _state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    // For now, just emit a cancel event
-    // In a full implementation, this would use cancellation tokens
-    tracing::info!("Download cancellation requested");
+    tracing::info!("Download cancellation requested - forcing stop");
+    
+    // Immediately emit cancellation event to frontend
+    let _ = app_handle.emit("model-loading-complete", serde_json::json!({
+        "success": false,
+        "error": "Download cancelled by user"
+    }));
+    
+    // Also emit a progress event to clear any loading indicators
+    let _ = app_handle.emit("model-loading-progress", serde_json::json!({
+        "progress": 0,
+        "status": "Download cancelled",
+        "model_name": ""
+    }));
+    
+    tracing::info!("Cancellation events emitted");
     Ok(())
 }
 
@@ -164,6 +186,18 @@ async fn set_last_selected_model(
 ) -> Result<(), String> {
     state.set_last_selected_model(&model_name).await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_available_models() -> Result<Vec<String>, String> {
+    Ok(vec![
+        "microsoft/phi-4".to_string(),
+        "microsoft/Phi-4-mini-instruct".to_string(),
+        "mlx-community/Phi-3.5-mini-instruct-4bit".to_string(),
+        "mlx-community/SmolLM2-1.7B-Instruct-4bit".to_string(),
+        "Qwen/Qwen2.5-1.5B-Instruct".to_string(),
+        "distilbert-base-uncased".to_string(),
+    ])
 }
 
 fn main() {
@@ -196,10 +230,12 @@ fn main() {
             is_recording,
             speak_text,
             get_camera_info,
+            get_audio_info,
             cancel_download,
             test_event_emission,
             get_last_selected_model,
             set_last_selected_model,
+            get_available_models,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

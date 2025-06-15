@@ -18,10 +18,8 @@ interface ControlsProps {
   isLoading: boolean;
 }
 
-const AVAILABLE_MODELS = [
-  "mlx-community/Qwen2.5-7B-Instruct-4bit",
-  "mlx-community/Llama-3.2-3B-Instruct-4bit",
-  "mlx-community/Phi-3.5-mini-instruct-4bit",
+// Models will be loaded from backend
+const DEFAULT_MODELS = [
   "mlx-community/SmolLM2-1.7B-Instruct-4bit",
 ];
 
@@ -33,10 +31,12 @@ const Controls: React.FC<ControlsProps> = ({
   isVoiceActive,
   isLoading,
 }) => {
-  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODELS[0]);
+  const [availableModels, setAvailableModels] = useState<string[]>(DEFAULT_MODELS);
   const [showSettings, setShowSettings] = useState(false);
   const [cachedModels, setCachedModels] = useState<CachedModel[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [audioInfo, setAudioInfo] = useState<string>("");
 
   const handleLoadModel = () => {
     onLoadModel(selectedModel);
@@ -60,36 +60,74 @@ const Controls: React.FC<ControlsProps> = ({
     }
   };
 
+  const loadAudioInfo = async () => {
+    try {
+      console.log('🎵 CONTROLS: Loading audio info...');
+      const info = await invoke<string>('get_audio_info');
+      console.log('🎵 CONTROLS: Audio info received:', info);
+      setAudioInfo(info);
+    } catch (error) {
+      console.error('Controls: Failed to load audio info:', error);
+      setAudioInfo("❌ Audio system not available");
+    }
+  };
 
-  // Load last selected model on component mount
+  const loadAvailableModels = async () => {
+    try {
+      const models = await invoke<string[]>('get_available_models');
+      setAvailableModels(models);
+      
+      // Update selected model if current one is not in the new list
+      if (!models.includes(selectedModel)) {
+        setSelectedModel(models[0] || DEFAULT_MODELS[0]);
+      }
+    } catch (error) {
+      console.error('Controls: Failed to load available models:', error);
+      setAvailableModels(DEFAULT_MODELS);
+    }
+  };
+
+
+  // Load available models and last selected model on component mount
   useEffect(() => {
-    const loadLastSelectedModel = async () => {
+    const initializeModels = async () => {
       if (!isInitialized) {
         try {
+          // First load available models
+          console.log('🤖 CONTROLS: Loading available models from backend...');
+          const models = await invoke<string[]>('get_available_models');
+          console.log('🤖 CONTROLS: Available models received:', models);
+          setAvailableModels(models);
+          
+          // Then load last selected model
           console.log('🔄 CONTROLS: Loading last selected model...');
           const lastModel = await invoke<string | null>('get_last_selected_model');
           console.log('📋 CONTROLS: Last selected model:', lastModel);
           
-          if (lastModel && AVAILABLE_MODELS.includes(lastModel)) {
+          if (lastModel && models.includes(lastModel)) {
             console.log('✅ CONTROLS: Setting selected model to:', lastModel);
             setSelectedModel(lastModel);
           } else {
             console.log('ℹ️ CONTROLS: Using default model (no valid last selection)');
+            setSelectedModel(models[0] || DEFAULT_MODELS[0]);
           }
         } catch (error) {
-          console.error('❌ CONTROLS: Failed to load last selected model:', error);
+          console.error('❌ CONTROLS: Failed to initialize models:', error);
+          setAvailableModels(DEFAULT_MODELS);
         } finally {
           setIsInitialized(true);
         }
       }
     };
 
-    loadLastSelectedModel();
+    initializeModels();
   }, [isInitialized]);
 
   useEffect(() => {
     if (showSettings) {
       loadCachedModels();
+      loadAudioInfo();
+      loadAvailableModels();
     }
   }, [showSettings]);
 
@@ -100,8 +138,19 @@ const Controls: React.FC<ControlsProps> = ({
       loadCachedModels();
     };
 
+    // Listen for close settings event
+    const handleCloseSettings = () => {
+      console.log('Controls: Closing settings panel after model load');
+      setShowSettings(false);
+    };
+
     window.addEventListener('modelLoadComplete', handleModelLoadComplete);
-    return () => window.removeEventListener('modelLoadComplete', handleModelLoadComplete);
+    window.addEventListener('closeSettings', handleCloseSettings);
+    
+    return () => {
+      window.removeEventListener('modelLoadComplete', handleModelLoadComplete);
+      window.removeEventListener('closeSettings', handleCloseSettings);
+    };
   }, []);
 
   return (
@@ -153,7 +202,7 @@ const Controls: React.FC<ControlsProps> = ({
               }}
               disabled={isLoading}
             >
-              {AVAILABLE_MODELS.map((model) => (
+              {availableModels.map((model) => (
                 <option key={model} value={model}>
                   {model}
                 </option>
@@ -213,6 +262,19 @@ const Controls: React.FC<ControlsProps> = ({
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+          
+          <div className="audio-status-section">
+            <h4>Audio System Status</h4>
+            {audioInfo ? (
+              <div className="audio-info">
+                {audioInfo.split('\n').map((line, index) => (
+                  <p key={index} className="audio-info-line">{line}</p>
+                ))}
+              </div>
+            ) : (
+              <p>Loading audio information...</p>
             )}
           </div>
         </div>

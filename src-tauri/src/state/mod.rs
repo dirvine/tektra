@@ -3,6 +3,7 @@ use tokio::sync::RwLock;
 use tauri::AppHandle;
 use anyhow::Result;
 use serde::{Serialize, Deserialize};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::ai::ModelManager;
 use crate::audio::AudioManager;
@@ -29,6 +30,7 @@ pub struct AppState {
     robot_controller: Arc<RwLock<RobotController>>,
     conversation_history: Arc<RwLock<Vec<Message>>>,
     config_path: std::path::PathBuf,
+    cancel_download: Arc<AtomicBool>,
 }
 
 impl AppState {
@@ -43,6 +45,7 @@ impl AppState {
             robot_controller: Arc::new(RwLock::new(RobotController::new()?)),
             conversation_history: Arc::new(RwLock::new(Vec::new())),
             config_path,
+            cancel_download: Arc::new(AtomicBool::new(false)),
         })
     }
     
@@ -148,6 +151,8 @@ impl AppState {
     
     pub async fn load_model(&self, model_name: &str) -> Result<()> {
         let mut model_manager = self.model_manager.write().await;
+        // Reset cancellation flag before starting
+        self.cancel_download.store(false, Ordering::SeqCst);
         let result = model_manager.load_model(model_name).await;
         
         // Save as last selected model if load was successful
@@ -209,5 +214,27 @@ impl AppState {
     pub async fn get_camera_info(&self) -> Result<String> {
         let vision_manager = self.vision_manager.read().await;
         vision_manager.get_camera_info().await
+    }
+    
+    pub async fn get_audio_info(&self) -> Result<String> {
+        let audio_manager = self.audio_manager.read().await;
+        audio_manager.get_audio_info().await
+    }
+    
+    pub async fn reset_loading_state(&self) -> Result<()> {
+        tracing::info!("Resetting loading state due to cancellation");
+        // Set cancellation flag
+        self.cancel_download.store(true, Ordering::SeqCst);
+        // Reset the flag after a brief delay to allow current operations to see it
+        let cancel_flag = self.cancel_download.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            cancel_flag.store(false, Ordering::SeqCst);
+        });
+        Ok(())
+    }
+    
+    pub fn is_download_cancelled(&self) -> bool {
+        self.cancel_download.load(Ordering::SeqCst)
     }
 }
