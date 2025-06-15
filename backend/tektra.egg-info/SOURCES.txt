@@ -3,9 +3,6 @@ MANIFEST.in
 README.md
 pyproject.toml
 setup.py
-backend/models/__init__.py
-backend/models/conversation.py
-backend/models/user.py
 backend/tektra/__init__.py
 backend/tektra/cli.py
 backend/tektra/server.py
