@@ -54,11 +54,8 @@ export default function EnhancedChatInterface({ onNavigate }: EnhancedChatInterf
     // Connect to WebSocket with user ID
     const connectWebSocket = async () => {
       try {
-        // Update WebSocket URL to include user ID
-        const wsUrl = `ws://localhost:8000/ws/chat/${userId}`
-        
-        // Connect to WebSocket
-        await chatWebSocket.connect(wsUrl)
+        // Connect to WebSocket (using existing chatWebSocket instance)
+        await chatWebSocket.connect()
         setIsConnected(true)
       } catch (error) {
         console.error('WebSocket connection failed:', error)
@@ -187,7 +184,7 @@ export default function EnhancedChatInterface({ onNavigate }: EnhancedChatInterf
             role: 'assistant',
             content: (response.data as { response?: string })?.response || 'No response',
             timestamp: new Date(),
-            conversationId
+            conversationId: conversationId ?? undefined
           }])
 
           // Save assistant response to conversation
