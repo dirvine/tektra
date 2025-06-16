@@ -25,6 +25,14 @@ np = None
 librosa = None
 sf = None
 
+# Check if Phi-4 dependencies are available
+try:
+    import torch as _torch_test
+    from transformers import AutoModelForCausalLM as _test
+    PHI4_AVAILABLE = True
+except ImportError:
+    PHI4_AVAILABLE = False
+
 from ..config import settings
 
 logger = logging.getLogger(__name__)

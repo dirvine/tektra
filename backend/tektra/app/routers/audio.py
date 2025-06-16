@@ -22,7 +22,7 @@ from ..services.whisper_service import whisper_service, transcribe_audio_bytes, 
 from ..services.phi4_service import phi4_service, transcribe_audio_phi4, detect_audio_language_phi4
 from ..services.tts_service import tts_service, synthesize_text_to_speech, get_voice_recommendations
 from ..services.vad_service import vad_service, detect_voice_in_audio, preprocess_voice_audio
-from ..services.language_service import language_service, detect_language_auto, get_recommended_voice
+from ..services.language_service import language_service, detect_language_auto, get_recommended_voice, configure_voice_for_content
 from ..dependencies import get_current_user
 from ..models.user import User
 
