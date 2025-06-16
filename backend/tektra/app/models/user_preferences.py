@@ -6,19 +6,11 @@ Models for storing user preferences, AI model settings, and personalization opti
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any
-from sqlalchemy import (
-    Column,
-    DateTime,
-    Enum as SQLEnum,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    Boolean,
-    JSON,
-    Float,
-)
+from typing import Any, Dict, Optional
+
+from sqlalchemy import JSON, Boolean, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 

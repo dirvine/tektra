@@ -2,22 +2,22 @@
 
 from .conversation import (
     Conversation,
+    ConversationCategory,
     Message,
-    Tag,
     MessageRole,
     MessageType,
-    ConversationCategory,
+    Tag,
     conversation_tags,
 )
 from .user import User
 from .user_preferences import (
-    UserPreferences,
-    ModelSettings,
-    ConversationTemplate,
     APIKey,
-    ThemeMode,
-    VoiceProvider,
+    ConversationTemplate,
+    ModelSettings,
     NotificationLevel,
+    ThemeMode,
+    UserPreferences,
+    VoiceProvider,
 )
 
 __all__ = [

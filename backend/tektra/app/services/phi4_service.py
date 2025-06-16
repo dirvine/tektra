@@ -6,13 +6,13 @@ using Microsoft's Phi-4 Multimodal Instruct model.
 """
 
 import asyncio
+import base64
+import io
+import json
 import logging
 import tempfile
-import io
-import base64
 from pathlib import Path
-from typing import Optional, Dict, List, Union, Any, AsyncGenerator
-import json
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 # Dynamic imports - will be loaded when needed
 torch = None
@@ -91,21 +91,17 @@ class Phi4Service:
                 torch = torch_module
 
             if AutoModelForCausalLM is None:
-                from transformers import (
-                    AutoModelForCausalLM as AMCL,
-                    AutoProcessor as AP,
-                    pipeline as pl,
-                )
+                from transformers import AutoModelForCausalLM as AMCL
+                from transformers import AutoProcessor as AP
+                from transformers import pipeline as pl
 
                 AutoModelForCausalLM = AMCL
                 AutoProcessor = AP
                 pipeline = pl
 
             if snapshot_download is None:
-                from huggingface_hub import (
-                    snapshot_download as sd,
-                    hf_hub_download as hd,
-                )
+                from huggingface_hub import hf_hub_download as hd
+                from huggingface_hub import snapshot_download as sd
 
                 snapshot_download = sd
                 hf_hub_download = hd

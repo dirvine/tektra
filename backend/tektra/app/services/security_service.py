@@ -6,13 +6,13 @@ Coordinates all security-related operations and provides unified security interf
 
 import asyncio
 import logging
-from typing import Optional, Dict, List, Any, Tuple
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
+from ..security.anonymization import anonymization_service
 from ..security.biometric_auth import biometric_auth_service
 from ..security.vault_manager import vault_manager
-from ..security.anonymization import anonymization_service
 
 logger = logging.getLogger(__name__)
 

@@ -5,23 +5,24 @@ Tektra AI Assistant CLI
 Command-line interface for managing and running the Tektra AI Assistant.
 """
 
-import typer
 import asyncio
-import webbrowser
-import time
 import signal
 import sys
-import httpx
+import time
+import webbrowser
 from pathlib import Path
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing import Optional
 
-from .server import start_server
-from .app.database import init_database
+import httpx
+import typer
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+
 from .app.config import settings
+from .app.database import init_database
+from .server import start_server
 
 app = typer.Typer(
     name="tektra",
@@ -130,8 +131,8 @@ def start(
         task4 = progress.add_task("Checking system requirements...", total=None)
         try:
             # Check essential imports
-            import cryptography
             import aiofiles
+            import cryptography
             import edge_tts
             import numpy
 

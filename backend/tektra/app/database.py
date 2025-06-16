@@ -1,7 +1,8 @@
 """Database configuration and session management."""
 
 from typing import AsyncGenerator
-from sqlalchemy import create_engine, MetaData
+
+from sqlalchemy import MetaData, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -51,8 +52,8 @@ async def init_database() -> None:
     """Initialize database tables."""
     async with engine.begin() as conn:
         # Import all models to ensure they're registered
-        from .models.user import User  # noqa: F401
         from .models.conversation import Conversation, Message  # noqa: F401
+        from .models.user import User  # noqa: F401
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)

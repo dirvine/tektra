@@ -1,6 +1,7 @@
 """Main FastAPI application."""
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
@@ -8,22 +9,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 
 from .config import settings
-from .database import init_database, close_database
+from .database import close_database, init_database
 from .routers import (
     ai,
     audio,
     avatar,
     camera,
-    robot,
-    websocket,
     conversations,
     conversations_enhanced,
     models,
     preferences,
+    robot,
     security,
+    websocket,
 )
 
 
@@ -204,10 +204,11 @@ if frontend_out_path:
         )
 
     # Mount main frontend with custom StaticFiles to exclude WebSocket paths
-    from starlette.staticfiles import StaticFiles
-    from starlette.responses import FileResponse
-    from starlette.exceptions import HTTPException as StarletteHTTPException
     import os
+
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    from starlette.responses import FileResponse
+    from starlette.staticfiles import StaticFiles
 
     class WebSocketAwareStaticFiles(StaticFiles):
         async def __call__(self, scope, receive, send):

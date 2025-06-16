@@ -11,9 +11,10 @@ Handles:
 import logging
 import uuid
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, and_
 from sqlalchemy.orm import selectinload
 
 from ..models.conversation import Conversation, Message, MessageRole, MessageType

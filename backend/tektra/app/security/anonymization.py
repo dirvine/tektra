@@ -4,12 +4,12 @@ Anonymization Service.
 Anonymizes queries before sending to external APIs to protect user privacy.
 """
 
-import re
-import logging
 import hashlib
-from typing import Dict, List, Set, Tuple, Optional, Any
 import json
+import logging
+import re
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 

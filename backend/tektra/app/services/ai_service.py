@@ -11,9 +11,10 @@ This service handles:
 import asyncio
 import logging
 import platform
-from typing import AsyncGenerator, Dict, List, Optional, Any, Union
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
+
 from .model_manager import model_manager
 from .phi4_service import phi4_service
 
@@ -144,7 +145,7 @@ class AIModelManager:
         """Load MLX model for Apple Silicon."""
         try:
             import mlx.core as mx
-            from mlx_lm import load, generate
+            from mlx_lm import generate, load
 
             # Ensure model is downloaded and available
             if not await model_manager.ensure_model_available(model_name):
@@ -177,8 +178,8 @@ class AIModelManager:
     async def _load_huggingface_model(self, model_name: str) -> Any:
         """Load Hugging Face model."""
         try:
-            from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
 
             # Ensure model is downloaded and available
             if not await model_manager.ensure_model_available(model_name):

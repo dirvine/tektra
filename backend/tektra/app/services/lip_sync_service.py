@@ -5,14 +5,15 @@ Analyzes audio data to generate synchronized lip-sync animation data for avatars
 Integrates with TTS service to provide real-time lip-sync for avatar speech.
 """
 
-import logging
-import numpy as np
-import json
-from typing import Dict, List, Optional, Tuple, Any
-from datetime import datetime
 import asyncio
 import io
+import json
+import logging
 import wave
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 try:
     import librosa

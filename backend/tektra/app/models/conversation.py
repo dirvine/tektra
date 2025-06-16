@@ -3,19 +3,10 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from sqlalchemy import (
-    Column,
-    DateTime,
-    Enum as SQLEnum,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    Boolean,
-    JSON,
-    Float,
-    Table,
-)
+
+from sqlalchemy import JSON, Boolean, Column, DateTime
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import Float, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 

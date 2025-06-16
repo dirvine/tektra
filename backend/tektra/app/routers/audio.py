@@ -8,44 +8,44 @@ including real-time audio streaming and voice management.
 import asyncio
 import io
 import logging
-import numpy as np
-from pathlib import Path
-from typing import Optional, List, Dict
 import tempfile
 import uuid
+from pathlib import Path
+from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
-from fastapi.responses import StreamingResponse, Response
+import numpy as np
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
-from ..services.whisper_service import (
-    whisper_service,
-    transcribe_audio_bytes,
-    detect_audio_language,
-)
-from ..services.phi4_service import (
-    phi4_service,
-    transcribe_audio_phi4,
-    detect_audio_language_phi4,
-)
-from ..services.tts_service import (
-    tts_service,
-    synthesize_text_to_speech,
-    get_voice_recommendations,
-)
-from ..services.vad_service import (
-    vad_service,
-    detect_voice_in_audio,
-    preprocess_voice_audio,
-)
-from ..services.language_service import (
-    language_service,
-    detect_language_auto,
-    get_recommended_voice,
-    configure_voice_for_content,
-)
 from ..dependencies import get_current_user
 from ..models.user import User
+from ..services.language_service import (
+    configure_voice_for_content,
+    detect_language_auto,
+    get_recommended_voice,
+    language_service,
+)
+from ..services.phi4_service import (
+    detect_audio_language_phi4,
+    phi4_service,
+    transcribe_audio_phi4,
+)
+from ..services.tts_service import (
+    get_voice_recommendations,
+    synthesize_text_to_speech,
+    tts_service,
+)
+from ..services.vad_service import (
+    detect_voice_in_audio,
+    preprocess_voice_audio,
+    vad_service,
+)
+from ..services.whisper_service import (
+    detect_audio_language,
+    transcribe_audio_bytes,
+    whisper_service,
+)
 
 logger = logging.getLogger(__name__)
 

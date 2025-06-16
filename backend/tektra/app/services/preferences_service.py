@@ -7,21 +7,22 @@ Service for managing user preferences, model settings, and personalization optio
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Union
+from typing import Any, Dict, List, Optional, Union
+
+from sqlalchemy import and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import and_, or_
 
-from ..models.user_preferences import (
-    UserPreferences,
-    ModelSettings,
-    ConversationTemplate,
-    APIKey,
-    ThemeMode,
-    VoiceProvider,
-    NotificationLevel,
-)
 from ..models.user import User
+from ..models.user_preferences import (
+    APIKey,
+    ConversationTemplate,
+    ModelSettings,
+    NotificationLevel,
+    ThemeMode,
+    UserPreferences,
+    VoiceProvider,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -1,14 +1,16 @@
 """AI model management and chat endpoints."""
 
 import json
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Depends
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
-from ..services.ai_service import ai_manager, ChatMessage as AIChatMessage, ModelInfo
+from ..services.ai_service import ChatMessage as AIChatMessage
+from ..services.ai_service import ModelInfo, ai_manager
 
 router = APIRouter()
 

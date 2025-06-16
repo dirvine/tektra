@@ -5,16 +5,17 @@ Downloads and installs required models and dependencies automatically on first r
 Provides seamless user experience without manual model setup.
 """
 
-import logging
 import asyncio
+import logging
 import os
 import shutil
-from pathlib import Path
-from typing import Dict, List, Optional, Any
 import subprocess
 import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from huggingface_hub import hf_hub_download, list_repo_files
+
 from ..config import settings
 
 logger = logging.getLogger(__name__)

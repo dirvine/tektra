@@ -6,11 +6,12 @@ preprocessing capabilities for enhanced voice interactions.
 """
 
 import asyncio
-import logging
-import numpy as np
-from typing import Optional, Dict, List, Tuple, Union
 import io
+import logging
 import wave
+from typing import Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 try:
     import webrtcvad

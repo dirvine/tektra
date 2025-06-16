@@ -5,14 +5,15 @@ Handles face recognition and voice authentication for secure user identification
 """
 
 import asyncio
+import base64
+import io
+import json
 import logging
 import tempfile
-import io
-import base64
-import numpy as np
 from pathlib import Path
-from typing import Optional, Dict, List, Tuple, Any
-import json
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 # Dynamic imports - will be loaded when needed
 cv2 = None

@@ -5,33 +5,33 @@ Handles real-time chat, audio streaming, and voice processing via WebSockets.
 """
 
 import asyncio
+import base64
 import json
 import logging
 import uuid
-import base64
-import numpy as np
-from typing import Dict, List, Optional, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
+import numpy as np
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState
 from pydantic import BaseModel, ValidationError
 
-from ..services.ai_service import ai_service
-from ..services.whisper_service import whisper_service
-from ..services.phi4_service import phi4_service
-from ..services.tts_service import tts_service
-from ..services.vad_service import vad_service, detect_voice_in_audio
-from ..services.language_service import (
-    language_service,
-    detect_language_auto,
-    configure_voice_for_content,
-)
-from ..models.conversation import Conversation
-from ..models.message import Message
 from ..database import get_db_session
 from ..dependencies import get_current_user_websocket
+from ..models.conversation import Conversation
+from ..models.message import Message
 from ..models.user import User
+from ..services.ai_service import ai_service
+from ..services.language_service import (
+    configure_voice_for_content,
+    detect_language_auto,
+    language_service,
+)
+from ..services.phi4_service import phi4_service
+from ..services.tts_service import tts_service
+from ..services.vad_service import detect_voice_in_audio, vad_service
+from ..services.whisper_service import whisper_service
 
 logger = logging.getLogger(__name__)
 

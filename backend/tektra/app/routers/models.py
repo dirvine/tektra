@@ -5,12 +5,13 @@ Endpoints for managing AI models, downloading, caching, and monitoring.
 """
 
 import logging
-from typing import Dict, List, Any
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
-from ..services.model_manager import model_manager
 from ..services.ai_service import ai_manager
+from ..services.model_manager import model_manager
 
 logger = logging.getLogger(__name__)
 

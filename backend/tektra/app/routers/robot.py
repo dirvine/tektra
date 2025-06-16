@@ -1,6 +1,7 @@
 """Robotics control and monitoring endpoints."""
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 

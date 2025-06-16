@@ -1,13 +1,14 @@
 """Conversation management endpoints."""
 
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
-from ..services.conversation_service import conversation_manager
 from ..models.conversation import MessageRole, MessageType
+from ..services.conversation_service import conversation_manager
 
 router = APIRouter()
 

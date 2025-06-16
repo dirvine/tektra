@@ -1,6 +1,7 @@
 """Configuration management for Tektra backend."""
 
 from typing import Any, Dict, Optional
+
 from pydantic import Field, validator
 from pydantic_settings import BaseSettings
 

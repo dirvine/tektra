@@ -5,27 +5,28 @@ Advanced features for conversation search, tagging, categorization, and analytic
 """
 
 import logging
-from datetime import datetime, date
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
-from ..services.conversation_service import conversation_manager
-from ..services.conversation_search_service import (
-    search_service,
-    tag_service,
-    export_service,
-)
 from ..models.conversation import (
+    Conversation,
+    ConversationCategory,
+    Message,
     MessageRole,
     MessageType,
-    ConversationCategory,
-    Conversation,
-    Message,
     Tag,
 )
+from ..services.conversation_search_service import (
+    export_service,
+    search_service,
+    tag_service,
+)
+from ..services.conversation_service import conversation_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

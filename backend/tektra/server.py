@@ -5,11 +5,13 @@ Tektra AI Assistant Server
 Server management and startup logic.
 """
 
-import uvicorn
 import os
 from pathlib import Path
-from .app.main import app as fastapi_app
+
+import uvicorn
+
 from .app.config import settings
+from .app.main import app as fastapi_app
 
 
 def start_server(

@@ -4,15 +4,16 @@ Security API endpoints.
 Provides REST API for biometric authentication, vault management, and security operations.
 """
 
-import logging
-from typing import Dict, List, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field
 import base64
+import logging
+from typing import Any, Dict, List, Optional
 
-from ..services.security_service import security_service
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, Field
+
 from ..security.anonymization import anonymization_service
+from ..services.security_service import security_service
 
 logger = logging.getLogger(__name__)
 

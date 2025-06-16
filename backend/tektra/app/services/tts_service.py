@@ -9,9 +9,9 @@ import asyncio
 import io
 import logging
 import tempfile
-from pathlib import Path
-from typing import Optional, Dict, List, Union, BinaryIO
 import uuid
+from pathlib import Path
+from typing import BinaryIO, Dict, List, Optional, Union
 
 try:
     import edge_tts

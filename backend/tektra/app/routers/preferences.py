@@ -5,19 +5,20 @@ Endpoints for managing user preferences, model settings, and personalization.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
+from ..models.user_preferences import NotificationLevel, ThemeMode, VoiceProvider
 from ..services.preferences_service import (
-    preferences_service,
-    model_settings_service,
-    template_service,
     api_key_service,
+    model_settings_service,
+    preferences_service,
+    template_service,
 )
-from ..models.user_preferences import ThemeMode, VoiceProvider, NotificationLevel
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

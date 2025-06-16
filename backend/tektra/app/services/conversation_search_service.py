@@ -8,18 +8,19 @@ import asyncio
 import logging
 import re
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any, Union
-from sqlalchemy import and_, or_, func, desc, asc, text
-from sqlalchemy.orm import Session, selectinload
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+from sqlalchemy import and_, asc, desc, func, or_, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session, selectinload
 
 from ..models.conversation import (
     Conversation,
+    ConversationCategory,
     Message,
-    Tag,
     MessageRole,
     MessageType,
-    ConversationCategory,
+    Tag,
     conversation_tags,
 )
 from ..models.user import User

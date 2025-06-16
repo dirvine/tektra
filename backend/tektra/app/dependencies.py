@@ -6,8 +6,9 @@ different API endpoints for user authentication and session management.
 """
 
 from typing import Optional
-from fastapi import Depends, HTTPException, status, WebSocket
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from fastapi import Depends, HTTPException, WebSocket, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from .database import get_db

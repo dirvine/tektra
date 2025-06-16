@@ -1,10 +1,11 @@
 """Avatar control and animation endpoints."""
 
-from typing import Dict, Any, List
+import logging
+import uuid
+from typing import Any, Dict, List
+
 from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel
-import uuid
-import logging
 
 from ..services.lip_sync_service import lip_sync_service
 from ..services.tts_service import tts_service

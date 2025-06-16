@@ -5,19 +5,20 @@ Manages encrypted user vaults for secure conversation and data storage.
 """
 
 import asyncio
+import base64
 import json
 import logging
 import os
-import base64
-from pathlib import Path
-from typing import Optional, Dict, List, Any, Union
+import secrets
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
 import aiofiles
 import aiofiles.os
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import padding, serialization
 from cryptography.hazmat.backends import default_backend
-import secrets
+from cryptography.hazmat.primitives import padding, serialization
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..config import settings
 from .key_derivation import key_derivation_service

@@ -6,22 +6,22 @@ processing capabilities for voice interactions.
 """
 
 import asyncio
-import logging
-from typing import Dict, List, Optional, Tuple, Union
 import json
+import logging
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
 
 try:
     import langdetect
-    from langdetect import detect, detect_langs, LangDetectException
+    from langdetect import LangDetectException, detect, detect_langs
 
     LANGDETECT_AVAILABLE = True
 except ImportError:
     LANGDETECT_AVAILABLE = False
 
-from ..services.whisper_service import whisper_service
-from ..services.tts_service import tts_service
 from ..config import settings
+from ..services.tts_service import tts_service
+from ..services.whisper_service import whisper_service
 
 logger = logging.getLogger(__name__)
 

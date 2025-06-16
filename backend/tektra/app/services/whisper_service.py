@@ -6,16 +6,17 @@ with support for multiple languages, real-time processing, and audio optimizatio
 """
 
 import asyncio
+import io
 import logging
 import tempfile
-import io
 from pathlib import Path
-from typing import Optional, Dict, List, Union, BinaryIO
+from typing import BinaryIO, Dict, List, Optional, Union
+
 import numpy as np
 
 try:
-    import whisper
     import torch
+    import whisper
 
     WHISPER_AVAILABLE = True
 except ImportError:

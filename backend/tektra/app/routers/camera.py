@@ -1,7 +1,8 @@
 """Camera and computer vision endpoints."""
 
-from typing import Dict, Any, List
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 router = APIRouter()
