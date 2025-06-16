@@ -116,8 +116,8 @@ class AutoInstaller:
     def _get_install_command(self, packages: List[str]) -> List[str]:
         """Get the appropriate install command for the detected package manager."""
         if self.package_manager == "uv_tool":
-            # UV tool environments: use uv pip with the specific tool environment
-            return ["uv", "pip", "install"] + packages + ["--quiet"]
+            # UV tool environments: use uv pip with --system flag for tool environments
+            return ["uv", "pip", "install", "--system"] + packages + ["--quiet"]
         elif self.package_manager == "uv":
             # Regular UV environments: use uv pip install --system
             return ["uv", "pip", "install", "--system"] + packages + ["--quiet"]
