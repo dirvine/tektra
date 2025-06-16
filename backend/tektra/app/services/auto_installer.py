@@ -135,9 +135,9 @@ class AutoInstaller:
     def _get_install_command(self, packages: List[str]) -> List[str]:
         """Get the appropriate install command for the detected package manager."""
         if self.package_manager == "uv_tool":
-            # UV tool environments: use uv pip targeting the specific tool environment
-            logger.debug("Using UV tool environment install command")
-            return ["uv", "pip", "install"] + packages + ["--quiet"]
+            # UV tool environments: use uv pip with --system flag for tool environments
+            logger.debug("Using UV tool environment install command with --system flag")
+            return ["uv", "pip", "install", "--system"] + packages + ["--quiet"]
         elif self.package_manager == "uv_tool_direct":
             # UV tool environment but with manual pip installation
             # This is a workaround for cases where UV isn't working properly
