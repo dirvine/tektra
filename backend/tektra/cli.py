@@ -43,7 +43,7 @@ def print_banner():
 ║     ██║   ███████╗██║  ██╗   ██║   ██║  ██║██║  ██║          ║
 ║     ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝          ║
 ║                                                              ║
-║            Advanced AI Assistant v0.9.1                     ║
+║            Advanced AI Assistant v0.9.2                     ║
 ║          Voice • Vision • Robotics • Chat                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -451,6 +451,73 @@ def enhance():
     
     # Start server normally
     start_server(host="localhost", port=8000, open_browser=True)
+
+
+@app.command()
+def install_deps(
+    dependency: str = typer.Argument(help="Dependency to install: transformers, biometric, advanced_audio, ml_models")
+):
+    """
+    Install optional dependencies safely.
+    
+    Available dependencies:
+    - transformers: HuggingFace Transformers for advanced ML models
+    - biometric: Camera-based biometric authentication
+    - advanced_audio: Advanced audio processing capabilities
+    - ml_models: Core PyTorch ML framework
+    """
+    console.print(f"\n🔧 Installing {dependency} dependencies...\n", style="bold blue")
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task(f"Installing {dependency}...", total=None)
+        
+        try:
+            # Import auto_installer
+            progress.update(task, description="Initializing installer...")
+            from .app.services.auto_installer import auto_installer
+            
+            # Install the dependency
+            progress.update(task, description=f"Installing {dependency} packages...")
+            result = asyncio.run(auto_installer.install_optional_dependency(dependency))
+            
+            if result.get("success"):
+                progress.update(task, description=f"✅ {dependency} installed successfully")
+                console.print(f"\n🎉 {dependency} dependencies installed successfully!", style="bold green")
+                
+                if result.get("method") == "alternative":
+                    console.print("✨ Used compilation-free alternative for faster installation")
+                
+                packages = result.get("packages", [])
+                if packages:
+                    console.print("📦 Installed packages:")
+                    for pkg in packages:
+                        console.print(f"  • {pkg}")
+                        
+            else:
+                progress.update(task, description=f"❌ Failed to install {dependency}")
+                error = result.get("error", "Unknown error")
+                console.print(f"\n❌ Installation failed: {error}", style="bold red")
+                
+                suggestion = result.get("suggestion")
+                if suggestion:
+                    console.print(f"💡 Suggestion: {suggestion}", style="yellow")
+                    
+                console.print("\n🔍 Alternative installation methods:", style="bold cyan")
+                console.print(f"  • Manual: pip install tektra[{dependency}]")
+                console.print("  • With UV: uv tool install tektra --with tektra[ml]")
+                return
+                
+        except Exception as e:
+            progress.update(task, description=f"❌ Error: {str(e)}")
+            console.print(f"\n❌ Unexpected error: {e}", style="bold red")
+            return
+    
+    console.print("\n✅ Dependencies ready for use!", style="bold green")
+    console.print("🚀 Restart Tektra to use the new capabilities")
 
 
 def main():

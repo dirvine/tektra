@@ -50,16 +50,25 @@ class AutoInstaller:
         # Optional dependencies that can be installed on demand
         self.optional_deps = {
             "biometric": {
-                "packages": ["opencv-python>=4.8.0", "face-recognition>=1.3.0"],
-                "description": "Biometric authentication (face recognition)"
+                "packages": ["opencv-python>=4.8.0"],
+                "description": "Biometric authentication (camera-based)",
+                "install_method": "safe"
             },
             "advanced_audio": {
-                "packages": ["speechbrain>=0.5.16", "scipy>=1.11.0"],
-                "description": "Advanced voice recognition"
+                "packages": ["scipy>=1.11.0"],
+                "description": "Advanced audio processing",
+                "install_method": "safe"
             },
             "ml_models": {
-                "packages": ["torch>=2.1.0", "transformers>=4.40.0"],
-                "description": "Machine learning model support"
+                "packages": ["torch>=2.1.0"],
+                "description": "Core ML framework (PyTorch)",
+                "install_method": "safe"
+            },
+            "transformers": {
+                "packages": ["transformers>=4.40.0", "tokenizers>=0.15.0"],
+                "description": "HuggingFace Transformers (may require compilation)",
+                "install_method": "compile_safe",
+                "alternatives": ["transformers[torch]>=4.40.0"]
             }
         }
     
@@ -72,6 +81,7 @@ class AutoInstaller:
             "models_installed": [],
             "models_failed": [],
             "optional_available": {},
+            "auto_installed": [],
             "setup_time": 0
         }
         
@@ -96,17 +106,31 @@ class AutoInstaller:
                     logger.warning(f"Failed to install {model_name}: {e}")
                     results["models_failed"].append(model_name)
             
-            # Check optional dependencies availability
+            # Check optional dependencies availability and auto-install safe ones
             for dep_name, config in self.optional_deps.items():
                 available = await self._check_packages_available(config["packages"])
                 results["optional_available"][dep_name] = available
+                
                 if available:
                     logger.info(f"✓ {config['description']} - available")
+                elif config.get("install_method") == "safe":
+                    # Auto-install safe dependencies
+                    logger.info(f"Auto-installing {config['description']}...")
+                    install_result = await self.install_optional_dependency(dep_name)
+                    if install_result.get("success"):
+                        results["auto_installed"].append(dep_name)
+                        results["optional_available"][dep_name] = True
+                    else:
+                        logger.info(f"○ {config['description']} - install manually if needed")
                 else:
-                    logger.info(f"○ {config['description']} - install with: pip install {' '.join(config['packages'])}")
+                    install_hint = "tektra install-deps " + dep_name if config.get("install_method") == "compile_safe" else f"pip install {' '.join(config['packages'])}"
+                    logger.info(f"○ {config['description']} - install with: {install_hint}")
             
             results["setup_time"] = time.time() - start_time
             logger.info(f"Setup completed in {results['setup_time']:.1f}s")
+            
+            if results["auto_installed"]:
+                logger.info(f"Auto-installed: {', '.join(results['auto_installed'])}")
             
         except Exception as e:
             logger.error(f"Setup failed: {e}")
@@ -211,17 +235,27 @@ class AutoInstaller:
             return False
     
     async def install_optional_dependency(self, dep_name: str) -> Dict[str, Any]:
-        """Install an optional dependency group."""
+        """Install an optional dependency group with smart fallback."""
         if dep_name not in self.optional_deps:
             return {"success": False, "error": f"Unknown dependency: {dep_name}"}
         
         config = self.optional_deps[dep_name]
         packages = config["packages"]
+        install_method = config.get("install_method", "safe")
         
         try:
             logger.info(f"Installing {config['description']}...")
             
-            # Install packages
+            # For compile_safe dependencies, try alternatives first
+            if install_method == "compile_safe" and "alternatives" in config:
+                logger.info("Trying compilation-free alternatives first...")
+                for alt_package in config["alternatives"]:
+                    success = await self._try_install_package(alt_package)
+                    if success:
+                        logger.info(f"✓ {config['description']} installed via alternative: {alt_package}")
+                        return {"success": True, "packages": [alt_package], "method": "alternative"}
+            
+            # Standard installation
             cmd = [sys.executable, "-m", "pip", "install"] + packages
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -232,15 +266,36 @@ class AutoInstaller:
             
             if process.returncode == 0:
                 logger.info(f"✓ {config['description']} installed successfully")
-                return {"success": True, "packages": packages}
+                return {"success": True, "packages": packages, "method": "standard"}
             else:
                 error_msg = stderr.decode() if stderr else "Installation failed"
                 logger.warning(f"Installation failed: {error_msg}")
+                
+                # For compile_safe, suggest manual installation
+                if install_method == "compile_safe":
+                    suggestion = f"Manual installation required: pip install {' '.join(packages)}"
+                    logger.info(f"💡 {suggestion}")
+                    return {"success": False, "error": error_msg, "suggestion": suggestion}
+                
                 return {"success": False, "error": error_msg}
                 
         except Exception as e:
             logger.error(f"Failed to install {dep_name}: {e}")
             return {"success": False, "error": str(e)}
+    
+    async def _try_install_package(self, package: str) -> bool:
+        """Try to install a single package quietly."""
+        try:
+            cmd = [sys.executable, "-m", "pip", "install", package, "--quiet"]
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await process.communicate()
+            return process.returncode == 0
+        except Exception:
+            return False
     
     def get_installation_status(self) -> Dict[str, Any]:
         """Get current installation status."""
