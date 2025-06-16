@@ -1,4 +1,5 @@
 core
 schemas
 tektra
+tests
 utils

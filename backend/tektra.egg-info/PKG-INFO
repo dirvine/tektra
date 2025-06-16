@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: tektra
-Version: 0.8.4
-Summary: Advanced AI assistant with Microsoft Phi-4 Multimodal integration, voice, vision, and robotics capabilities
+Version: 0.9.1
+Summary: Advanced AI assistant with 3D avatar, lip-sync, Microsoft Phi-4 Multimodal integration, biometric security, voice, vision, and robotics capabilities
 Home-page: https://github.com/tektra/tektra
 Author: Tektra Team
 Author-email: Saorsa Labs <saorsalabs@gmail.com>
@@ -11,7 +11,7 @@ Project-URL: Homepage, https://github.com/dirvine/tektra
 Project-URL: Documentation, https://github.com/dirvine/tektra#readme
 Project-URL: Repository, https://github.com/dirvine/tektra
 Project-URL: Bug Reports, https://github.com/dirvine/tektra/issues
-Keywords: ai,assistant,voice,vision,robotics,ml,chatbot,phi4,multimodal,speech-recognition
+Keywords: ai,assistant,voice,vision,robotics,ml,chatbot,phi4,multimodal,speech-recognition,avatar,3d,lip-sync,biometric,security,tts
 Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Developers
 Classifier: Intended Audience :: Science/Research
@@ -45,6 +45,10 @@ Requires-Dist: httpx>=0.25.0
 Requires-Dist: requests>=2.31.0
 Requires-Dist: jinja2>=3.1.0
 Requires-Dist: numpy<2.0.0,>=1.24.0
+Requires-Dist: cryptography>=41.0.0
+Requires-Dist: aiofiles>=23.0.0
+Requires-Dist: edge-tts>=6.1.0
+Requires-Dist: huggingface-hub>=0.20.0
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0.0; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.21.0; extra == "dev"
@@ -52,6 +56,10 @@ Requires-Dist: black>=23.0.0; extra == "dev"
 Requires-Dist: isort>=5.12.0; extra == "dev"
 Requires-Dist: flake8>=6.0.0; extra == "dev"
 Requires-Dist: mypy>=1.7.0; extra == "dev"
+Requires-Dist: pytest-mock>=3.12.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: httpx>=0.25.0; extra == "dev"
+Requires-Dist: pillow>=10.0.0; extra == "dev"
 Provides-Extra: ml
 Requires-Dist: torch>=2.1.0; extra == "ml"
 Requires-Dist: transformers>=4.40.0; extra == "ml"
@@ -68,7 +76,6 @@ Requires-Dist: pyaudio>=0.2.11; extra == "audio"
 Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "audio"
 Requires-Dist: webrtcvad>=2.0.10; extra == "audio"
 Requires-Dist: noisereduce>=3.0.0; extra == "audio"
-Requires-Dist: edge-tts>=6.1.0; extra == "audio"
 Requires-Dist: openai-whisper>=20231117; extra == "audio"
 Provides-Extra: vision
 Requires-Dist: opencv-python>=4.8.0; extra == "vision"
@@ -79,6 +86,10 @@ Provides-Extra: robotics
 Requires-Dist: pyserial>=3.5; extra == "robotics"
 Requires-Dist: pybullet>=3.2.5; extra == "robotics"
 Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "robotics"
+Provides-Extra: security
+Requires-Dist: cryptography>=41.0.0; extra == "security"
+Requires-Dist: aiofiles>=23.0.0; extra == "security"
+Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "security"
 Provides-Extra: all
 Requires-Dist: torch>=2.1.0; extra == "all"
 Requires-Dist: transformers>=4.40.0; extra == "all"
@@ -99,6 +110,11 @@ Requires-Dist: mediapipe>=0.10.0; extra == "all"
 Requires-Dist: pyserial>=3.5; extra == "all"
 Requires-Dist: pybullet>=3.2.5; extra == "all"
 Requires-Dist: pillow>=10.0.0; extra == "all"
+Requires-Dist: cryptography>=41.0.0; extra == "all"
+Requires-Dist: aiofiles>=23.0.0; extra == "all"
+Requires-Dist: face-recognition>=1.3.0; extra == "all"
+Requires-Dist: speechbrain>=0.5.16; extra == "all"
+Requires-Dist: scipy>=1.11.0; extra == "all"
 Requires-Dist: numpy<2.0.0,>=1.24.0; extra == "all"
 Dynamic: author
 Dynamic: home-page
@@ -109,12 +125,30 @@ Dynamic: requires-python
 
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PyPI Version](https://img.shields.io/badge/pypi-v0.8.0-orange.svg)](https://pypi.org/project/tektra/)
+[![PyPI Version](https://img.shields.io/badge/pypi-v0.9.0-orange.svg)](https://pypi.org/project/tektra/)
 [![Phi-4 Integration](https://img.shields.io/badge/Phi--4-Multimodal-purple.svg)](https://huggingface.co/microsoft/Phi-4-multimodal-instruct)
+[![3D Avatar](https://img.shields.io/badge/3D%20Avatar-Lip--Sync-green.svg)](#-3d-avatar--lip-sync)
+[![Biometric Security](https://img.shields.io/badge/Biometric-Security-red.svg)](#-biometric-security)
 
-**Tektra AI Assistant** is an advanced AI assistant featuring **Microsoft Phi-4 Multimodal integration** with superior voice, vision, and robotics capabilities. It delivers state-of-the-art speech recognition, intelligent chat completion, and multimodal understanding with persistent conversation management and a beautiful web interface.
+**Tektra AI Assistant** is an advanced AI assistant featuring **3D Avatar with Lip-Sync**, **Biometric Security**, **Microsoft Phi-4 Multimodal integration** with superior voice, vision, and robotics capabilities. It delivers state-of-the-art speech recognition, intelligent chat completion, multimodal understanding, and immersive avatar interactions with persistent conversation management and a beautiful web interface.
 
 ## ✨ Features
+
+### 🎭 **3D Avatar & Lip-Sync** ⭐ *NEW in v0.9.0*
+- **Realistic 3D Avatar**: Professional React Three Fiber-based 3D avatar rendering
+- **Advanced Lip-Sync**: Real-time phoneme detection and viseme mapping for natural speech
+- **14 Facial Expressions**: Happy, sad, angry, surprised, thinking, excited, and more
+- **8+ Gesture Animations**: Wave, nod, point, thumbs up, shrug, and natural movements  
+- **TTS Integration**: Seamless speech synthesis with synchronized lip-sync animation
+- **Real-time Responsiveness**: 30fps smooth animation with professional lighting
+
+### 🔐 **Biometric Security** ⭐ *NEW in v0.9.0*
+- **Multi-Factor Authentication**: Face recognition + voice recognition + PIN
+- **Encrypted User Vaults**: AES-256-CBC encryption for conversation storage
+- **Query Anonymization**: PII detection and removal for external API protection
+- **PBKDF2 Key Derivation**: 100,000 iterations with biometric fusion
+- **Lab-Safe Privacy**: Context-aware anonymization for sensitive research environments
+- **Session Management**: Secure user sessions with biometric validation
 
 ### 🧠 **Advanced AI Integration**
 - **Microsoft Phi-4 Multimodal**: Primary processor with #1 OpenASR leaderboard performance

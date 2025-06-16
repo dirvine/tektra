@@ -14,6 +14,8 @@ import platform
 from typing import AsyncGenerator, Dict, List, Optional, Any, Union
 from dataclasses import dataclass
 from enum import Enum
+from .model_manager import model_manager
+from .phi4_service import phi4_service
 
 logger = logging.getLogger(__name__)
 
@@ -75,54 +77,20 @@ class AIModelManager:
     
     def _initialize_available_models(self):
         """Initialize the catalog of available models."""
-        # MLX Models (for Apple Silicon)
-        if self._is_apple_silicon():
-            self.models.update({
-                "phi-3-mini": ModelInfo(
-                    name="phi-3-mini",
-                    type=ModelType.LOCAL_MLX,
-                    description="Microsoft's efficient small language model optimized for Apple Silicon",
-                    size="~3.8B parameters",
-                    status=ModelStatus.UNLOADED,
-                    parameters={"max_tokens": 2048, "temperature": 0.7}
-                ),
-                "llama-3.2-1b": ModelInfo(
-                    name="llama-3.2-1b", 
-                    type=ModelType.LOCAL_MLX,
-                    description="Meta's compact Llama model for fast local inference",
-                    size="~1B parameters",
-                    status=ModelStatus.UNLOADED,
-                    parameters={"max_tokens": 2048, "temperature": 0.7}
-                ),
-                "gemma-2b": ModelInfo(
-                    name="gemma-2b",
-                    type=ModelType.LOCAL_MLX,
-                    description="Google's Gemma model optimized for Apple Silicon",
-                    size="~2B parameters", 
-                    status=ModelStatus.UNLOADED,
-                    parameters={"max_tokens": 2048, "temperature": 0.7}
-                )
-            })
+        # Get available models from model manager
+        available_models = model_manager.list_available_models()
         
-        # Hugging Face Models (cloud/local)
-        self.models.update({
-            "gpt-3.5-turbo": ModelInfo(
-                name="gpt-3.5-turbo",
-                type=ModelType.HUGGINGFACE,
-                description="Fast and efficient conversational AI via Hugging Face",
-                size="~175B parameters",
+        for model_name, model_info in available_models.items():
+            model_type = ModelType.LOCAL_MLX if model_info["type"] == "mlx" else ModelType.HUGGINGFACE
+            
+            self.models[model_name] = ModelInfo(
+                name=model_name,
+                type=model_type,
+                description=model_info["description"],
+                size=f"~{model_info['parameters']} parameters",
                 status=ModelStatus.UNLOADED,
-                parameters={"max_tokens": 4096, "temperature": 0.7}
-            ),
-            "llama-2-7b-chat": ModelInfo(
-                name="llama-2-7b-chat",
-                type=ModelType.HUGGINGFACE,
-                description="Meta's Llama 2 chat model via Hugging Face",
-                size="~7B parameters",
-                status=ModelStatus.UNLOADED,
-                parameters={"max_tokens": 4096, "temperature": 0.7}
+                parameters={"max_tokens": 2048, "temperature": 0.7}
             )
-        })
     
     def _is_apple_silicon(self) -> bool:
         """Check if running on Apple Silicon."""
@@ -169,19 +137,19 @@ class AIModelManager:
             import mlx.core as mx
             from mlx_lm import load, generate
             
-            # Map our model names to MLX model identifiers
-            mlx_model_map = {
-                "phi-3-mini": "microsoft/Phi-3-mini-4k-instruct",
-                "llama-3.2-1b": "meta-llama/Llama-3.2-1B-Instruct", 
-                "gemma-2b": "google/gemma-2b-it"
-            }
+            # Ensure model is downloaded and available
+            if not await model_manager.ensure_model_available(model_name):
+                raise ValueError(f"Failed to ensure model {model_name} is available")
             
-            if model_name not in mlx_model_map:
-                raise ValueError(f"MLX model mapping not found for {model_name}")
+            # Get local model path
+            model_path = model_manager.get_model_path(model_name)
+            if not model_path:
+                raise ValueError(f"Model path not found for {model_name}")
             
-            # Load model and tokenizer
-            model_path = mlx_model_map[model_name]
-            model, tokenizer = await asyncio.to_thread(load, model_path)
+            logger.info(f"Loading MLX model from {model_path}")
+            
+            # Load model and tokenizer from local path
+            model, tokenizer = await asyncio.to_thread(load, str(model_path))
             
             return {
                 "model": model,
@@ -203,24 +171,24 @@ class AIModelManager:
             from transformers import AutoTokenizer, AutoModelForCausalLM
             import torch
             
-            # Map our model names to HF model identifiers
-            hf_model_map = {
-                "gpt-3.5-turbo": "microsoft/DialoGPT-medium",  # Placeholder
-                "llama-2-7b-chat": "meta-llama/Llama-2-7b-chat-hf"
-            }
+            # Ensure model is downloaded and available
+            if not await model_manager.ensure_model_available(model_name):
+                raise ValueError(f"Failed to ensure model {model_name} is available")
             
-            if model_name not in hf_model_map:
-                raise ValueError(f"HuggingFace model mapping not found for {model_name}")
+            # Get local model path
+            model_path = model_manager.get_model_path(model_name)
+            if not model_path:
+                raise ValueError(f"Model path not found for {model_name}")
             
-            model_path = hf_model_map[model_name]
+            logger.info(f"Loading Hugging Face model from {model_path}")
             
-            # Load tokenizer and model
+            # Load tokenizer and model from local path
             tokenizer = await asyncio.to_thread(
-                AutoTokenizer.from_pretrained, model_path
+                AutoTokenizer.from_pretrained, str(model_path)
             )
             model = await asyncio.to_thread(
                 AutoModelForCausalLM.from_pretrained,
-                model_path,
+                str(model_path),
                 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
                 device_map="auto" if torch.cuda.is_available() else None
             )
@@ -261,6 +229,49 @@ class AIModelManager:
         logger.info(f"Unloaded model {model_name}")
         return True
     
+    async def stream_chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        **kwargs
+    ) -> AsyncGenerator[str, None]:
+        """Stream chat completion - uses Phi-4 if available, otherwise fallback."""
+        try:
+            # Try Phi-4 first if available
+            if phi4_service.is_loaded:
+                logger.info("Using Phi-4 for chat completion")
+                async for chunk in phi4_service.chat_completion(
+                    messages=messages,
+                    model=model,
+                    temperature=temperature,
+                    stream=True,
+                    **kwargs
+                ):
+                    yield chunk
+                return
+            else:
+                logger.info("Phi-4 not available, falling back to local models")
+        except Exception as e:
+            logger.warning(f"Phi-4 chat completion failed: {e}, falling back to local models")
+        
+        # Fallback to existing local model system
+        chat_messages = [ChatMessage(role=msg["role"], content=msg["content"]) for msg in messages]
+        
+        # Use default model or first available model
+        model_name = model or self.default_model
+        if not await self.load_model(model_name):
+            # Use mock response if no models available
+            response = f"I understand your message: {messages[-1]['content']}"
+            for word in response.split():
+                yield f"{word} "
+                await asyncio.sleep(0.05)
+            return
+        
+        # Stream from local model
+        async for chunk in self._generate_streaming_response(chat_messages, model_name, **kwargs):
+            yield chunk
+
     async def chat(
         self, 
         messages: List[ChatMessage], 
@@ -470,3 +481,6 @@ class AIModelManager:
 
 # Global AI manager instance
 ai_manager = AIModelManager()
+
+# Alias for backward compatibility
+ai_service = ai_manager

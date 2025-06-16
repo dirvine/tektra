@@ -53,6 +53,12 @@ class Settings(BaseSettings):
         description="Maximum memory for model loading in GB"
     )
     
+    # Data Storage Configuration
+    data_dir: str = Field(
+        default="./data",
+        description="Directory for application data storage"
+    )
+    
     # Audio Configuration
     audio_sample_rate: int = 16000
     audio_chunk_size: int = 1024

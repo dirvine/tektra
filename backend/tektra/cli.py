@@ -43,7 +43,7 @@ def print_banner():
 ║     ██║   ███████╗██║  ██╗   ██║   ██║  ██║██║  ██║          ║
 ║     ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝          ║
 ║                                                              ║
-║            Advanced AI Assistant v0.8.4                     ║
+║            Advanced AI Assistant v0.9.1                     ║
 ║          Voice • Vision • Robotics • Chat                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
@@ -97,6 +97,34 @@ def start(
             progress.update(task2, description="✅ Database initialized")
         except Exception as e:
             progress.update(task2, description=f"⚠️  Database initialization failed: {e}")
+        
+        # Run automatic setup
+        task3 = progress.add_task("Setting up models and dependencies...", total=None)
+        try:
+            from .app.services.auto_installer import auto_installer
+            setup_results = asyncio.run(auto_installer.run_initial_setup())
+            
+            if setup_results["success"]:
+                models_count = len(setup_results["models_installed"])
+                progress.update(task3, description=f"✅ Setup complete ({models_count} models ready)")
+                auto_installer.mark_setup_complete()
+            else:
+                progress.update(task3, description="⚠️  Setup completed with warnings")
+        except Exception as e:
+            progress.update(task3, description=f"⚠️  Setup failed: {e} (continuing anyway)")
+        
+        # Quick dependency check
+        task4 = progress.add_task("Checking system requirements...", total=None)
+        try:
+            # Check essential imports
+            import cryptography
+            import aiofiles
+            import edge_tts
+            import numpy
+            
+            progress.update(task4, description="✅ Core dependencies available")
+        except Exception as e:
+            progress.update(task4, description=f"⚠️  Some dependencies missing: {e}")
         
         time.sleep(0.5)  # Brief pause for user to see the status
     
