@@ -98,17 +98,19 @@ async def get_admin_user(
     return current_user
 
 
-async def get_current_user_websocket(websocket: WebSocket) -> User:
+async def get_current_user_websocket(websocket: WebSocket, token: Optional[str] = None) -> User:
     """
     Get current user for WebSocket connections.
     
     Args:
         websocket: WebSocket connection
+        token: Optional authentication token
         
     Returns:
-        User: Default user for now (future: authenticate via headers/query params)
+        User: Default user for now (future: authenticate via token or headers)
     """
     # For now, return default user since WebSocket auth is not implemented
+    # In the future, this will validate the token parameter
     # In the future, this could authenticate via:
     # - Query parameters: ?token=jwt_token
     # - Headers during handshake

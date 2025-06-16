@@ -8,6 +8,7 @@ Provides seamless user experience without manual model setup.
 import logging
 import asyncio
 import os
+import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 import subprocess
@@ -25,6 +26,9 @@ class AutoInstaller:
     def __init__(self):
         self.models_dir = Path(settings.model_cache_dir)
         self.models_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Detect package manager
+        self.package_manager = self._detect_package_manager()
         
         # Essential models for core functionality
         self.essential_models = {
@@ -71,6 +75,40 @@ class AutoInstaller:
                 "alternatives": ["transformers[torch]>=4.40.0"]
             }
         }
+    
+    def _detect_package_manager(self) -> str:
+        """Detect which package manager to use (uv, pip, etc.)."""
+        try:
+            # Check if we're in a UV environment
+            if os.environ.get('VIRTUAL_ENV') and shutil.which('uv'):
+                # Check if uv can add packages to this environment
+                return 'uv'
+            
+            # Check if pip is available
+            try:
+                subprocess.run([sys.executable, '-m', 'pip', '--version'], 
+                             capture_output=True, check=True, timeout=5)
+                return 'pip'
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                # Try UV as fallback
+                if shutil.which('uv'):
+                    return 'uv'
+                
+                return 'none'
+                
+        except Exception:
+            return 'pip'  # Default fallback
+    
+    def _get_install_command(self, packages: List[str]) -> List[str]:
+        """Get the appropriate install command for the detected package manager."""
+        if self.package_manager == 'uv':
+            # UV can add packages to the current environment
+            return ['uv', 'add'] + packages
+        elif self.package_manager == 'pip':
+            return [sys.executable, '-m', 'pip', 'install'] + packages + ['--quiet', '--disable-pip-version-check']
+        else:
+            # Fallback - try pip anyway
+            return [sys.executable, '-m', 'pip', 'install'] + packages + ['--quiet', '--disable-pip-version-check']
     
     async def run_initial_setup(self) -> Dict[str, Any]:
         """Run initial setup on first launch."""
@@ -256,7 +294,7 @@ class AutoInstaller:
                         return {"success": True, "packages": [alt_package], "method": "alternative"}
             
             # Standard installation
-            cmd = [sys.executable, "-m", "pip", "install"] + packages
+            cmd = self._get_install_command(packages)
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -286,7 +324,7 @@ class AutoInstaller:
     async def _try_install_package(self, package: str) -> bool:
         """Try to install a single package quietly."""
         try:
-            cmd = [sys.executable, "-m", "pip", "install", package, "--quiet"]
+            cmd = self._get_install_command([package])
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.DEVNULL,
@@ -309,7 +347,8 @@ class AutoInstaller:
     def mark_setup_complete(self):
         """Mark initial setup as complete."""
         setup_file = self.models_dir / ".tektra_setup_complete"
-        setup_file.write_text(f"Setup completed at {asyncio.get_event_loop().time()}")
+        import time
+        setup_file.write_text(f"Setup completed at {time.time()}")
     
     async def install_dependency_silently(self, dep_name: str) -> bool:
         """Install a dependency silently in the background without user notifications."""
@@ -324,19 +363,34 @@ class AutoInstaller:
             if await self._check_packages_available(packages):
                 return True
             
+            # Get appropriate install command
+            cmd = self._get_install_command(packages)
+            logger.debug(f"Installing {dep_name} with command: {' '.join(cmd)}")
+            
             # Install silently
-            cmd = [sys.executable, "-m", "pip", "install"] + packages + ["--quiet", "--disable-pip-version-check"]
             process = await asyncio.create_subprocess_exec(
                 *cmd,
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
-            await process.communicate()
+            stdout, stderr = await process.communicate()
+            
+            # Log detailed errors for debugging
+            if process.returncode != 0:
+                logger.warning(f"Installation failed for {dep_name}: {stderr.decode() if stderr else 'Unknown error'}")
+                return False
             
             # Verify installation
-            return process.returncode == 0 and await self._check_packages_available(packages)
+            success = await self._check_packages_available(packages)
+            if success:
+                logger.info(f"✓ Successfully installed {dep_name}")
+            else:
+                logger.warning(f"Installation completed but packages not available for {dep_name}")
             
-        except Exception:
+            return success
+            
+        except Exception as e:
+            logger.error(f"Exception during {dep_name} installation: {e}")
             return False
     
     async def ensure_dependency_available(self, dep_name: str, timeout: float = 30.0) -> bool:
