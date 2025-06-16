@@ -1,9 +1,15 @@
 """Avatar control and animation endpoints."""
 
 from typing import Dict, Any, List
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel
+import uuid
+import logging
 
+from ..services.lip_sync_service import lip_sync_service
+from ..services.tts_service import tts_service
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -101,18 +107,77 @@ async def trigger_gesture(request: GestureRequest) -> Dict[str, Any]:
 
 
 @router.post("/speak")
-async def make_avatar_speak(request: SpeakRequest) -> Dict[str, Any]:
+async def make_avatar_speak(request: SpeakRequest, background_tasks: BackgroundTasks) -> Dict[str, Any]:
     """Make avatar speak with lip sync and expression."""
-    # TODO: Implement actual avatar speech with lip sync
-    
-    return {
-        "status": "success",
-        "text": request.text,
-        "lip_sync": request.lip_sync,
-        "expression": request.expression,
-        "estimated_duration": len(request.text) * 0.05,
-        "message": "Avatar speech started"
-    }
+    try:
+        session_id = str(uuid.uuid4())
+        
+        # Start lip-sync session
+        lip_sync_session = await lip_sync_service.start_speech_session(session_id, request.text)
+        
+        if not lip_sync_session.get('status') == 'started':
+            logger.error(f"Failed to start lip-sync session: {lip_sync_session}")
+            
+        # Generate TTS audio
+        try:
+            audio_result = await tts_service.synthesize_speech(
+                text=request.text,
+                voice_name=None,  # Use default voice
+                format="wav"
+            )
+            
+            if audio_result.get('success'):
+                audio_data = audio_result.get('audio_data', b'')
+                
+                # Generate lip-sync data
+                if request.lip_sync and audio_data:
+                    lip_sync_data = await lip_sync_service.complete_speech_session(session_id, audio_data)
+                    
+                    return {
+                        "status": "success",
+                        "text": request.text,
+                        "lip_sync": request.lip_sync,
+                        "expression": request.expression,
+                        "estimated_duration": len(request.text) * 0.05,
+                        "audio_data": audio_data.hex() if audio_data else None,
+                        "lip_sync_data": lip_sync_data if request.lip_sync else None,
+                        "session_id": session_id,
+                        "message": "Avatar speech generated with lip-sync"
+                    }
+                else:
+                    return {
+                        "status": "success",
+                        "text": request.text,
+                        "lip_sync": False,
+                        "expression": request.expression,
+                        "estimated_duration": len(request.text) * 0.05,
+                        "audio_data": audio_data.hex() if audio_data else None,
+                        "session_id": session_id,
+                        "message": "Avatar speech generated without lip-sync"
+                    }
+            else:
+                raise Exception(f"TTS synthesis failed: {audio_result.get('error', 'Unknown error')}")
+                
+        except Exception as tts_error:
+            logger.error(f"TTS synthesis error: {tts_error}")
+            # Return basic response without audio
+            return {
+                "status": "partial_success",
+                "text": request.text,
+                "lip_sync": False,
+                "expression": request.expression,
+                "estimated_duration": len(request.text) * 0.05,
+                "error": f"TTS synthesis failed: {str(tts_error)}",
+                "message": "Avatar speech text ready (audio synthesis failed)"
+            }
+            
+    except Exception as e:
+        logger.error(f"Avatar speak error: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "message": "Failed to generate avatar speech"
+        }
 
 
 @router.get("/expressions")
@@ -147,3 +212,54 @@ async def reset_avatar() -> Dict[str, Any]:
         "position": {"x": 0.0, "y": 0.0, "z": 0.0},
         "message": "Avatar reset to default state"
     }
+
+
+@router.get("/lip-sync/capabilities")
+async def get_lip_sync_capabilities() -> Dict[str, Any]:
+    """Get lip-sync analysis capabilities."""
+    return lip_sync_service.analyzer.get_analysis_capabilities()
+
+
+@router.get("/lip-sync/sessions")
+async def get_active_lip_sync_sessions() -> Dict[str, Any]:
+    """Get active lip-sync sessions."""
+    return {
+        "active_sessions": lip_sync_service.get_active_sessions(),
+        "total_sessions": len(lip_sync_service.get_active_sessions())
+    }
+
+
+class RealTimeSpeechRequest(BaseModel):
+    """Real-time speech request schema."""
+    session_id: str
+    audio_chunk: str  # Base64 encoded audio
+    is_final: bool = False
+
+
+@router.post("/speak/real-time")
+async def process_real_time_speech(request: RealTimeSpeechRequest) -> Dict[str, Any]:
+    """Process real-time audio for immediate lip-sync feedback."""
+    try:
+        import base64
+        
+        # Decode audio chunk
+        audio_bytes = base64.b64decode(request.audio_chunk)
+        
+        # Process with lip-sync service
+        result = await lip_sync_service.process_audio_chunk(request.session_id, audio_bytes)
+        
+        return {
+            "status": "success",
+            "session_id": request.session_id,
+            "is_final": request.is_final,
+            "lip_sync_data": result,
+            "timestamp": result.get('timestamp') if result else None
+        }
+        
+    except Exception as e:
+        logger.error(f"Real-time speech processing error: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "session_id": request.session_id
+        }

@@ -2,12 +2,30 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PyPI Version](https://img.shields.io/badge/pypi-v0.8.0-orange.svg)](https://pypi.org/project/tektra/)
+[![PyPI Version](https://img.shields.io/badge/pypi-v0.9.0-orange.svg)](https://pypi.org/project/tektra/)
 [![Phi-4 Integration](https://img.shields.io/badge/Phi--4-Multimodal-purple.svg)](https://huggingface.co/microsoft/Phi-4-multimodal-instruct)
+[![3D Avatar](https://img.shields.io/badge/3D%20Avatar-Lip--Sync-green.svg)](#-3d-avatar--lip-sync)
+[![Biometric Security](https://img.shields.io/badge/Biometric-Security-red.svg)](#-biometric-security)
 
-**Tektra AI Assistant** is an advanced AI assistant featuring **Microsoft Phi-4 Multimodal integration** with superior voice, vision, and robotics capabilities. It delivers state-of-the-art speech recognition, intelligent chat completion, and multimodal understanding with persistent conversation management and a beautiful web interface.
+**Tektra AI Assistant** is an advanced AI assistant featuring **3D Avatar with Lip-Sync**, **Biometric Security**, **Microsoft Phi-4 Multimodal integration** with superior voice, vision, and robotics capabilities. It delivers state-of-the-art speech recognition, intelligent chat completion, multimodal understanding, and immersive avatar interactions with persistent conversation management and a beautiful web interface.
 
 ## ✨ Features
+
+### 🎭 **3D Avatar & Lip-Sync** ⭐ *NEW in v0.9.0*
+- **Realistic 3D Avatar**: Professional React Three Fiber-based 3D avatar rendering
+- **Advanced Lip-Sync**: Real-time phoneme detection and viseme mapping for natural speech
+- **14 Facial Expressions**: Happy, sad, angry, surprised, thinking, excited, and more
+- **8+ Gesture Animations**: Wave, nod, point, thumbs up, shrug, and natural movements  
+- **TTS Integration**: Seamless speech synthesis with synchronized lip-sync animation
+- **Real-time Responsiveness**: 30fps smooth animation with professional lighting
+
+### 🔐 **Biometric Security** ⭐ *NEW in v0.9.0*
+- **Multi-Factor Authentication**: Face recognition + voice recognition + PIN
+- **Encrypted User Vaults**: AES-256-CBC encryption for conversation storage
+- **Query Anonymization**: PII detection and removal for external API protection
+- **PBKDF2 Key Derivation**: 100,000 iterations with biometric fusion
+- **Lab-Safe Privacy**: Context-aware anonymization for sensitive research environments
+- **Session Management**: Secure user sessions with biometric validation
 
 ### 🧠 **Advanced AI Integration**
 - **Microsoft Phi-4 Multimodal**: Primary processor with #1 OpenASR leaderboard performance

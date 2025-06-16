@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .config import settings
 from .database import init_database, close_database
-from .routers import ai, audio, avatar, camera, robot, websocket, conversations, conversations_enhanced, models, preferences
+from .routers import ai, audio, avatar, camera, robot, websocket, conversations, conversations_enhanced, models, preferences, security
 
 
 @asynccontextmanager
@@ -26,6 +26,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         print(f"⚠️  Database initialization failed: {e}")
         print("✅ Backend started without database")
+    
+    # Initialize Security Services
+    try:
+        from .services.security_service import security_service
+        print("🔒 Initializing security services...")
+        await security_service.initialize()
+        print("✅ Security services initialized successfully")
+    except Exception as e:
+        print(f"⚠️  Security services initialization failed: {e}")
+        print("✅ Backend started without full security features")
     
     # Auto-load Phi-4 Multimodal
     try:
@@ -82,6 +92,7 @@ app.include_router(audio.router, prefix="/api/v1/audio", tags=["Audio"])
 app.include_router(avatar.router, prefix="/api/v1/avatar", tags=["Avatar"])
 app.include_router(camera.router, prefix="/api/v1/camera", tags=["Camera"])
 app.include_router(robot.router, prefix="/api/v1/robots", tags=["Robots"])
+app.include_router(security.router, tags=["Security"])
 
 
 @app.get("/api")

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Play, RotateCcw } from 'lucide-react'
 import { api } from '@/lib/api'
+import AvatarRenderer from './AvatarRenderer'
 
 interface AvatarStatus {
   active: boolean
@@ -111,15 +112,35 @@ export default function AvatarControl() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Avatar Control</span>
-          <div className={`w-3 h-3 rounded-full ${status?.active ? 'bg-green-500' : 'bg-gray-400'}`} />
-        </CardTitle>
-      </CardHeader>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 3D Avatar Display */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Avatar Display</span>
+            <div className={`w-3 h-3 rounded-full ${status?.active ? 'bg-green-500' : 'bg-gray-400'}`} />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AvatarRenderer
+            expression={status?.current_expression || selectedExpression}
+            speaking={status?.speaking || false}
+            gesture={status?.current_gesture || 'idle'}
+            size={{ width: 400, height: 400 }}
+            style="realistic"
+            gender="neutral"
+            className="mx-auto"
+          />
+        </CardContent>
+      </Card>
 
-      <CardContent className="space-y-6">
+      {/* Avatar Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Avatar Control</CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
         {/* Status Display */}
         {status && (
           <div className="bg-muted p-4 rounded-lg">
@@ -206,7 +227,8 @@ export default function AvatarControl() {
             Reset Avatar
           </Button>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

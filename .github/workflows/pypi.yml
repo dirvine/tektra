@@ -25,13 +25,21 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       
-      - name: Build frontend
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Build frontend with avatar enhancements
         working-directory: frontend
         run: |
           npm ci
           npm run build
+          echo "Frontend build completed with 3D avatar support"
       
-      - name: Build Python package
+      - name: Build Python package with new features
         run: |
           uv pip install --system build twine
           # Clean any existing build artifacts
@@ -39,8 +47,13 @@ jobs:
           # Copy frontend build to backend package
           mkdir -p backend/tektra/frontend
           cp -r frontend/out/* backend/tektra/frontend/
+          # Verify avatar components are included
+          ls -la backend/tektra/frontend/ || echo "Frontend build directory structure:"
+          find backend/tektra/frontend -name "*.js" | head -5 || echo "Frontend files:"
+          # Build the package
           python -m build
           twine check dist/*
+          echo "Package built with Phase 2 avatar enhancements"
       
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

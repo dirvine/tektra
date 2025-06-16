@@ -29,6 +29,7 @@ dependencies = [
     "aiofiles>=23.2.0",
     "httpx>=0.25.0",
     "greenlet>=3.0.0",
+    "cryptography>=45.0.4",
 ]
 
 [project.optional-dependencies]
