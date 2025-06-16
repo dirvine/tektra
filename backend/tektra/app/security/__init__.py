@@ -10,8 +10,8 @@ from .key_derivation import KeyDerivationService
 from .anonymization import AnonymizationService
 
 __all__ = [
-    'BiometricAuthService',
-    'VaultManager', 
-    'KeyDerivationService',
-    'AnonymizationService'
+    "BiometricAuthService",
+    "VaultManager",
+    "KeyDerivationService",
+    "AnonymizationService",
 ]

@@ -53,7 +53,7 @@ async def init_database() -> None:
         # Import all models to ensure they're registered
         from .models.user import User  # noqa: F401
         from .models.conversation import Conversation, Message  # noqa: F401
-        
+
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
 

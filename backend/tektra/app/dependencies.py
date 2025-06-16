@@ -19,21 +19,21 @@ security = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> User:
     """
     Get the current authenticated user.
-    
+
     For now, this returns a default user since authentication is not yet implemented.
     In the future, this will validate JWT tokens and return the authenticated user.
-    
+
     Args:
         credentials: Optional authentication credentials
         db: Database session
-        
+
     Returns:
         User: The current user (default user for now)
-        
+
     Raises:
         HTTPException: If authentication fails (in future implementation)
     """
@@ -43,53 +43,47 @@ async def get_current_user(
     # 2. Extract user info from the token
     # 3. Query the database for the user
     # 4. Return the authenticated user or raise HTTPException
-    
+
     # Create a default user for now
     default_user = User(
-        id=1,
-        username="default_user",
-        email="user@tektra.ai",
-        is_active=True
+        id=1, username="default_user", email="user@tektra.ai", is_active=True
     )
-    
+
     return default_user
 
 
 async def get_current_active_user(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> User:
     """
     Get the current active user.
-    
+
     Args:
         current_user: Current user from get_current_user
-        
+
     Returns:
         User: Active user
-        
+
     Raises:
         HTTPException: If user is inactive
     """
     if not current_user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
     return current_user
 
 
-async def get_admin_user(
-    current_user: User = Depends(get_current_active_user)
-) -> User:
+async def get_admin_user(current_user: User = Depends(get_current_active_user)) -> User:
     """
     Get current user if they have admin privileges.
-    
+
     Args:
         current_user: Current active user
-        
+
     Returns:
         User: Admin user
-        
+
     Raises:
         HTTPException: If user is not an admin
     """
@@ -98,14 +92,16 @@ async def get_admin_user(
     return current_user
 
 
-async def get_current_user_websocket(websocket: WebSocket, token: Optional[str] = None) -> User:
+async def get_current_user_websocket(
+    websocket: WebSocket, token: Optional[str] = None
+) -> User:
     """
     Get current user for WebSocket connections.
-    
+
     Args:
         websocket: WebSocket connection
         token: Optional authentication token
-        
+
     Returns:
         User: Default user for now (future: authenticate via token or headers)
     """
@@ -115,27 +111,24 @@ async def get_current_user_websocket(websocket: WebSocket, token: Optional[str] 
     # - Query parameters: ?token=jwt_token
     # - Headers during handshake
     # - Cookies
-    
+
     default_user = User(
-        id=1,
-        username="default_user",
-        email="user@tektra.ai",
-        is_active=True
+        id=1, username="default_user", email="user@tektra.ai", is_active=True
     )
-    
+
     return default_user
 
 
 # Optional: Dependency for API key authentication
 async def get_api_key(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[str]:
     """
     Extract API key from authorization header.
-    
+
     Args:
         credentials: Authorization credentials
-        
+
     Returns:
         Optional API key string
     """

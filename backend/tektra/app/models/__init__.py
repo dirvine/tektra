@@ -1,19 +1,29 @@
 """Models package."""
 
 from .conversation import (
-    Conversation, Message, Tag, MessageRole, MessageType, 
-    ConversationCategory, conversation_tags
+    Conversation,
+    Message,
+    Tag,
+    MessageRole,
+    MessageType,
+    ConversationCategory,
+    conversation_tags,
 )
 from .user import User
 from .user_preferences import (
-    UserPreferences, ModelSettings, ConversationTemplate, APIKey,
-    ThemeMode, VoiceProvider, NotificationLevel
+    UserPreferences,
+    ModelSettings,
+    ConversationTemplate,
+    APIKey,
+    ThemeMode,
+    VoiceProvider,
+    NotificationLevel,
 )
 
 __all__ = [
     "Conversation",
     "Message",
-    "Tag", 
+    "Tag",
     "MessageRole",
     "MessageType",
     "ConversationCategory",
@@ -25,5 +35,5 @@ __all__ = [
     "APIKey",
     "ThemeMode",
     "VoiceProvider",
-    "NotificationLevel"
+    "NotificationLevel",
 ]

@@ -21,12 +21,12 @@ async def setup_tektra():
     Set up Tektra AI Assistant for first use.
     """
     console.print("🔧 Setting up Tektra AI Assistant...", style="bold blue")
-    
+
     # Create directories
     data_dir = Path.home() / ".tektra" / "data"
-    models_dir = Path.home() / ".tektra" / "models" 
+    models_dir = Path.home() / ".tektra" / "models"
     logs_dir = Path.home() / ".tektra" / "logs"
-    
+
     try:
         data_dir.mkdir(parents=True, exist_ok=True)
         models_dir.mkdir(parents=True, exist_ok=True)
@@ -35,7 +35,7 @@ async def setup_tektra():
     except Exception as e:
         console.print(f"❌ Failed to create directories: {e}", style="red")
         return False
-    
+
     # Initialize database
     try:
         await init_database()
@@ -43,7 +43,7 @@ async def setup_tektra():
     except Exception as e:
         console.print(f"❌ Database initialization failed: {e}", style="red")
         return False
-    
+
     console.print("🎉 Setup complete!", style="bold green")
     return True
 
