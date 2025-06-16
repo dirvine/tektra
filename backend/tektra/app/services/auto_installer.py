@@ -79,10 +79,19 @@ class AutoInstaller:
     def _detect_package_manager(self) -> str:
         """Detect which package manager to use (uv, pip, etc.)."""
         try:
-            # Check if we're in a UV environment
+            # Check if we're running inside a UV tool environment
+            # UV tools install into isolated environments, we should use pip directly
+            executable_path = sys.executable
+            if 'uv/tools/' in executable_path:
+                logger.debug("Detected UV tool environment, using pip")
+                return 'pip'
+            
+            # Check if we're in a regular UV environment (not tool)
             if os.environ.get('VIRTUAL_ENV') and shutil.which('uv'):
-                # Check if uv can add packages to this environment
-                return 'uv'
+                # Only use UV for regular project environments
+                venv_path = os.environ.get('VIRTUAL_ENV', '')
+                if 'uv/tools/' not in venv_path:
+                    return 'uv'
             
             # Check if pip is available
             try:
@@ -105,10 +114,11 @@ class AutoInstaller:
             # Use 'uv pip install --system' for tool/standalone installations
             return ['uv', 'pip', 'install', '--system'] + packages + ['--quiet']
         elif self.package_manager == 'pip':
-            return [sys.executable, '-m', 'pip', 'install'] + packages + ['--quiet', '--disable-pip-version-check']
+            # For UV tool environments, use pip directly within the isolated environment
+            return [sys.executable, '-m', 'pip', 'install', '--user'] + packages + ['--quiet', '--disable-pip-version-check']
         else:
             # Fallback - try pip anyway
-            return [sys.executable, '-m', 'pip', 'install'] + packages + ['--quiet', '--disable-pip-version-check']
+            return [sys.executable, '-m', 'pip', 'install', '--user'] + packages + ['--quiet', '--disable-pip-version-check']
     
     async def run_initial_setup(self) -> Dict[str, Any]:
         """Run initial setup on first launch."""
