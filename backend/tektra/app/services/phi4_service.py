@@ -149,18 +149,40 @@ class Phi4Service:
             
             # Try to install ML dependencies
             from .auto_installer import auto_installer
-            success = await auto_installer.ensure_dependency_available("ml_models", timeout=60.0)
             
-            if success and await self._ensure_ml_dependencies():
-                logger.info("✓ ML dependencies installed successfully")
+            # Install both torch and transformers
+            logger.info("Installing PyTorch...")
+            torch_success = await auto_installer.ensure_dependency_available("ml_models", timeout=60.0)
+            
+            logger.info("Installing Transformers...")
+            transformers_success = await auto_installer.ensure_dependency_available("transformers", timeout=90.0)
+            
+            # Check if dependencies are now available
+            deps_available = await self._ensure_ml_dependencies()
+            
+            if torch_success and transformers_success and deps_available:
+                logger.info("✓ All ML dependencies installed successfully")
             else:
+                error_details = []
+                if not torch_success:
+                    error_details.append("PyTorch installation failed")
+                if not transformers_success:
+                    error_details.append("Transformers installation failed")
+                if not deps_available:
+                    error_details.append("Dependencies not properly loaded")
+                
+                error_msg = "; ".join(error_details)
+                logger.error(f"ML dependency installation failed: {error_msg}")
+                
                 self.load_progress = {
-                    "status": "ready", 
+                    "status": "error", 
                     "progress": 0.0,
-                    "message": "Phi-4 will be available after ML dependencies finish installing"
+                    "message": f"Phi-4 installation failed: {error_msg}"
                 }
-                logger.info("○ ML dependencies installing in background, Phi-4 will be available shortly")
-                # Start background installation for transformers
+                
+                # Start background installation as fallback
+                logger.info("○ Starting background installation as fallback")
+                auto_installer.start_background_installation("ml_models")
                 auto_installer.start_background_installation("transformers")
                 return False
         

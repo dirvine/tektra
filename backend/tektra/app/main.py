@@ -45,7 +45,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         if success:
             print("✅ Phi-4 Multimodal loaded successfully")
         else:
-            print("⚠️  Phi-4 Multimodal failed to load, will use fallback")
+            # Get detailed error information
+            model_info = await phi4_service.get_model_info()
+            load_progress = model_info.get("load_progress", {})
+            error_message = load_progress.get("message", "Unknown error")
+            print(f"⚠️  Phi-4 Multimodal failed to load: {error_message}")
+            print("💡 Phi-4 dependencies will install in background, model will be available shortly")
     except Exception as e:
         print(f"⚠️  Phi-4 auto-load failed: {e}")
         print("✅ Backend started with Whisper fallback")
@@ -82,7 +87,7 @@ app.add_middleware(
 )
 
 # Include routers - WebSocket must be included before StaticFiles
-app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
+app.include_router(websocket.router, tags=["WebSocket"])  # No prefix - route already has /ws
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI"])
 app.include_router(conversations.router, prefix="/api/v1/conversations", tags=["Conversations"])
 app.include_router(conversations_enhanced.router, prefix="/api/v1/conversations", tags=["Conversations Enhanced"])
