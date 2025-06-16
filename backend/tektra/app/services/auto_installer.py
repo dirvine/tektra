@@ -310,6 +310,64 @@ class AutoInstaller:
         """Mark initial setup as complete."""
         setup_file = self.models_dir / ".tektra_setup_complete"
         setup_file.write_text(f"Setup completed at {asyncio.get_event_loop().time()}")
+    
+    async def install_dependency_silently(self, dep_name: str) -> bool:
+        """Install a dependency silently in the background without user notifications."""
+        if dep_name not in self.optional_deps:
+            return False
+        
+        config = self.optional_deps[dep_name]
+        packages = config["packages"]
+        
+        try:
+            # Check if already available first
+            if await self._check_packages_available(packages):
+                return True
+            
+            # Install silently
+            cmd = [sys.executable, "-m", "pip", "install"] + packages + ["--quiet", "--disable-pip-version-check"]
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL
+            )
+            await process.communicate()
+            
+            # Verify installation
+            return process.returncode == 0 and await self._check_packages_available(packages)
+            
+        except Exception:
+            return False
+    
+    async def ensure_dependency_available(self, dep_name: str, timeout: float = 30.0) -> bool:
+        """Ensure a dependency is available, installing it silently if needed."""
+        try:
+            # Check if already available
+            if dep_name in self.optional_deps:
+                packages = self.optional_deps[dep_name]["packages"]
+                if await self._check_packages_available(packages):
+                    return True
+            
+            # Install silently with timeout
+            install_task = asyncio.create_task(self.install_dependency_silently(dep_name))
+            try:
+                return await asyncio.wait_for(install_task, timeout=timeout)
+            except asyncio.TimeoutError:
+                install_task.cancel()
+                return False
+                
+        except Exception:
+            return False
+    
+    def start_background_installation(self, dep_name: str) -> asyncio.Task:
+        """Start background installation of a dependency without blocking."""
+        async def background_install():
+            try:
+                await self.install_dependency_silently(dep_name)
+            except Exception:
+                pass  # Silent failure
+        
+        return asyncio.create_task(background_install())
 
 
 # Global installer instance

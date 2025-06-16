@@ -14,22 +14,16 @@ from pathlib import Path
 from typing import Optional, Dict, List, Union, Any, AsyncGenerator
 import json
 
-try:
-    import torch
-    from transformers import AutoModelForCausalLM, AutoProcessor, pipeline
-    from huggingface_hub import snapshot_download, hf_hub_download
-    import numpy as np
-    PHI4_AVAILABLE = True
-except ImportError:
-    PHI4_AVAILABLE = False
-    np = None
-
-try:
-    import librosa
-    import soundfile as sf
-    AUDIO_PROCESSING_AVAILABLE = True
-except ImportError:
-    AUDIO_PROCESSING_AVAILABLE = False
+# Dynamic imports - will be loaded when needed
+torch = None
+AutoModelForCausalLM = None
+AutoProcessor = None
+pipeline = None
+snapshot_download = None
+hf_hub_download = None
+np = None
+librosa = None
+sf = None
 
 from ..config import settings
 
@@ -77,9 +71,37 @@ class Phi4Service:
         except Exception as e:
             logger.error(f"Failed to initialize Phi-4 model: {e}")
     
+    async def _ensure_ml_dependencies(self) -> bool:
+        """Ensure ML dependencies are available."""
+        global torch, AutoModelForCausalLM, AutoProcessor, pipeline, snapshot_download, hf_hub_download, np
+        
+        try:
+            if torch is None:
+                import torch as torch_module
+                torch = torch_module
+            
+            if AutoModelForCausalLM is None:
+                from transformers import AutoModelForCausalLM as AMCL, AutoProcessor as AP, pipeline as pl
+                AutoModelForCausalLM = AMCL
+                AutoProcessor = AP
+                pipeline = pl
+            
+            if snapshot_download is None:
+                from huggingface_hub import snapshot_download as sd, hf_hub_download as hd
+                snapshot_download = sd
+                hf_hub_download = hd
+            
+            if np is None:
+                import numpy as np_module
+                np = np_module
+            
+            return True
+        except ImportError:
+            return False
+    
     def _get_device(self):
         """Determine the best available device."""
-        if not PHI4_AVAILABLE:
+        if torch is None:
             return "cpu"  # Default when torch not available
         
         try:
@@ -92,6 +114,23 @@ class Phi4Service:
         except Exception:
             return "cpu"
     
+    async def _ensure_audio_processing(self) -> bool:
+        """Ensure audio processing dependencies are available."""
+        global librosa, sf
+        
+        try:
+            if librosa is None:
+                import librosa as librosa_module
+                librosa = librosa_module
+            
+            if sf is None:
+                import soundfile as sf_module
+                sf = sf_module
+            
+            return True
+        except ImportError:
+            return False
+    
     async def load_model(self) -> bool:
         """
         Load Phi-4 Multimodal model with download progress tracking.
@@ -99,14 +138,31 @@ class Phi4Service:
         Returns:
             bool: True if model loaded successfully
         """
-        if not PHI4_AVAILABLE:
+        # Ensure ML dependencies are available
+        if not await self._ensure_ml_dependencies():
             self.load_progress = {
-                "status": "error",
+                "status": "installing",
                 "progress": 0.0,
-                "message": "Phi-4 dependencies not available. Install with: uv tool install tektra --with tektra[ml]"
+                "message": "Installing ML dependencies automatically..."
             }
-            logger.error("Phi-4 dependencies not available. Install with: uv tool install tektra --with tektra[ml]")
-            return False
+            logger.info("Installing ML dependencies for Phi-4...")
+            
+            # Try to install ML dependencies
+            from .auto_installer import auto_installer
+            success = await auto_installer.ensure_dependency_available("ml_models", timeout=60.0)
+            
+            if success and await self._ensure_ml_dependencies():
+                logger.info("✓ ML dependencies installed successfully")
+            else:
+                self.load_progress = {
+                    "status": "ready", 
+                    "progress": 0.0,
+                    "message": "Phi-4 will be available after ML dependencies finish installing"
+                }
+                logger.info("○ ML dependencies installing in background, Phi-4 will be available shortly")
+                # Start background installation for transformers
+                auto_installer.start_background_installation("transformers")
+                return False
         
         if self.is_loading:
             logger.info("Phi-4 model already loading")
@@ -525,12 +581,16 @@ class Phi4Service:
         Returns:
             np.ndarray: Audio data as numpy array
         """
-        if not AUDIO_PROCESSING_AVAILABLE:
-            logger.warning("Audio processing libraries not available")
-            if isinstance(audio_data, bytes):
-                # Simple fallback without numpy
-                return list(audio_data)
-            raise ValueError("Audio processing libraries required for this input type")
+        if not await self._ensure_audio_processing():
+            logger.info("Installing audio processing libraries...")
+            from .auto_installer import auto_installer
+            if await auto_installer.ensure_dependency_available("advanced_audio", timeout=30.0):
+                await self._ensure_audio_processing()  # Reload modules
+            else:
+                if isinstance(audio_data, bytes):
+                    # Simple fallback without numpy
+                    return list(audio_data)
+                raise ValueError("Audio processing libraries installing, please try again shortly")
         
         try:
             # Handle different input types
@@ -584,8 +644,8 @@ class Phi4Service:
             "model_name": self.model_name,
             "device": self.device,
             "supported_languages": self.supported_languages,
-            "available": PHI4_AVAILABLE,
-            "audio_processing_available": AUDIO_PROCESSING_AVAILABLE,
+            "available": await self._ensure_ml_dependencies(),
+            "audio_processing_available": await self._ensure_audio_processing(),
             "capabilities": {
                 "speech_recognition": True,
                 "chat_completion": True,

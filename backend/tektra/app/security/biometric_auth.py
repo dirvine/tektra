@@ -14,25 +14,12 @@ from pathlib import Path
 from typing import Optional, Dict, List, Tuple, Any
 import json
 
-try:
-    import cv2
-    import face_recognition
-    FACE_RECOGNITION_AVAILABLE = True
-except ImportError:
-    FACE_RECOGNITION_AVAILABLE = False
-    cv2 = None
-    face_recognition = None
-
-try:
-    import librosa
-    import soundfile as sf
-    from speechbrain.pretrained import SpeakerRecognition
-    VOICE_RECOGNITION_AVAILABLE = True
-except ImportError:
-    VOICE_RECOGNITION_AVAILABLE = False
-    librosa = None
-    sf = None
-    SpeakerRecognition = None
+# Dynamic imports - will be loaded when needed
+cv2 = None
+face_recognition = None
+librosa = None
+sf = None
+SpeakerRecognition = None
 
 from .key_derivation import key_derivation_service
 
@@ -60,27 +47,82 @@ class BiometricAuthService:
         self.registered_users: Dict[str, Dict] = {}
         
     async def initialize(self):
-        """Initialize biometric models."""
+        """Initialize biometric models with automatic dependency installation."""
         try:
-            if not FACE_RECOGNITION_AVAILABLE:
-                logger.warning("Face recognition not available. Install with: uv pip install face-recognition opencv-python")
-                
-            if not VOICE_RECOGNITION_AVAILABLE:
-                logger.warning("Voice recognition not available. Install with: uv pip install speechbrain librosa soundfile")
-                
-            # Initialize voice model if available
-            if VOICE_RECOGNITION_AVAILABLE:
+            # Start background installation of biometric dependencies
+            from ..services.auto_installer import auto_installer
+            
+            logger.info("Initializing biometric capabilities...")
+            
+            # Try to load face recognition capabilities
+            face_available = await self._ensure_face_recognition()
+            if face_available:
+                self.face_model_loaded = True
+                logger.info("✓ Face recognition ready")
+            else:
+                # Start background installation
+                auto_installer.start_background_installation("biometric")
+                logger.info("○ Face recognition installing in background")
+            
+            # Try to load voice recognition capabilities
+            voice_available = await self._ensure_voice_recognition()
+            if voice_available:
                 await self._load_voice_model()
+                logger.info("✓ Voice recognition ready")
+            else:
+                # Start background installation
+                auto_installer.start_background_installation("advanced_audio")
+                logger.info("○ Voice recognition installing in background")
                 
-            self.face_model_loaded = FACE_RECOGNITION_AVAILABLE
-            logger.info(f"Biometric auth initialized - Face: {self.face_model_loaded}, Voice: {self.voice_model_loaded}")
+            logger.info("Biometric services initialized successfully")
             
         except Exception as e:
             logger.error(f"Failed to initialize biometric auth: {e}")
+    
+    async def _ensure_face_recognition(self) -> bool:
+        """Ensure face recognition dependencies are available."""
+        global cv2, face_recognition
+        
+        try:
+            if cv2 is None:
+                import cv2 as cv2_module
+                cv2 = cv2_module
+            
+            if face_recognition is None:
+                import face_recognition as fr_module
+                face_recognition = fr_module
+            
+            return True
+        except ImportError:
+            return False
+    
+    async def _ensure_voice_recognition(self) -> bool:
+        """Ensure voice recognition dependencies are available."""
+        global librosa, sf, SpeakerRecognition
+        
+        try:
+            if librosa is None:
+                import librosa as librosa_module
+                librosa = librosa_module
+            
+            if sf is None:
+                import soundfile as sf_module
+                sf = sf_module
+            
+            if SpeakerRecognition is None:
+                from speechbrain.pretrained import SpeakerRecognition as SR
+                SpeakerRecognition = SR
+            
+            return True
+        except ImportError:
+            return False
             
     async def _load_voice_model(self):
         """Load the voice recognition model."""
         try:
+            if not await self._ensure_voice_recognition():
+                return False
+                
             loop = asyncio.get_event_loop()
             
             def load_model():
@@ -91,7 +133,7 @@ class BiometricAuthService:
             
             self.voice_model = await loop.run_in_executor(None, load_model)
             self.voice_model_loaded = True
-            logger.info("Voice recognition model loaded")
+            return True
             
         except Exception as e:
             logger.error(f"Failed to load voice model: {e}")
@@ -108,8 +150,12 @@ class BiometricAuthService:
             Face encoding array or None if no face found
         """
         if not self.face_model_loaded:
-            logger.error("Face recognition not available")
-            return None
+            # Try to ensure face recognition is available
+            if await self._ensure_face_recognition():
+                self.face_model_loaded = True
+            else:
+                logger.error("Face recognition not available")
+                return None
             
         try:
             # Convert bytes to numpy array
