@@ -194,18 +194,22 @@ class Phi4Service:
                     error_details.append("Dependencies not properly loaded")
 
                 error_msg = "; ".join(error_details)
-                logger.error(f"ML dependency installation failed: {error_msg}")
+                logger.info(f"Phi-4 not available: {error_msg}")
 
                 self.load_progress = {
-                    "status": "error",
+                    "status": "unavailable",
                     "progress": 0.0,
-                    "message": f"Phi-4 installation failed: {error_msg}",
+                    "message": "Phi-4 requires manual installation in this environment",
                 }
 
-                # Start background installation as fallback
-                logger.info("○ Starting background installation as fallback")
-                auto_installer.start_background_installation("ml_models")
-                auto_installer.start_background_installation("transformers")
+                # Check if we're in a UV tool environment
+                if auto_installer.package_manager in ["uv_tool", "uv_tool_direct"]:
+                    logger.info("💡 For Phi-4 support, run: uv pip install torch transformers")
+                else:
+                    # Start background installation as fallback for regular environments
+                    logger.info("○ Starting background installation as fallback")
+                    auto_installer.start_background_installation("ml_models")
+                    auto_installer.start_background_installation("transformers")
                 return False
 
         if self.is_loading:

@@ -144,7 +144,7 @@ class AutoInstaller:
             logger.debug("UV tool environment detected but pip unavailable - running in limited mode")
             # Return a command that will "succeed" but not actually install anything
             # This allows Tektra to run without ML dependencies
-            return ["echo", "Running in compatibility mode - ML features disabled"]
+            return ["echo", "UV tool environment: ML features require manual installation"]
         elif self.package_manager == "uv":
             # Regular UV environments: use uv pip install --system
             return ["uv", "pip", "install", "--system"] + packages + ["--quiet"]
@@ -229,10 +229,12 @@ class AutoInstaller:
                     if self.package_manager == "uv_tool_direct":
                         # Special message for UV tool environment issues
                         logger.info(
-                            f"○ {config['description']} - currently unavailable in UV tool environment"
+                            f"○ {config['description']} - optional (UV tool environment)"
                         )
+                    elif self.package_manager == "uv_tool":
+                        # UV tool but with externally managed Python
                         logger.info(
-                            "💡 For ML features, try: pip install tektra[advanced] (in a regular environment)"
+                            f"○ {config['description']} - optional (externally managed Python)"
                         )
                     else:
                         install_hint = (
@@ -249,6 +251,17 @@ class AutoInstaller:
 
             if results["auto_installed"]:
                 logger.info(f"Auto-installed: {', '.join(results['auto_installed'])}")
+            
+            # Show helpful summary for UV tool environments
+            if self.package_manager in ["uv_tool", "uv_tool_direct"]:
+                logger.info("✨ Tektra is ready! Core features available:")
+                logger.info("  • Chat interface and conversation management")
+                logger.info("  • Text-to-speech with Edge-TTS")
+                logger.info("  • 3D avatar with lip-sync animation")
+                logger.info("  • Biometric security")
+                logger.info("🔧 For advanced ML features, run: uv pip install torch transformers")
+            else:
+                logger.info("✨ Tektra setup complete! All features ready.")
 
         except Exception as e:
             logger.error(f"Setup failed: {e}")
