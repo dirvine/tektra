@@ -102,8 +102,8 @@ class AutoInstaller:
     def _get_install_command(self, packages: List[str]) -> List[str]:
         """Get the appropriate install command for the detected package manager."""
         if self.package_manager == 'uv':
-            # Use 'uv pip install' for standalone installations (no pyproject.toml required)
-            return ['uv', 'pip', 'install'] + packages + ['--quiet']
+            # Use 'uv pip install --system' for tool/standalone installations
+            return ['uv', 'pip', 'install', '--system'] + packages + ['--quiet']
         elif self.package_manager == 'pip':
             return [sys.executable, '-m', 'pip', 'install'] + packages + ['--quiet', '--disable-pip-version-check']
         else:
