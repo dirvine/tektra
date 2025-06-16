@@ -45,7 +45,7 @@ def print_banner():
 ║     ██║   ███████╗██║  ██╗   ██║   ██║  ██║██║  ██║          ║
 ║     ╚═╝   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝          ║
 ║                                                              ║
-║            Advanced AI Assistant v0.9.8                     ║
+║            Advanced AI Assistant v0.9.9                     ║
 ║          Voice • Vision • Robotics • Chat                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝

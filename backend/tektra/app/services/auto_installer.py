@@ -81,11 +81,11 @@ class AutoInstaller:
         """Detect which package manager to use (uv, pip, etc.)."""
         try:
             # Check if we're running inside a UV tool environment
-            # UV tools install into isolated environments, we should use pip directly
             executable_path = sys.executable
             if "uv/tools/" in executable_path:
-                logger.debug("Detected UV tool environment, using pip")
-                return "pip"
+                # UV tool environments don't have pip module, must use uv
+                logger.debug("Detected UV tool environment, using uv pip")
+                return "uv_tool"
 
             # Check if we're in a regular UV environment (not tool)
             if os.environ.get("VIRTUAL_ENV") and shutil.which("uv"):
@@ -115,11 +115,14 @@ class AutoInstaller:
 
     def _get_install_command(self, packages: List[str]) -> List[str]:
         """Get the appropriate install command for the detected package manager."""
-        if self.package_manager == "uv":
-            # Use 'uv pip install --system' for tool/standalone installations
+        if self.package_manager == "uv_tool":
+            # UV tool environments: use uv pip with the specific tool environment
+            return ["uv", "pip", "install"] + packages + ["--quiet"]
+        elif self.package_manager == "uv":
+            # Regular UV environments: use uv pip install --system
             return ["uv", "pip", "install", "--system"] + packages + ["--quiet"]
         elif self.package_manager == "pip":
-            # For UV tool environments, use pip directly within the isolated environment
+            # Standard pip environments
             return (
                 [sys.executable, "-m", "pip", "install", "--user"]
                 + packages
