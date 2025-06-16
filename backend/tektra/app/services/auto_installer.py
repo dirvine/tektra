@@ -398,9 +398,10 @@ class AutoInstaller:
                 logger.warning(f"Installation failed: {error_msg}")
                 
                 # Check for externally managed environment error
-                if "externally-managed-environment" in error_msg.lower():
-                    logger.info("Detected externally managed environment, trying fallback...")
+                if "externally managed" in error_msg.lower() or "externally-managed-environment" in error_msg.lower():
+                    logger.info(f"Detected externally managed environment, trying fallback for {config['description']}...")
                     fallback_cmd = self._get_fallback_install_command(packages)
+                    logger.debug(f"Fallback command: {' '.join(fallback_cmd)}")
                     process = await asyncio.create_subprocess_exec(
                         *fallback_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                     )
@@ -443,7 +444,7 @@ class AutoInstaller:
             else:
                 # Check for externally managed environment and try fallback
                 error_msg = stderr.decode() if stderr else ""
-                if "externally-managed-environment" in error_msg.lower():
+                if "externally managed" in error_msg.lower() or "externally-managed-environment" in error_msg.lower():
                     fallback_cmd = self._get_fallback_install_command([package])
                     process = await asyncio.create_subprocess_exec(
                         *fallback_cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE
@@ -511,9 +512,10 @@ class AutoInstaller:
                 logger.warning(f"Installation failed for {dep_name}: {error_msg}")
                 
                 # Check for externally managed environment error and try fallback
-                if "externally-managed-environment" in error_msg.lower():
-                    logger.debug(f"Trying fallback installation for {dep_name}...")
+                if "externally managed" in error_msg.lower() or "externally-managed-environment" in error_msg.lower():
+                    logger.info(f"Detected externally managed environment, trying fallback for {dep_name}...")
                     fallback_cmd = self._get_fallback_install_command(packages)
+                    logger.debug(f"Fallback command: {' '.join(fallback_cmd)}")
                     
                     process = await asyncio.create_subprocess_exec(
                         *fallback_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
