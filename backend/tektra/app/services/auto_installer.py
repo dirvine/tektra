@@ -135,7 +135,7 @@ class AutoInstaller:
     def _get_install_command(self, packages: List[str]) -> List[str]:
         """Get the appropriate install command for the detected package manager."""
         if self.package_manager == "uv_tool":
-            # UV tool environments: use uv pip with --system flag for tool environments
+            # UV tool environments: try uv pip first, then fallback to break-system-packages
             logger.debug("Using UV tool environment install command with --system flag")
             return ["uv", "pip", "install", "--system"] + packages + ["--quiet"]
         elif self.package_manager == "uv_tool_direct":
@@ -162,6 +162,15 @@ class AutoInstaller:
                 + packages
                 + ["--quiet", "--disable-pip-version-check"]
             )
+
+    def _get_fallback_install_command(self, packages: List[str]) -> List[str]:
+        """Get fallback install command for externally managed environments."""
+        logger.debug("Using fallback install with --break-system-packages")
+        return (
+            [sys.executable, "-m", "pip", "install", "--break-system-packages"]
+            + packages
+            + ["--quiet", "--disable-pip-version-check"]
+        )
 
     async def run_initial_setup(self) -> Dict[str, Any]:
         """Run initial setup on first launch."""
@@ -387,6 +396,22 @@ class AutoInstaller:
             else:
                 error_msg = stderr.decode() if stderr else "Installation failed"
                 logger.warning(f"Installation failed: {error_msg}")
+                
+                # Check for externally managed environment error
+                if "externally-managed-environment" in error_msg.lower():
+                    logger.info("Detected externally managed environment, trying fallback...")
+                    fallback_cmd = self._get_fallback_install_command(packages)
+                    process = await asyncio.create_subprocess_exec(
+                        *fallback_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                    )
+                    stdout, stderr = await process.communicate()
+                    
+                    if process.returncode == 0:
+                        logger.info(f"✓ {config['description']} installed via fallback method")
+                        return {"success": True, "packages": packages, "method": "fallback_system"}
+                    else:
+                        fallback_error = stderr.decode() if stderr else "Fallback installation failed"
+                        logger.warning(f"Fallback installation failed: {fallback_error}")
 
                 # For compile_safe, suggest manual installation
                 if install_method == "compile_safe":
@@ -412,7 +437,21 @@ class AutoInstaller:
                 *cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE
             )
             stdout, stderr = await process.communicate()
-            return process.returncode == 0
+            
+            if process.returncode == 0:
+                return True
+            else:
+                # Check for externally managed environment and try fallback
+                error_msg = stderr.decode() if stderr else ""
+                if "externally-managed-environment" in error_msg.lower():
+                    fallback_cmd = self._get_fallback_install_command([package])
+                    process = await asyncio.create_subprocess_exec(
+                        *fallback_cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE
+                    )
+                    stdout, stderr = await process.communicate()
+                    return process.returncode == 0
+                
+                return False
         except Exception:
             return False
 
@@ -455,23 +494,46 @@ class AutoInstaller:
             )
             stdout, stderr = await process.communicate()
 
-            # Log detailed errors for debugging
-            if process.returncode != 0:
-                logger.warning(
-                    f"Installation failed for {dep_name}: {stderr.decode() if stderr else 'Unknown error'}"
-                )
-                return False
-
-            # Verify installation
-            success = await self._check_packages_available(packages)
-            if success:
-                logger.info(f"✓ Successfully installed {dep_name}")
+            # Check if successful
+            if process.returncode == 0:
+                # Verify installation
+                success = await self._check_packages_available(packages)
+                if success:
+                    logger.info(f"✓ Successfully installed {dep_name}")
+                    return True
+                else:
+                    logger.warning(
+                        f"Installation completed but packages not available for {dep_name}"
+                    )
+                    return False
             else:
-                logger.warning(
-                    f"Installation completed but packages not available for {dep_name}"
-                )
-
-            return success
+                error_msg = stderr.decode() if stderr else "Unknown error"
+                logger.warning(f"Installation failed for {dep_name}: {error_msg}")
+                
+                # Check for externally managed environment error and try fallback
+                if "externally-managed-environment" in error_msg.lower():
+                    logger.debug(f"Trying fallback installation for {dep_name}...")
+                    fallback_cmd = self._get_fallback_install_command(packages)
+                    
+                    process = await asyncio.create_subprocess_exec(
+                        *fallback_cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                    )
+                    stdout, stderr = await process.communicate()
+                    
+                    if process.returncode == 0:
+                        # Verify fallback installation
+                        success = await self._check_packages_available(packages)
+                        if success:
+                            logger.info(f"✓ Successfully installed {dep_name} via fallback")
+                            return True
+                        else:
+                            logger.warning(f"Fallback installation completed but packages not available for {dep_name}")
+                            return False
+                    else:
+                        fallback_error = stderr.decode() if stderr else "Unknown fallback error"
+                        logger.debug(f"Fallback installation also failed for {dep_name}: {fallback_error}")
+                
+                return False
 
         except Exception as e:
             logger.error(f"Exception during {dep_name} installation: {e}")
