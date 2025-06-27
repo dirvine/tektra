@@ -50,8 +50,9 @@ tokenizers = { version = "0.20", features = ["onig"] }
 # mlx-rs = { version = "0.25.0-alpha.1", features = ["metal", "accelerate"], optional = true }
 
 # GGUF model inference (cross-platform fallback)
-# TODO: Add proper GGUF inference library when available
-# Options: llama-cpp-rs, candle, or custom bindings
+candle-core = "0.8"
+candle-nn = "0.8"
+candle-transformers = "0.8"
 
 # For downloading models
 # (already have hf-hub, reqwest, futures, dirs)
