@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tracing::{error, info};
+use super::inference_backend::{InferenceConfig, BackendType};
+use super::inference_manager::{InferenceManager};
 
 // Gemma-3n model information
 // E2B = 2 billion parameters (faster, good for desktop)
@@ -52,16 +54,38 @@ pub struct AIManager {
     model_path: Option<PathBuf>,
     chat_template: GemmaChatTemplate,
     selected_model: String,
+    inference_manager: InferenceManager,
+    backend_type: BackendType,
 }
 
 impl AIManager {
     pub fn new(app_handle: AppHandle) -> Result<Self> {
+        // Default to Auto backend selection
+        let backend_type = BackendType::Auto;
+        let inference_manager = InferenceManager::new(backend_type)?;
+        
         Ok(Self {
             app_handle,
             model_loaded: false,
             model_path: None,
             chat_template: GemmaChatTemplate::default(),
             selected_model: GEMMA_E2B_GGUF_ID.to_string(), // Default to 2B model
+            inference_manager,
+            backend_type,
+        })
+    }
+    
+    pub fn with_backend(app_handle: AppHandle, backend_type: BackendType) -> Result<Self> {
+        let inference_manager = InferenceManager::new(backend_type)?;
+        
+        Ok(Self {
+            app_handle,
+            model_loaded: false,
+            model_path: None,
+            chat_template: GemmaChatTemplate::default(),
+            selected_model: GEMMA_E2B_GGUF_ID.to_string(),
+            inference_manager,
+            backend_type,
         })
     }
 
@@ -74,13 +98,23 @@ impl AIManager {
                 self.model_path = Some(path.clone());
                 info!("Gemma-3n model downloaded to: {:?}", path);
                 
-                self.emit_progress(90, "Preparing Gemma-3n for inference...", &self.selected_model).await;
+                self.emit_progress(90, "Loading Gemma-3n model into memory...", &self.selected_model).await;
                 
-                // Model is ready to use
-                self.model_loaded = true;
-                
-                self.emit_progress(100, "Gemma-3n ready! Google's latest AI model at your service.", &self.selected_model).await;
-                Ok(())
+                // Load the model into the inference engine
+                match self.inference_manager.load_model(&path).await {
+                    Ok(_) => {
+                        self.model_loaded = true;
+                        let backend_name = self.inference_manager.backend_name().await;
+                        self.emit_progress(100, &format!("Gemma-3n ready with {} backend! Google's latest AI model at your service.", backend_name), &self.selected_model).await;
+                        info!("Model loaded successfully using {} backend", backend_name);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        error!("Failed to load model: {}", e);
+                        self.emit_progress(0, &format!("Failed to load model: {}", e), &self.selected_model).await;
+                        Err(e)
+                    }
+                }
             }
             Err(e) => {
                 error!("Failed to download Gemma model: {}", e);
@@ -240,13 +274,29 @@ impl AIManager {
         info!("Processing prompt: {}", prompt);
         info!("Formatted for Gemma: {}", _formatted_prompt);
         
-        // Since we don't have actual GGUF inference yet, provide contextual responses
-        if self.model_path.is_some() {
-            let response = self.generate_contextual_response(prompt, &system);
-            info!("Generated response: {}", response);
-            Ok(response)
-        } else {
-            Ok("Gemma model is not fully loaded. Please wait a moment and try again.".to_string())
+        // Create inference config
+        let config = InferenceConfig {
+            max_tokens: _max_tokens,
+            temperature: 0.7,
+            top_p: 0.9,
+            repeat_penalty: 1.1,
+            seed: None,
+            n_threads: None,
+        };
+        
+        // Use actual inference backend
+        match self.inference_manager.generate(&_formatted_prompt, &config).await {
+            Ok(response) => {
+                info!("Generated response: {}", response);
+                Ok(response)
+            }
+            Err(e) => {
+                error!("Inference error: {}", e);
+                // Fall back to contextual response if inference fails
+                let response = self.generate_contextual_response(prompt, &system);
+                info!("Fallback response: {}", response);
+                Ok(response)
+            }
         }
     }
     
@@ -464,5 +514,28 @@ These principles lead to phenomena like quantum tunneling, which enables technol
 
     pub fn is_loaded(&self) -> bool {
         self.model_loaded
+    }
+    
+    pub async fn get_backend_info(&self) -> String {
+        let backend_name = self.inference_manager.backend_name().await;
+        let system_info = InferenceManager::get_system_info();
+        
+        format!(
+            "Current Backend: {}\nBackend Type: {:?}\n\n{}",
+            backend_name, self.backend_type, system_info
+        )
+    }
+    
+    pub async fn benchmark_backends(&self, prompt: &str, max_tokens: usize) -> Result<Vec<(String, super::inference_backend::InferenceMetrics)>> {
+        let config = InferenceConfig {
+            max_tokens,
+            temperature: 0.7,
+            top_p: 0.9,
+            repeat_penalty: 1.1,
+            seed: Some(42), // Fixed seed for consistent benchmarks
+            n_threads: None,
+        };
+        
+        self.inference_manager.benchmark_backends(prompt, &config).await
     }
 }

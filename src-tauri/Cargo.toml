@@ -40,6 +40,19 @@ hound = "3.5"
 # whisper-rs = "0.11"  # For Whisper STT when ready
 # ort = "2.0"  # ONNX Runtime for Silero VAD when ready
 
+# Tokenizer support for both GGUF and MLX
+tokenizers = { version = "0.20", features = ["onig"] }
+
+# Model inference backends
+[target.'cfg(target_os = "macos")'.dependencies]
+# MLX for Apple Silicon (much faster on M1/M2/M3)
+# NOTE: Requires XCode Command Line Tools and metal compiler
+# mlx-rs = { version = "0.25.0-alpha.1", features = ["metal", "accelerate"], optional = true }
+
+# GGUF model inference (cross-platform fallback)
+# TODO: Add proper GGUF inference library when available
+# Options: llama-cpp-rs, candle, or custom bindings
+
 # For downloading models
 # (already have hf-hub, reqwest, futures, dirs)
 

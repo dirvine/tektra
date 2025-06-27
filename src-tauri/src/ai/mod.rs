@@ -2,6 +2,23 @@
 mod gemma3n;
 pub use gemma3n::AIManager;
 
+// Inference backend abstraction
+mod inference_backend;
+pub use inference_backend::{InferenceBackend, InferenceConfig, InferenceMetrics, BackendType};
+
+// GGUF inference engine
+mod gguf_inference;
+pub use gguf_inference::GGUFInference;
+
+// MLX inference engine (Apple Silicon only)
+// Currently disabled - requires XCode Command Line Tools and Metal compiler
+mod mlx_inference;
+pub use mlx_inference::MLXInference;
+
+// Unified inference manager
+mod inference_manager;
+pub use inference_manager::InferenceManager;
+
 // Speech processing module for conversational AI
 mod speech_processor;
 pub use speech_processor::{SpeechProcessor, ConversationState};

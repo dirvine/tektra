@@ -15,6 +15,8 @@ use vision::VisionManager;
 mod avatar;
 use avatar::AvatarManager;
 mod cli;
+mod config;
+use config::AppConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ChatMessage {
@@ -369,6 +371,28 @@ async fn avatar_blink(avatar: State<'_, Avatar>) -> Result<(), String> {
     }
 }
 
+#[tauri::command]
+async fn get_backend_info(ai: State<'_, AI>) -> Result<String, String> {
+    let ai_manager = ai.lock().await;
+    Ok(ai_manager.get_backend_info().await)
+}
+
+#[tauri::command]
+async fn benchmark_backends(
+    ai: State<'_, AI>,
+    prompt: Option<String>,
+    max_tokens: Option<usize>,
+) -> Result<Vec<(String, crate::ai::InferenceMetrics)>, String> {
+    let ai_manager = ai.lock().await;
+    let test_prompt = prompt.unwrap_or_else(|| "What is the capital of France?".to_string());
+    let tokens = max_tokens.unwrap_or(100);
+    
+    match ai_manager.benchmark_backends(&test_prompt, tokens).await {
+        Ok(results) => Ok(results),
+        Err(e) => Err(format!("Failed to benchmark backends: {}", e)),
+    }
+}
+
 fn main() {
     // Check if running as CLI
     if let Err(e) = cli::run_cli() {
@@ -388,7 +412,24 @@ fn main() {
     tauri::Builder::default()
         .setup(|app| {
             let app_handle = app.handle();
-            let ai_manager = AIManager::new(app_handle.clone())
+            
+            // Load configuration
+            let mut app_config = match AppConfig::get_config_path() {
+                Ok(path) => AppConfig::load(&path).unwrap_or_default(),
+                Err(_) => AppConfig::default(),
+            };
+            
+            // Apply environment variable overrides
+            app_config.apply_env_overrides();
+            
+            // Log configuration
+            tracing::info!("Loaded configuration: backend={:?}, benchmark={}", 
+                app_config.inference.backend, 
+                app_config.inference.benchmark_on_startup
+            );
+            
+            // Create AI manager with configured backend
+            let ai_manager = AIManager::with_backend(app_handle.clone(), app_config.inference.backend)
                 .map_err(|e| format!("Failed to create AI manager: {}", e))?;
             
             let audio_recorder = AudioRecorder::new(app_handle.clone());
@@ -401,6 +442,9 @@ fn main() {
             app.manage(AudioRec::new(Mutex::new(audio_recorder)));
             app.manage(Vision::new(Mutex::new(vision_manager)));
             app.manage(Avatar::new(Mutex::new(avatar_manager)));
+            
+            // Store config for later use
+            app.manage(Arc::new(Mutex::new(app_config)));
             
             Ok(())
         })
@@ -426,7 +470,9 @@ fn main() {
             set_avatar_expression,
             start_avatar_speaking,
             stop_avatar_speaking,
-            avatar_blink
+            avatar_blink,
+            get_backend_info,
+            benchmark_backends
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
