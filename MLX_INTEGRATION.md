@@ -137,29 +137,44 @@ MLX models use:
 
 ## Enabling MLX
 
-To enable MLX support:
+To enable MLX support, you need the Metal compiler which requires:
 
-1. **Install XCode Command Line Tools**:
-   ```bash
-   xcode-select --install
-   ```
-
-2. **Verify Metal compiler**:
+### Option 1: Full XCode Installation (Recommended)
+1. **Install XCode from App Store** (free, ~15GB)
+2. **Launch XCode once** to complete setup
+3. **Verify Metal compiler**:
    ```bash
    xcrun -find metal
+   # Should output: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/metal
    ```
 
-3. **Uncomment MLX dependency** in `Cargo.toml`:
+### Option 2: Metal Developer Tools Only
+1. **Download Metal Developer Tools** from [Apple Developer](https://developer.apple.com/metal/)
+2. **Install the Metal framework**
+3. **Set developer directory** if needed:
+   ```bash
+   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+   ```
+
+### Once Metal is Available:
+
+1. **Uncomment MLX dependency** in `Cargo.toml`:
    ```toml
    [target.'cfg(target_os = "macos")'.dependencies]
    mlx-rs = { version = "0.25.0-alpha.1", features = ["metal", "accelerate"] }
    ```
 
-4. **Rebuild the application**:
+2. **Rebuild the application**:
    ```bash
    cd src-tauri
    cargo build --release
    ```
+
+### Alternative: Use GGUF Backend
+
+If you don't want to install XCode, the GGUF backend provides good performance and is already available:
+- Set `TEKTRA_BACKEND=gguf` environment variable
+- Or use the default Auto mode which will fall back to GGUF
 
 ## API Usage
 
