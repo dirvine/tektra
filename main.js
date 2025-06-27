@@ -1,15 +1,22 @@
 import { invoke } from '@tauri-apps/api/tauri';
+import { listen } from '@tauri-apps/api/event';
+import { Avatar2D } from './avatar.js';
 
 class ProjectTektra {
     constructor() {
         this.isListening = false;
         this.recognition = null;
         this.synthesis = window.speechSynthesis;
+        this.avatar = null;
+        this.cameraActive = false;
+        this.cameraStream = null;
         
         this.initializeElements();
         this.attachEventListeners();
         this.initializeApp();
         this.setupSpeechRecognition();
+        this.initializeAvatar();
+        this.initializeCamera();
     }
 
     initializeElements() {
@@ -19,7 +26,6 @@ class ProjectTektra {
             chatMessages: document.getElementById('chatMessages'),
             messageInput: document.getElementById('messageInput'),
             sendBtn: document.getElementById('sendBtn'),
-            voiceBtn: document.getElementById('voiceBtn'),
             clearBtn: document.getElementById('clearBtn'),
             refreshBtn: document.getElementById('refreshBtn'),
             settingsBtn: document.getElementById('settingsBtn'),
@@ -35,7 +41,25 @@ class ProjectTektra {
             ollamaModel: document.getElementById('ollamaModel'),
             ollamaUrl: document.getElementById('ollamaUrl'),
             settingsVoiceEnabled: document.getElementById('settingsVoiceEnabled'),
-            saveSettings: document.getElementById('saveSettings')
+            saveSettings: document.getElementById('saveSettings'),
+            systemPrompt: document.getElementById('systemPrompt'),
+            userPrefix: document.getElementById('userPrefix'),
+            assistantPrefix: document.getElementById('assistantPrefix'),
+            
+            // Loading overlay
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            progressFill: document.getElementById('progressFill'),
+            progressStatus: document.getElementById('progressStatus'),
+            progressPercent: document.getElementById('progressPercent'),
+            
+            // Camera elements
+            cameraToggleBtn: document.getElementById('cameraToggleBtn'),
+            cameraPreview: document.getElementById('cameraPreview'),
+            cameraCanvas: document.getElementById('cameraCanvas'),
+            
+            // Avatar elements
+            avatarCanvas: document.getElementById('avatarCanvas'),
+            avatarExpression: document.getElementById('avatarExpression')
         };
     }
 
@@ -45,10 +69,12 @@ class ProjectTektra {
             if (e.key === 'Enter') this.sendMessage();
         });
         
-        this.elements.voiceBtn.addEventListener('click', () => this.toggleVoiceRecognition());
         this.elements.clearBtn.addEventListener('click', () => this.clearChat());
         this.elements.refreshBtn.addEventListener('click', () => this.refreshStatus());
         this.elements.settingsBtn.addEventListener('click', () => this.showSettings());
+        
+        // Voice enabled toggle - controls always listening
+        this.elements.voiceEnabled.addEventListener('change', () => this.toggleAlwaysListening());
         
         this.elements.closeSettings.addEventListener('click', () => this.hideSettings());
         this.elements.saveSettings.addEventListener('click', () => this.saveSettings());
@@ -59,93 +85,142 @@ class ProjectTektra {
                 this.hideSettings();
             }
         });
+        
+        // Camera toggle
+        this.elements.cameraToggleBtn.addEventListener('click', () => this.toggleCamera());
+        
+        // Avatar expression change
+        this.elements.avatarExpression.addEventListener('change', (e) => {
+            if (this.avatar) {
+                this.avatar.setExpression(e.target.value);
+            }
+        });
     }
 
     async initializeApp() {
         this.updateStatus('Loading AI Model...', false);
         
+        // Show loading overlay
+        this.elements.loadingOverlay.classList.remove('hidden');
+        
+        // Track which models are being loaded
+        this.modelsLoading = new Set();
+        this.modelProgress = {};
+        
+        // Listen for model loading progress
+        const unlisten = await listen('model-loading-progress', (event) => {
+            const { progress, status, model_name } = event.payload;
+            
+            // Track this model
+            this.modelsLoading.add(model_name);
+            this.modelProgress[model_name] = progress;
+            
+            // Calculate overall progress
+            const totalProgress = Object.values(this.modelProgress).reduce((sum, p) => sum + p, 0) / Object.keys(this.modelProgress).length || 0;
+            
+            // Update progress bar
+            this.elements.progressFill.style.width = `${totalProgress}%`;
+            this.elements.progressStatus.textContent = status;
+            this.elements.progressPercent.textContent = `${Math.round(totalProgress)}%`;
+            
+            // Update status text
+            this.updateStatus(`${status} (${Math.round(totalProgress)}%)`, false);
+            
+            if (progress === 100 && model_name) {
+                this.addMessage('system', `✅ ${model_name} loaded successfully!`);
+            }
+        });
+        
+        // Listen for completion
+        const unlistenComplete = await listen('model-loading-complete', (event) => {
+            const { success } = event.payload;
+            if (success && Object.values(this.modelProgress).every(p => p === 100)) {
+                // All models loaded
+                setTimeout(() => {
+                    this.elements.loadingOverlay.classList.add('hidden');
+                }, 500);
+                
+                this.updateStatus('AI Ready', true);
+            }
+        });
+        
         try {
             // Load settings
             await this.loadSettings();
             
-            // Initialize the embedded model
-            this.addMessage('system', 'Initializing local AI assistant...');
+            // Initialize the AI model
+            this.addMessage('system', 'Initializing Google Gemma-3n E2B model...');
             const modelLoaded = await invoke('initialize_model');
             
             if (modelLoaded) {
                 await this.loadAvailableModels();
                 this.updateStatus('AI Ready', true);
                 await this.loadChatHistory();
-                this.addMessage('system', 'Local AI assistant ready! No internet required - everything runs on your device.');
+                
+                // Tektra introduces itself on startup
+                const introduction = "Hello! I'm Tektra, your AI assistant powered by Google's Gemma-3n model. I'm here to help you with questions, tasks, and conversations. I'm always listening when you enable the microphone toggle, so just speak naturally and I'll assist you. How can I help you today?";
+                this.addMessage('assistant', introduction);
+                
+                // Auto-speak the introduction if voice is enabled
+                if (this.elements.autoSpeech.checked) {
+                    this.speak(introduction);
+                }
+                
+                // Initialize Whisper after main model
+                this.addMessage('system', 'Initializing Whisper speech-to-text...');
+                try {
+                    const whisperLoaded = await invoke('initialize_whisper');
+                    if (!whisperLoaded) {
+                        this.addMessage('system', '⚠️ Whisper initialization failed. Voice input may not work properly.');
+                    }
+                } catch (whisperError) {
+                    console.error('Whisper initialization error:', whisperError);
+                    this.addMessage('system', `⚠️ Whisper error: ${whisperError}`);
+                }
+                
+                // Hide loading overlay if not already hidden
+                setTimeout(() => {
+                    this.elements.loadingOverlay.classList.add('hidden');
+                }, 500);
             } else {
                 this.updateStatus('AI Offline', false);
-                this.addMessage('system', 'Failed to initialize local AI assistant.');
+                this.addMessage('system', 'Failed to initialize AI model.');
+                this.elements.loadingOverlay.classList.add('hidden');
             }
         } catch (error) {
             console.error('Initialization error:', error);
             this.updateStatus('Error', false);
             this.addMessage('system', `Error: ${error}`);
+            this.elements.loadingOverlay.classList.add('hidden');
         }
     }
 
     setupSpeechRecognition() {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            this.recognition = new SpeechRecognition();
-            
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            this.recognition.lang = 'en-US';
-
-            this.recognition.onstart = () => {
-                console.log('Speech recognition started');
-                this.elements.voiceIndicator.classList.remove('hidden');
-                this.elements.voiceBtn.classList.add('listening');
-                this.addMessage('system', '🎤 Listening...');
-            };
-
-            this.recognition.onresult = (event) => {
-                console.log('Speech recognition result:', event.results);
-                const transcript = event.results[0][0].transcript;
-                console.log('Transcript:', transcript);
-                this.elements.messageInput.value = transcript;
+        // Use native Tauri audio recording
+        console.log('Setting up native audio recording...');
+        
+        // Update UI with more informative message
+        this.addMessage('system', '🎤 Voice input is ready! When you enable "Always Listening", I\'ll transcribe your speech and respond automatically.');
+        
+        // Setup native audio recording
+        this.isRecording = false;
+        this.useNativeAudio = true;
+        this.continuousListening = false;
+        
+        // Listen for recording events
+        this.setupAudioEventListeners();
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
                 this.sendMessage();
-            };
-
-            this.recognition.onend = () => {
-                console.log('Speech recognition ended');
-                this.isListening = false;
-                this.elements.voiceIndicator.classList.add('hidden');
-                this.elements.voiceBtn.classList.remove('listening');
-            };
-
-            this.recognition.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                this.isListening = false;
-                this.elements.voiceIndicator.classList.add('hidden');
-                this.elements.voiceBtn.classList.remove('listening');
-                
-                let errorMsg = 'Microphone error: ';
-                switch(event.error) {
-                    case 'not-allowed':
-                        errorMsg += 'Microphone permission denied. Please allow microphone access.';
-                        break;
-                    case 'no-speech':
-                        errorMsg += 'No speech detected. Try speaking louder.';
-                        break;
-                    case 'network':
-                        errorMsg += 'Network error occurred.';
-                        break;
-                    default:
-                        errorMsg += event.error;
-                }
-                this.addMessage('system', errorMsg);
-            };
-        } else {
-            this.elements.voiceBtn.style.display = 'none';
-            console.warn('Speech recognition not supported');
-            this.addMessage('system', 'Speech recognition not supported in this browser');
-        }
+            }
+        });
+        
+        // Don't initialize any Web Speech API stuff
+        this.recognition = null;
+        this.mediaRecorder = null;
     }
 
     async sendMessage() {
@@ -163,8 +238,10 @@ class ProjectTektra {
         const typingId = this.addMessage('assistant', 'Thinking...');
 
         try {
-            // Send to Rust backend
-            const response = await invoke('send_message', { message });
+            // Send to Rust backend - use camera-enabled command if camera is active
+            const response = this.cameraActive 
+                ? await invoke('send_message_with_camera', { message })
+                : await invoke('send_message', { message });
             
             // Remove typing indicator and add response
             this.removeMessage(typingId);
@@ -231,25 +308,112 @@ class ProjectTektra {
         return div.innerHTML;
     }
 
-    async toggleVoiceRecognition() {
-        if (!this.recognition) return;
+    
+    async setupAudioEventListeners() {
+        const { listen } = await import('@tauri-apps/api/event');
+        
+        // Listen for recording started
+        await listen('recording-started', () => {
+            console.log('Recording started');
+            this.elements.voiceIndicator.classList.remove('hidden');
+        });
+        
+        // Listen for recording stopped
+        await listen('recording-stopped', (event) => {
+            console.log('Recording stopped, samples:', event.payload);
+            this.elements.voiceIndicator.classList.add('hidden');
+        });
+        
+        // Listen for speech transcription
+        await listen('speech-transcribed', (event) => {
+            console.log('Speech transcribed:', event.payload);
+            const text = event.payload;
+            
+            // Add to message input or send directly
+            if (text && text.trim().length > 0) {
+                // Show what was transcribed
+                this.addMessage('system', `🎤 Heard: "${text}"`);
+                
+                this.elements.messageInput.value = text;
+                // Auto-send if enabled
+                if (this.continuousListening) {
+                    this.sendMessage();
+                }
+            }
+        });
+        
+        // Listen for assistant interruption
+        await listen('interrupt-assistant', () => {
+            console.log('Interrupting assistant');
+            // Stop any ongoing speech synthesis
+            if (this.synthesis && this.synthesis.speaking) {
+                this.synthesis.cancel();
+            }
+        });
+    }
 
-        if (this.isListening) {
-            this.recognition.stop();
+    async toggleAlwaysListening() {
+        if (this.elements.voiceEnabled.checked) {
+            // Start continuous listening
+            this.continuousListening = true;
+            this.addMessage('system', '🎤 Always listening mode activated. I\'ll transcribe your speech and respond automatically.');
+            await this.startContinuousRecording();
         } else {
-            try {
-                // Request microphone permission first
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                this.isListening = true;
-                this.recognition.start();
-            } catch (error) {
-                console.error('Microphone permission error:', error);
-                this.addMessage('system', 'Microphone access denied. Please check your browser settings and allow microphone access for this app.');
+            // Stop continuous listening
+            this.continuousListening = false;
+            this.addMessage('system', '🎤 Always listening mode deactivated.');
+            if (this.isRecording) {
+                await this.stopContinuousRecording();
             }
         }
     }
+    
+    async startContinuousRecording() {
+        try {
+            const started = await invoke('start_audio_recording');
+            if (started) {
+                this.isRecording = true;
+                this.elements.voiceIndicator.classList.remove('hidden');
+                console.log('Continuous recording started');
+                
+                // Set up interval to process audio chunks
+                this.recordingInterval = setInterval(async () => {
+                    if (this.continuousListening && this.isRecording) {
+                        try {
+                            await invoke('process_audio_stream');
+                        } catch (error) {
+                            console.error('Error processing audio stream:', error);
+                        }
+                    }
+                }, 100); // Process every 100ms for real-time response
+            } else {
+                this.addMessage('system', 'Failed to start recording. Check microphone permissions in System Preferences.');
+                this.elements.voiceEnabled.checked = false;
+            }
+        } catch (error) {
+            console.error('Recording error:', error);
+            this.addMessage('system', `Recording error: ${error}`);
+            this.elements.voiceEnabled.checked = false;
+        }
+    }
+    
+    async stopContinuousRecording() {
+        try {
+            if (this.recordingInterval) {
+                clearInterval(this.recordingInterval);
+            }
+            
+            const audioData = await invoke('stop_audio_recording');
+            console.log('Recording stopped, total samples:', audioData.length);
+            
+            this.isRecording = false;
+            this.elements.voiceIndicator.classList.add('hidden');
+        } catch (error) {
+            console.error('Stop recording error:', error);
+        }
+    }
 
-    speak(text) {
+    async speak(text) {
         if (this.synthesis && this.synthesis.speaking) {
             this.synthesis.cancel();
         }
@@ -258,6 +422,27 @@ class ProjectTektra {
         utterance.rate = 0.9;
         utterance.pitch = 1;
         utterance.volume = 0.8;
+        
+        // Start avatar lip sync
+        if (this.avatar) {
+            try {
+                const lipSyncFrames = await invoke('start_avatar_speaking', { text });
+                this.avatar.animateLipSync(lipSyncFrames);
+            } catch (error) {
+                console.error('Avatar lip sync error:', error);
+            }
+        }
+        
+        // Handle speech end
+        utterance.onend = async () => {
+            if (this.avatar) {
+                try {
+                    await invoke('stop_avatar_speaking');
+                } catch (error) {
+                    console.error('Avatar stop speaking error:', error);
+                }
+            }
+        };
         
         this.synthesis.speak(utterance);
     }
@@ -303,6 +488,11 @@ class ProjectTektra {
             this.elements.voiceEnabled.checked = settings.voice_enabled;
             this.elements.autoSpeech.checked = settings.auto_speech;
             
+            // Load prompt settings
+            this.elements.systemPrompt.value = settings.system_prompt || 'You are Tektra, a helpful AI assistant powered by the Gemma-3n model. You provide accurate, thoughtful, and detailed responses.';
+            this.elements.userPrefix.value = settings.user_prefix || 'User: ';
+            this.elements.assistantPrefix.value = settings.assistant_prefix || 'Assistant: ';
+            
             this.elements.modelName.textContent = settings.model_name;
         } catch (error) {
             console.error('Load settings error:', error);
@@ -340,7 +530,10 @@ class ProjectTektra {
                 max_tokens: 512,
                 temperature: 0.7,
                 voice_enabled: this.elements.settingsVoiceEnabled.checked,
-                auto_speech: this.elements.autoSpeech.checked
+                auto_speech: this.elements.autoSpeech.checked,
+                system_prompt: this.elements.systemPrompt.value,
+                user_prefix: this.elements.userPrefix.value,
+                assistant_prefix: this.elements.assistantPrefix.value
             };
 
             await invoke('update_settings', { newSettings: settings });
@@ -367,6 +560,110 @@ class ProjectTektra {
         } else {
             this.elements.statusDot.classList.remove('connected');
         }
+    }
+    
+    // Avatar methods
+    initializeAvatar() {
+        if (this.elements.avatarCanvas) {
+            this.avatar = new Avatar2D(this.elements.avatarCanvas);
+            
+            // Listen for avatar state changes from backend
+            listen('avatar-state-changed', (event) => {
+                if (this.avatar) {
+                    this.avatar.setState(event.payload);
+                }
+            });
+            
+            // Set up periodic blinking
+            setInterval(() => {
+                if (this.avatar && Math.random() < 0.3) {
+                    invoke('avatar_blink');
+                }
+            }, 3000);
+        }
+    }
+    
+    // Camera methods
+    async initializeCamera() {
+        try {
+            // Listen for camera events
+            await listen('camera-ready', () => {
+                this.addMessage('system', '📷 Camera initialized successfully');
+            });
+            
+            await listen('camera-error', (event) => {
+                this.addMessage('system', `📷 Camera error: ${event.payload}`);
+            });
+            
+            await listen('camera-capture-started', () => {
+                this.cameraActive = true;
+                this.elements.cameraToggleBtn.textContent = 'Disable Camera';
+                this.elements.cameraPreview.classList.remove('hidden');
+                this.startCameraPreview();
+            });
+            
+            await listen('camera-capture-stopped', () => {
+                this.cameraActive = false;
+                this.elements.cameraToggleBtn.textContent = 'Enable Camera';
+                this.elements.cameraPreview.classList.add('hidden');
+                this.stopCameraPreview();
+            });
+        } catch (error) {
+            console.error('Camera initialization error:', error);
+        }
+    }
+    
+    async toggleCamera() {
+        try {
+            if (!this.cameraActive) {
+                // Initialize camera if not already done
+                const initialized = await invoke('initialize_camera');
+                if (initialized) {
+                    await invoke('start_camera_capture');
+                }
+            } else {
+                await invoke('stop_camera_capture');
+            }
+        } catch (error) {
+            console.error('Camera toggle error:', error);
+            this.addMessage('system', `📷 Camera error: ${error}`);
+        }
+    }
+    
+    async startCameraPreview() {
+        const canvas = this.elements.cameraCanvas;
+        const ctx = canvas.getContext('2d');
+        
+        const updateFrame = async () => {
+            if (!this.cameraActive) return;
+            
+            try {
+                const frameData = await invoke('get_camera_frame');
+                
+                // Create an image from the base64 data
+                const img = new Image();
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                };
+                img.src = frameData;
+                
+                // Continue updating
+                if (this.cameraActive) {
+                    requestAnimationFrame(updateFrame);
+                }
+            } catch (error) {
+                console.error('Camera frame error:', error);
+            }
+        };
+        
+        updateFrame();
+    }
+    
+    stopCameraPreview() {
+        // Clear the canvas
+        const canvas = this.elements.cameraCanvas;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 }
 
@@ -793,6 +1090,130 @@ style.textContent = `
 
     ::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Loading overlay styles */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(10px);
+    }
+
+    .loading-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 3rem;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        min-width: 400px;
+    }
+
+    .loading-container h2 {
+        color: white;
+        margin-bottom: 2rem;
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+
+    .progress-bar {
+        background: rgba(255, 255, 255, 0.2);
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #44ff44, #66ff66);
+        transition: width 0.3s ease;
+        width: 0%;
+        box-shadow: 0 0 10px rgba(68, 255, 68, 0.5);
+    }
+
+    .progress-text {
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    #progressStatus {
+        text-align: left;
+        flex: 1;
+    }
+
+    #progressPercent {
+        font-weight: 600;
+    }
+
+    /* Camera and Avatar panels */
+    .camera-panel, .avatar-panel {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        margin-top: 1rem;
+    }
+
+    .camera-panel h3, .avatar-panel h3 {
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .camera-preview {
+        margin-top: 1rem;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .camera-preview canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .avatar-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    #avatarCanvas {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+    }
+
+    .avatar-controls {
+        display: flex;
+        justify-content: center;
+    }
+
+    .expression-select {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    .expression-select option {
+        background: #333;
+        color: white;
     }
 `;
 document.head.appendChild(style);

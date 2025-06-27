@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Tektra needs access to your microphone for voice commands and interactions.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Tektra uses speech recognition to understand your voice commands.</string>
+</dict>
+</plist>

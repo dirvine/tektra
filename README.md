@@ -1,51 +1,80 @@
-# Project Tektra - Local AI Voice Assistant
+# Tektra - AI Voice Assistant
 
-🚀 **A completely self-contained desktop AI assistant that works entirely offline**
+🚀 **A voice-interactive AI assistant powered by Google's Gemma-3n model running locally on your machine**
 
 ## Features
 
-✅ **100% Offline** - No internet required after installation  
-✅ **Self-Contained** - Built-in AI model, no external dependencies  
-✅ **Voice Enabled** - Speech recognition and text-to-speech  
-✅ **Native Performance** - Built with Rust and Tauri  
-✅ **Modern UI** - Beautiful interface with real-time chat  
-✅ **Cross-Platform** - Works on macOS, Windows, and Linux  
+✅ **Local AI** - Runs Gemma-3n model locally with Metal acceleration on Apple Silicon  
+✅ **Voice Interaction** - Native audio recording with future speech-to-text support  
+✅ **Smart Conversations** - Context-aware responses with chat history  
+✅ **Beautiful UI** - Modern, gradient-based interface with real-time feedback  
+✅ **Self-Contained** - Automatic model downloading and caching  
+✅ **Privacy-First** - Everything runs locally on your machine  
 
 ## Architecture
 
-- **Frontend**: Modern web technologies (HTML5, JavaScript, CSS3)
-- **Backend**: Rust with built-in AI assistant
-- **Framework**: Tauri for native desktop performance
-- **AI**: Local pattern-matching assistant with intelligent responses
-- **Voice**: Web Speech API for recognition and synthesis
+- **Frontend**: React + TypeScript with Vite
+- **Backend**: Rust with Tauri framework
+- **AI Engine**: GGUF models for efficient inference (Gemma-3n E2B)
+- **Audio**: Native audio recording with future STT/TTS support
+- **Model**: Google Gemma-3n E2B (2.79GB) - automatically downloaded on first run
 
-## Quick Start
+## Installation
 
-### Prerequisites
-
-- Node.js (v18 or later)
-- Rust (latest stable)
-- System microphone (for voice input)
-
-### Installation
+### From Crates.io (Recommended)
 
 ```bash
+cargo install tektra
+```
+
+### From Source
+
+```bash
+git clone https://github.com/dirvine/tektra
+cd tektra
+cargo install --path src-tauri
+```
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/dirvine/tektra
+cd tektra
+
 # Install frontend dependencies
 npm install
 
 # Run in development mode
-cargo tauri dev
-
-# Build for production
-cargo tauri build
+tektra dev
+# OR
+npm run tauri dev
 ```
 
-### Usage
+## Usage
 
-1. **Text Chat**: Type messages and get intelligent responses
-2. **Voice Input**: Click the microphone button to speak
+### Running the Application
+
+Simply run:
+```bash
+tektra
+```
+
+### CLI Commands
+
+```bash
+tektra --help     # Show help
+tektra --version  # Show version information
+tektra dev        # Run in development mode with hot reload
+```
+
+### In-App Features
+
+1. **Text Chat**: Type messages and get intelligent responses from Gemma-3n
+2. **Voice Input**: Click the microphone button to record audio (STT coming soon)
 3. **Voice Output**: Enable auto-speech in settings for spoken responses
-4. **Settings**: Customize AI model and voice preferences
+4. **Progress Tracking**: Visual progress bar shows model download status
+5. **Settings**: Customize preferences and view model information
 
 ## Project Structure
 
@@ -64,22 +93,46 @@ tektra/
 └── CLAUDE.md            # Development guidelines
 ```
 
-## Built-in AI Assistant
+## Building from Source
 
-The local AI assistant includes:
+### Prerequisites
 
-- **Intelligent Responses**: Context-aware conversation
-- **Multiple Personalities**: Varied response styles
-- **Pattern Matching**: Recognizes greetings, questions, and requests
-- **Memory**: Maintains conversation history
-- **Fast Performance**: Instant responses without network calls
+- Rust 1.70+ (install from [rustup.rs](https://rustup.rs))
+- Node.js 16+ and npm
+- macOS 11+ (for Metal acceleration, other platforms supported)
 
-## Voice Features
+### Build Steps
 
-- **Speech Recognition**: Uses Web Speech API
-- **Text-to-Speech**: Natural voice synthesis
-- **Microphone Controls**: Visual feedback and error handling
-- **Platform Support**: Works on all major browsers/platforms
+1. Clone and enter the repository:
+```bash
+git clone https://github.com/dirvine/tektra
+cd tektra
+```
+
+2. Install frontend dependencies:
+```bash
+npm install
+```
+
+3. Build for release:
+```bash
+./build-release.sh
+```
+
+4. Install locally:
+```bash
+cargo install --path src-tauri
+```
+
+## Models
+
+Tektra uses the Gemma-3n E2B model (2.79GB) from Google, which is automatically downloaded on first run. The model is cached in `~/.cache/huggingface/hub/` for subsequent uses.
+
+### Model Details
+- **Name**: Gemma-3n E2B (2 billion parameters)
+- **Size**: 2.79GB (4-bit quantized GGUF format)
+- **Performance**: Optimized for Apple Silicon with Metal acceleration
+- **Source**: Automatically downloaded from HuggingFace Hub
 
 ## Development
 
@@ -105,9 +158,31 @@ This is a complete rewrite of Project Tektra as a native desktop application:
 3. Follow the development guidelines in CLAUDE.md
 4. Submit a pull request
 
+## Publishing to Crates.io
+
+To publish this package to crates.io:
+
+1. Make sure you're logged in:
+```bash
+cargo login
+```
+
+2. From the src-tauri directory:
+```bash
+cd src-tauri
+cargo publish
+```
+
+Note: The frontend assets are bundled with the binary during the build process.
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under either of:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
+at your option.
 
 ## Credits
 
