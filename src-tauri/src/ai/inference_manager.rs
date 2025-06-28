@@ -157,22 +157,48 @@ impl InferenceManager {
         let mut info = String::new();
         
         info.push_str("Available Inference Backends:\n");
-        info.push_str("- GGUF: Available (cross-platform)\n");
+        info.push_str("- GGUF: Available (cross-platform - works on all systems)\n");
         
-        if std::env::consts::OS == "macos" && std::env::consts::ARCH == "aarch64" {
-            if MLXInference::is_available() {
-                info.push_str("- MLX: Available (Apple Silicon detected)\n");
-            } else {
-                info.push_str("- MLX: Not available (requires XCode Command Line Tools with Metal compiler)\n");
+        // Platform-specific backend availability
+        match (std::env::consts::OS, std::env::consts::ARCH) {
+            ("macos", "aarch64") => {
+                if MLXInference::is_available() {
+                    info.push_str("- MLX: Available (Apple Silicon detected)\n");
+                } else {
+                    info.push_str("- MLX: Not available (requires XCode Command Line Tools with Metal compiler)\n");
+                }
             }
-        } else {
-            info.push_str("- MLX: Not available (requires Apple Silicon Mac)\n");
+            ("macos", _) => {
+                info.push_str("- MLX: Not available (requires Apple Silicon, not Intel Mac)\n");
+            }
+            ("linux", _) => {
+                info.push_str("- MLX: Not available (Apple Silicon only - using GGUF on Linux)\n");
+            }
+            ("windows", _) => {
+                info.push_str("- MLX: Not available (Apple Silicon only - using GGUF on Windows)\n");
+            }
+            _ => {
+                info.push_str("- MLX: Not available (Apple Silicon only)\n");
+            }
         }
         
-        info.push_str(&format!("\nCurrent platform: {} {}\n", 
+        info.push_str(&format!("\nCurrent platform: {} {} ({})\n", 
             std::env::consts::OS, 
-            std::env::consts::ARCH
+            std::env::consts::ARCH,
+            if std::env::consts::OS == "macos" && std::env::consts::ARCH == "aarch64" {
+                "Apple Silicon"
+            } else {
+                "Non-Apple Silicon"
+            }
         ));
+        
+        // Add default backend info
+        let default_backend = if MLXInference::is_available() {
+            "MLX (optimized for your Apple Silicon)"
+        } else {
+            "GGUF (cross-platform compatibility)"
+        };
+        info.push_str(&format!("Default backend: {}\n", default_backend));
         
         info
     }
@@ -206,5 +232,49 @@ mod tests {
         let info = InferenceManager::get_system_info();
         assert!(info.contains("Available Inference Backends"));
         assert!(info.contains("GGUF: Available"));
+    }
+    
+    #[test]
+    fn test_platform_specific_info() {
+        let info = InferenceManager::get_system_info();
+        
+        // Test platform-specific messages
+        #[cfg(target_os = "linux")]
+        assert!(info.contains("MLX: Not available (Apple Silicon only - using GGUF on Linux)"));
+        
+        #[cfg(target_os = "windows")]
+        assert!(info.contains("MLX: Not available (Apple Silicon only - using GGUF on Windows)"));
+        
+        #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+        assert!(info.contains("MLX: Not available (requires Apple Silicon, not Intel Mac)"));
+        
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        assert!(info.contains("MLX: "));
+    }
+    
+    #[tokio::test] 
+    async fn test_cross_platform_backend_creation() {
+        // Test that GGUF backend can be created on all platforms
+        let gguf_manager = InferenceManager::new(BackendType::GGUF);
+        assert!(gguf_manager.is_ok());
+        
+        // Test MLX backend creation
+        let mlx_manager = InferenceManager::new(BackendType::MLX);
+        
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            // Should succeed on Apple Silicon (or fail gracefully if Metal not installed)
+            // Either way, it shouldn't panic
+            match mlx_manager {
+                Ok(_) => println!("MLX backend created successfully"),
+                Err(e) => println!("MLX backend creation failed (expected if Metal not installed): {}", e),
+            }
+        }
+        
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            // Should fail on non-Apple Silicon platforms
+            assert!(mlx_manager.is_err());
+        }
     }
 }

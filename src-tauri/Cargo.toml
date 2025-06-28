@@ -43,16 +43,16 @@ hound = "3.5"
 # Tokenizer support for both GGUF and MLX
 tokenizers = { version = "0.20", features = ["onig"] }
 
+# GGUF model inference (cross-platform - available on all systems)
+candle-core = "0.8"
+candle-nn = "0.8"
+candle-transformers = "0.8"
+
 # Model inference backends
 [target.'cfg(target_os = "macos")'.dependencies]
 # MLX for Apple Silicon (much faster on M1/M2/M3)
 # NOTE: Requires XCode Command Line Tools and metal compiler
 mlx-rs = { version = "0.25.0-alpha.1", features = ["metal", "accelerate"] }
-
-# GGUF model inference (cross-platform fallback)
-candle-core = "0.8"
-candle-nn = "0.8"
-candle-transformers = "0.8"
 
 # For downloading models
 # (already have hf-hub, reqwest, futures, dirs)
