@@ -192,14 +192,22 @@ impl AudioRecorder {
                             info!("Transcribed: {}", text);
                             Some(text)
                         }
-                        _ => None,
+                        Ok(_) => {
+                            info!("Whisper returned empty transcription");
+                            None
+                        }
+                        Err(e) => {
+                            error!("Whisper transcription error: {}", e);
+                            None
+                        }
                     }
                 } else {
-                    Some("[Whisper not loaded - please wait]".to_string())
+                    error!("Whisper not loaded - cannot transcribe audio");
+                    None
                 };
                 
                 if let Some(text) = text {
-                    // Emit transcribed text
+                    // Only emit transcribed text if we actually got something
                     let _ = self.app_handle.emit_all("speech-transcribed", text);
                 }
             }

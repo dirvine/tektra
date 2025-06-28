@@ -41,13 +41,31 @@ prompt = sys.stdin.read()
 # Generate response
 # MLX-LM's generate function only accepts max_tokens as a parameter
 # Temperature and top_p would need custom sampler implementation
-response = generate(
+full_response = generate(
     model, 
     tokenizer, 
     prompt,
     verbose=False,
     max_tokens={}
 )
+
+# Extract only the generated part (after the prompt)
+# The response includes the prompt, so we need to remove it
+if full_response.startswith(prompt):
+    response = full_response[len(prompt):]
+else:
+    # If for some reason it doesn't start with prompt, look for the model turn marker
+    model_marker = "<start_of_turn>model\\n"
+    if model_marker in full_response:
+        response = full_response.split(model_marker)[-1]
+        # Remove any end_of_turn marker if present
+        if "<end_of_turn>" in response:
+            response = response.split("<end_of_turn>")[0]
+    else:
+        response = full_response
+
+# Clean up the response
+response = response.strip()
 
 # Output just the generated text
 print(response)

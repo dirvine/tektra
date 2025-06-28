@@ -45,7 +45,7 @@ impl Default for AppSettings {
             temperature: 0.7,
             voice_enabled: true,
             auto_speech: false,
-            system_prompt: Some("You are Tektra, a helpful AI assistant powered by the Gemma-3n model. You provide accurate, thoughtful, and detailed responses.".to_string()),
+            system_prompt: Some("You are Tektra, a helpful AI assistant. Provide clear, conversational responses without using markdown formatting, emojis, or special characters unless specifically asked. Keep your responses natural and friendly.".to_string()),
             user_prefix: Some("User: ".to_string()),
             assistant_prefix: Some("Assistant: ".to_string()),
         }

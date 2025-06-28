@@ -342,25 +342,27 @@ impl AIManager {
         }
         
         let system = system_prompt.unwrap_or_else(|| 
-            "You are Tektra, a helpful AI assistant powered by the Gemma-3n model. You provide accurate, thoughtful, and detailed responses.".to_string()
+            "You are Tektra, a helpful AI assistant. Provide clear, conversational responses without using markdown formatting, emojis, or special characters unless specifically asked. Keep your responses natural and friendly.".to_string()
         );
         
         // Format prompt using correct Gemma chat template
+        // For Gemma, the system prompt should be part of the first user turn
         let _formatted_prompt = if !system.is_empty() {
+            // Include system prompt as context in the user message
             format!(
-                "{}{}{}\n{}\n{}{}\n{}{}",
+                "{}{}{}\n{}\n\n{}\n{}{}{}\n",
                 self.chat_template.bos,
                 self.chat_template.start_turn,
                 self.chat_template.user_role,
-                format!("{}\n\n{}", system, prompt),
+                system,
+                prompt,
                 self.chat_template.end_turn,
                 self.chat_template.start_turn,
-                self.chat_template.model_role,
-                "\n" // Model's response will go here
+                self.chat_template.model_role
             )
         } else {
             format!(
-                "{}{}{}\n{}{}\n{}{}",
+                "{}{}{}\n{}\n{}{}{}\n",
                 self.chat_template.bos,
                 self.chat_template.start_turn,
                 self.chat_template.user_role,
