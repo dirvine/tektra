@@ -47,7 +47,7 @@ tokenizers = { version = "0.20", features = ["onig"] }
 [target.'cfg(target_os = "macos")'.dependencies]
 # MLX for Apple Silicon (much faster on M1/M2/M3)
 # NOTE: Requires XCode Command Line Tools and metal compiler
-# mlx-rs = { version = "0.25.0-alpha.1", features = ["metal", "accelerate"], optional = true }
+mlx-rs = { version = "0.25.0-alpha.1", features = ["metal", "accelerate"] }
 
 # GGUF model inference (cross-platform fallback)
 candle-core = "0.8"
@@ -72,6 +72,10 @@ png = "0.17"
 [[bin]]
 name = "tektra"
 path = "src/main.rs"
+
+[[bin]]
+name = "test_mlx"
+path = "test_mlx.rs"
 
 [profile.release]
 opt-level = 3
