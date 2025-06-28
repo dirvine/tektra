@@ -11,7 +11,6 @@ mod gguf_inference;
 pub use gguf_inference::GGUFInference;
 
 // MLX inference engine (Apple Silicon only)
-// Currently disabled - requires XCode Command Line Tools and Metal compiler
 mod mlx_inference;
 pub use mlx_inference::MLXInference;
 

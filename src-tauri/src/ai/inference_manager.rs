@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{info, warn, error};
+use tracing::{info, warn};
 use super::inference_backend::{InferenceBackend, InferenceConfig, InferenceMetrics, BackendType};
 use super::gguf_inference::GGUFInference;
 

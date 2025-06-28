@@ -65,7 +65,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             inference: InferenceConfig {
-                backend: BackendType::Auto,
+                backend: BackendType::Auto,  // Auto will use MLX on Apple Silicon, GGUF elsewhere
                 benchmark_on_startup: false,
                 max_tokens: 512,
                 temperature: 0.7,

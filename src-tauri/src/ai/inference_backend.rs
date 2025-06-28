@@ -50,7 +50,7 @@ pub trait InferenceBackend: Send + Sync {
     /// Generate text with performance metrics
     fn generate_with_metrics(&self, prompt: &str, config: &InferenceConfig) -> Result<(String, InferenceMetrics)> {
         let start = Instant::now();
-        let mut first_token_time = None;
+        let first_token_time = None;
         let initial_memory = self.get_memory_usage_mb();
         
         // Default implementation - backends can override for more accurate metrics

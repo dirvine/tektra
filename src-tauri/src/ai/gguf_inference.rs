@@ -3,8 +3,8 @@ use std::path::Path;
 use tracing::{info, error, warn};
 use super::inference_backend::{InferenceBackend, InferenceConfig, InferenceMetrics};
 use std::time::Instant;
-use candle_core::{Device, Tensor, DType};
-use candle_transformers::models::gemma2::{Config as GemmaConfig, Model as GemmaModel};
+use candle_core::Device;
+use candle_transformers::models::gemma2::Model as GemmaModel;
 use tokenizers::Tokenizer;
 use std::sync::Arc;
 
@@ -68,6 +68,59 @@ impl GGUFInference {
                     warn!("Failed to load tokenizer: {}", e);
                 }
             }
+        } else {
+            // Try to download tokenizer from a public repository
+            info!("Tokenizer not found locally, downloading tokenizer...");
+            
+            // Try the unsloth repository which has the tokenizer publicly available
+            let tokenizer_url = "https://huggingface.co/unsloth/gemma-2-2b-it-bnb-4bit/resolve/main/tokenizer.json";
+            let tokenizer_path_clone = tokenizer_path.clone();
+            
+            // Download using blocking I/O to avoid runtime issues
+            let download_result = std::thread::spawn(move || {
+                let client = reqwest::blocking::Client::builder()
+                    .build()
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to create client: {}", e)))?;
+                
+                match client.get(tokenizer_url).send() {
+                    Ok(response) => {
+                        if response.status().is_success() {
+                            match response.bytes() {
+                                Ok(bytes) => {
+                                    std::fs::write(&tokenizer_path_clone, bytes)
+                                }
+                                Err(e) => {
+                                    Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to read response: {}", e)))
+                                }
+                            }
+                        } else {
+                            Err(std::io::Error::new(std::io::ErrorKind::Other, format!("HTTP error: {}", response.status())))
+                        }
+                    }
+                    Err(e) => {
+                        Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Request failed: {}", e)))
+                    }
+                }
+            }).join().unwrap();
+            
+            match download_result {
+                Ok(_) => {
+                    info!("Tokenizer downloaded successfully");
+                    // Try to load it
+                    match Tokenizer::from_file(&tokenizer_path) {
+                        Ok(tokenizer) => {
+                            self.tokenizer = Some(Arc::new(tokenizer));
+                            info!("Tokenizer loaded successfully");
+                        }
+                        Err(e) => {
+                            error!("Failed to load downloaded tokenizer: {}", e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to download/save tokenizer: {}", e);
+                }
+            }
         }
         
         // TODO: Implement actual GGUF loading with Candle
@@ -82,22 +135,6 @@ impl GGUFInference {
         Ok(())
     }
     
-    fn generate_fallback_response(&self, prompt: &str) -> String {
-        // Provide slightly better fallback responses than pure demo mode
-        let prompt_lower = prompt.to_lowercase();
-        
-        if prompt_lower.contains("capital") && prompt_lower.contains("france") {
-            "The capital of France is Paris.".to_string()
-        } else if prompt_lower.contains("2+2") || prompt_lower.contains("2 + 2") {
-            "2 + 2 = 4".to_string()
-        } else if prompt_lower.contains("hello") || prompt_lower.contains("hi") {
-            "Hello! I'm Tektra, your AI assistant. While I'm running with limited inference capabilities at the moment, I'm here to help with your questions.".to_string()
-        } else if prompt_lower.contains("who are you") {
-            "I'm Tektra, an AI assistant powered by the Gemma-3n model. Currently running in limited mode as the full GGUF inference is being implemented.".to_string()
-        } else {
-            format!("I understand you're asking about '{}'. While my full inference capabilities are being implemented, I can provide basic responses. For more complex queries, the full model implementation will be available soon.", prompt)
-        }
-    }
 }
 
 impl InferenceBackend for GGUFInference {
@@ -129,9 +166,8 @@ impl InferenceBackend for GGUFInference {
                     info!("Prompt tokenized to {} tokens", tokens.len());
                     
                     // TODO: Implement actual Candle inference here
-                    // For now, provide a better fallback response
-                    warn!("Candle inference not yet implemented, using fallback response");
-                    return Ok(self.generate_fallback_response(prompt));
+                    error!("GGUF inference with Candle is not yet implemented");
+                    return Err(anyhow::anyhow!("GGUF inference with Candle is not yet implemented. Please use a different backend or wait for implementation."));
                 }
                 Err(e) => {
                     error!("Failed to tokenize prompt: {}", e);
@@ -139,8 +175,8 @@ impl InferenceBackend for GGUFInference {
                 }
             }
         } else {
-            warn!("No tokenizer available, using fallback response");
-            return Ok(self.generate_fallback_response(prompt));
+            error!("No tokenizer available for GGUF model");
+            return Err(anyhow::anyhow!("No tokenizer available. GGUF models require a tokenizer.json file."));
         }
     }
     
