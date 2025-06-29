@@ -1,6 +1,6 @@
 [package]
 name = "tektra"
-version = "0.2.2"
+version = "0.2.3"
 description = "A voice-interactive AI assistant with multimodal capabilities"
 authors = ["David Irvine <david.irvine@maidsafe.net>"]
 license = "MIT OR Apache-2.0"
