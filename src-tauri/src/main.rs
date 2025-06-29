@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Manager, State};
 use tokio::sync::Mutex;
-use tracing::{info, error};
+use tracing::{info, error, warn};
 
 mod ai;
 use ai::AIManager;
@@ -697,6 +697,7 @@ async fn benchmark_backends(
         Err(e) => Err(format!("Failed to benchmark backends: {}", e)),
     }
 }
+
 
 fn main() {
     // Check if running as CLI

@@ -21,18 +21,34 @@
 
 ## Installation
 
-### From Crates.io (Recommended)
+### Pre-built Binaries (Recommended)
 
-```bash
-cargo install tektra
-```
+Download the latest pre-built binary for your platform from the [GitHub Releases](https://github.com/dirvine/tektra/releases) page.
 
 ### From Source
 
+**Note**: Tektra is a desktop application that requires both Rust backend and React frontend. `cargo install` alone will not work properly.
+
 ```bash
+# Clone the repository
 git clone https://github.com/dirvine/tektra
 cd tektra
-cargo install --path src-tauri
+
+# Install frontend dependencies
+npm install
+
+# Build the complete application
+npm run tauri:build
+
+# The built application will be in src-tauri/target/release/bundle/
+```
+
+### Cargo Install (Limited - Backend Only)
+
+⚠️ **Not recommended for end users** - This only installs the Rust backend without the frontend UI:
+
+```bash
+cargo install tektra
 ```
 
 ### Development Setup
