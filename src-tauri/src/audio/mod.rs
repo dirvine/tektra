@@ -2,7 +2,7 @@ mod real_audio;
 
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter};
 use tracing::{info, error};
 use real_audio::RealAudioRecorder;
 use crate::ai::{SpeechProcessor, SileroVAD, WhisperSTT};
@@ -70,7 +70,7 @@ impl AudioRecorder {
         info!("Starting audio recording");
 
         // Emit recording started event
-        let _ = self.app_handle.emit_all("recording-started", ());
+        let _ = self.app_handle.emit("recording-started", ());
 
         // Use real audio if available
         if let Some(ref recorder) = self.real_recorder {
@@ -110,7 +110,7 @@ impl AudioRecorder {
         };
         
         // Emit recording stopped event
-        let _ = self.app_handle.emit_all("recording-stopped", audio_data.len());
+        let _ = self.app_handle.emit("recording-stopped", audio_data.len());
 
         info!("Recorded {} samples ({:.2} seconds)", audio_data.len(), audio_data.len() as f32 / self.sample_rate as f32);
 
@@ -268,7 +268,7 @@ impl AudioRecorder {
                 let app_handle = self.app_handle.clone();
                 let transcribed_text_clone = transcribed_text.clone();
                 tokio::spawn(async move {
-                    if let Err(e) = app_handle.emit_all("process_audio_input", serde_json::json!({
+                    if let Err(e) = app_handle.emit("process_audio_input", serde_json::json!({
                         "message": transcribed_text_clone,
                         "audio_data": audio_bytes,
                     })) {
@@ -282,7 +282,7 @@ impl AudioRecorder {
         {
             let processor = self.speech_processor.lock().unwrap();
             if processor.should_interrupt_assistant() {
-                let _ = self.app_handle.emit_all("interrupt-assistant", ());
+                let _ = self.app_handle.emit("interrupt-assistant", ());
             }
         }
         

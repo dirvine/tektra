@@ -137,7 +137,7 @@ async fn download_file_with_progress(
 }
 
 async fn emit_download_progress(app_handle: &AppHandle, progress: u32, status: &str, model_name: &str) {
-    let _ = app_handle.emit_all("model-loading-progress", serde_json::json!({
+    let _ = app_handle.emit("model-loading-progress", serde_json::json!({
         "progress": progress,
         "status": status,
         "model_name": model_name

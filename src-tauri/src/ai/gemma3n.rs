@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter};
 use tracing::{error, info};
 use super::inference_backend::{InferenceConfig, BackendType};
 use super::inference_manager::{InferenceManager};
@@ -356,13 +356,13 @@ impl AIManager {
             model_name: model_name.to_string(),
         };
         
-        if let Err(e) = self.app_handle.emit_all("model-loading-progress", &progress_data) {
+        if let Err(e) = self.app_handle.emit("model-loading-progress", &progress_data) {
             error!("Failed to emit progress: {}", e);
         }
     }
 
     async fn emit_completion(&self, success: bool, error: Option<String>) {
-        let _ = self.app_handle.emit_all(
+        let _ = self.app_handle.emit(
             "model-loading-complete",
             serde_json::json!({
                 "success": success,

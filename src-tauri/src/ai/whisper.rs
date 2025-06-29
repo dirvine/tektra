@@ -2,7 +2,7 @@ use anyhow::Result;
 use hf_hub::api::tokio::Api;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter};
 use tokio::fs;
 use tracing::{info, error};
 use whisper_rs::{WhisperContext, WhisperContextParameters, FullParams, SamplingStrategy};
@@ -324,7 +324,7 @@ impl WhisperSTT {
     }
 
     async fn emit_progress(&self, progress: u32, status: &str, model_name: &str) {
-        let _ = self.app_handle.emit_all(
+        let _ = self.app_handle.emit(
             "model-loading-progress",
             serde_json::json!({
                 "progress": progress,
@@ -335,7 +335,7 @@ impl WhisperSTT {
     }
 
     async fn emit_completion(&self, success: bool, error: Option<String>) {
-        let _ = self.app_handle.emit_all(
+        let _ = self.app_handle.emit(
             "model-loading-complete",
             serde_json::json!({
                 "success": success,
