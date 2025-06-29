@@ -59,55 +59,116 @@ const EnhancedChatInterface: React.FC = () => {
       content: inputValue
     });
     
+    const userMessage = inputValue;
     setInputValue('');
     setIsTyping(true);
     setAvatarSpeaking(true);
     
-    // Simulate AI response with realistic delay
-    setTimeout(() => {
+    try {
+      // Use real backend - check if camera is enabled for multimodal
+      const result = modelStatus.cameraEnabled 
+        ? await invoke<string>('send_message_with_camera', { message: userMessage })
+        : await invoke<string>('send_message', { message: userMessage });
+      
       addMessage({
         role: 'assistant',
-        content: `I understand you said: "${inputValue}". This is the complete Tektra AI Assistant with full multimodal capabilities including voice, vision, and advanced chat features!`
+        content: result
       });
+    } catch (error) {
+      console.error('AI response error:', error);
+      addMessage({
+        role: 'assistant',
+        content: `Error: ${error}`
+      });
+    } finally {
       setIsTyping(false);
       setAvatarSpeaking(false);
-    }, 2000);
+    }
   };
 
-  const toggleRecording = () => {
+  const toggleRecording = async () => {
     const newRecording = !isRecording;
     setRecording(newRecording);
     setAvatarListening(newRecording);
     
-    if (newRecording) {
-      addMessage({
-        role: 'system',
-        content: '🎤 Voice recording started...'
-      });
-    } else {
-      addMessage({
-        role: 'system',
-        content: '🎤 Voice recording stopped. Processing speech...'
-      });
-      
-      // Simulate voice processing
-      setTimeout(() => {
+    try {
+      if (newRecording) {
+        const started = await invoke<boolean>('start_audio_recording');
+        if (started) {
+          addMessage({
+            role: 'system',
+            content: '🎤 Voice recording started...'
+          });
+        }
+      } else {
+        const audioData = await invoke<number[]>('stop_audio_recording');
         addMessage({
-          role: 'user',
-          content: 'Hello, this is a voice message transcription!'
+          role: 'system',
+          content: '🎤 Voice recording stopped. Processing speech...'
         });
+        
+        // Process the actual audio data
+        if (audioData && audioData.length > 0) {
+          const audioBytes = new Uint8Array(audioData);
+          const result = await invoke<string>('process_audio_input', { 
+            message: '', 
+            audioData: Array.from(audioBytes) 
+          });
+          
+          if (result.trim()) {
+            addMessage({
+              role: 'user',
+              content: result
+            });
+          }
+        }
         setAvatarListening(false);
-      }, 1500);
+      }
+    } catch (error) {
+      console.error('Audio recording error:', error);
+      addMessage({
+        role: 'system',
+        content: `❌ Audio error: ${error}`
+      });
+      setRecording(false);
+      setAvatarListening(false);
     }
   };
 
-  const toggleCamera = () => {
+  const toggleCamera = async () => {
     const newCameraState = !modelStatus.cameraEnabled;
-    // Update camera state through store action
-    addMessage({
-      role: 'system',
-      content: newCameraState ? '📷 Camera enabled - Ready for vision tasks' : '📷 Camera disabled'
-    });
+    
+    try {
+      if (newCameraState) {
+        const initialized = await invoke<boolean>('initialize_camera');
+        if (initialized) {
+          const started = await invoke<boolean>('start_camera_capture');
+          if (started) {
+            // Update store state
+            const setModelStatus = useTektraStore.getState().setModelStatus;
+            setModelStatus({ cameraEnabled: true });
+            addMessage({
+              role: 'system',
+              content: '📷 Camera enabled - Ready for vision tasks'
+            });
+          }
+        }
+      } else {
+        await invoke<boolean>('stop_camera_capture');
+        const setModelStatus = useTektraStore.getState().setModelStatus;
+        setModelStatus({ cameraEnabled: false });
+        addMessage({
+          role: 'system',
+          content: '📷 Camera disabled'
+        });
+      }
+    } catch (error) {
+      console.error('Camera toggle error:', error);
+      addMessage({
+        role: 'system',
+        content: `❌ Camera error: ${error}`
+      });
+    }
   };
 
   return (
@@ -532,6 +593,12 @@ const CompleteAppContent: React.FC = () => {
   const setModelStatus = useTektraStore((state) => state.setModelStatus);
   const addMessage = useTektraStore((state) => state.addMessage);
   const addNotification = useTektraStore((state) => state.addNotification);
+  const setRecording = useTektraStore((state) => state.setRecording);
+  const setAvatarSpeaking = useTektraStore((state) => state.setAvatarSpeaking);
+  const setAvatarListening = useTektraStore((state) => state.setAvatarListening);
+
+  // Local state for UI
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     initializeApp();
@@ -540,37 +607,49 @@ const CompleteAppContent: React.FC = () => {
 
   const initializeApp = async () => {
     try {
-      setModelStatus({ isLoading: true });
+      setModelStatus({ isLoading: true, modelName: 'gemma3n:e4b' });
       
-      // Initialize AI model
-      const modelLoaded = await invoke<boolean>('initialize_model').catch(() => false);
-      if (modelLoaded) {
-        setModelStatus({ isLoaded: true, isLoading: false });
+      // Initialize Whisper first
+      try {
+        await invoke<boolean>('initialize_whisper');
         addMessage({
           role: 'system',
-          content: '✅ AI model loaded successfully. Welcome to the complete Tektra AI Assistant!'
+          content: '🎤 Speech recognition initialized'
+        });
+      } catch (whisperError) {
+        console.warn('Whisper initialization failed:', whisperError);
+        addMessage({
+          role: 'system',
+          content: '⚠️ Speech recognition unavailable'
+        });
+      }
+      
+      // Initialize AI model (gemma3:4b)
+      const modelLoaded = await invoke<boolean>('initialize_model');
+      if (modelLoaded) {
+        setModelStatus({ isLoaded: true, isLoading: false, modelName: 'gemma3n:e4b' });
+        addMessage({
+          role: 'system',
+          content: '✅ Gemma3n:e4b model loaded successfully - multimodal capabilities ready!'
         });
         addNotification({
           type: 'success',
-          message: 'System ready'
+          message: 'AI model ready'
         });
       } else {
-        // Fallback for demo
-        setTimeout(() => {
-          setModelStatus({ isLoaded: true, isLoading: false });
-          addMessage({
-            role: 'assistant',
-            content: 'Welcome! I am your complete AI assistant with voice, vision, and chat capabilities. The full professional interface is now ready!'
-          });
-        }, 2000);
+        throw new Error('Model failed to load - check if gemma3n:e4b is available in Ollama');
       }
       
     } catch (error) {
       console.error('Model initialization error:', error);
-      setModelStatus({ isLoading: false });
+      setModelStatus({ isLoading: false, modelName: 'gemma3n:e4b' });
       addMessage({
         role: 'system',
-        content: `❌ Failed to load AI model: ${error}`
+        content: `❌ Failed to load gemma3n:e4b model: ${error}`
+      });
+      addNotification({
+        type: 'error',
+        message: 'Model initialization failed'
       });
     }
   };
@@ -581,19 +660,63 @@ const CompleteAppContent: React.FC = () => {
       await listen('ai-response', (event: any) => {
         addMessage({
           role: 'assistant',
-          content: event.payload.content
+          content: event.payload.content || event.payload.message || event.payload
         });
+        setIsTyping(false);
+        setAvatarSpeaking(false);
       });
 
       // Listen for transcription results
       await listen('transcription-result', (event: any) => {
         addMessage({
           role: 'user',
-          content: event.payload.text
+          content: event.payload.text || event.payload
         });
       });
+
+      // Listen for audio recording events
+      await listen('audio-recording-started', () => {
+        setRecording(true);
+        setAvatarListening(true);
+      });
+
+      await listen('audio-recording-stopped', () => {
+        setRecording(false);
+      });
+
+      // Listen for camera events
+      await listen('camera-initialized', () => {
+        const setModelStatus = useTektraStore.getState().setModelStatus;
+        setModelStatus({ cameraEnabled: true });
+        addMessage({
+          role: 'system',
+          content: '📷 Camera initialized and ready'
+        });
+      });
+
+      await listen('camera-frame-captured', (event: any) => {
+        // Handle camera frame if needed
+        console.log('Camera frame captured:', event.payload);
+      });
+
+      // Listen for model loading progress
+      await listen('model-loading-progress', (event: any) => {
+        addMessage({
+          role: 'system',
+          content: `📊 ${event.payload.status || event.payload}`
+        });
+      });
+
+      // Listen for errors
+      await listen('error', (event: any) => {
+        addMessage({
+          role: 'system',
+          content: `❌ Error: ${event.payload.message || event.payload}`
+        });
+      });
+
     } catch (error) {
-      console.log('Event listener setup skipped:', error);
+      console.log('Event listener setup failed:', error);
     }
   };
 

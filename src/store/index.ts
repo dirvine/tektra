@@ -105,7 +105,7 @@ interface TektraStore {
 // Default states
 const defaultModelStatus: ModelStatus = {
   isLoaded: false,
-  modelName: 'gemma2:2b',
+  modelName: 'gemma3n:e4b',
   backend: 'Ollama',
   isLoading: false,
   whisperReady: false,
