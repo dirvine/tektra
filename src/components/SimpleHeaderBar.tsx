@@ -7,7 +7,8 @@ import {
   Activity,
   Zap,
   Brain,
-  Eye
+  Eye,
+  PanelRight
 } from 'lucide-react';
 import { useTektraStore } from '../store';
 
@@ -19,6 +20,7 @@ const SimpleHeaderBar: React.FC<HeaderBarProps> = ({ className = '' }) => {
   // Use individual selectors - this is the only pattern that works
   const modelStatus = useTektraStore((state) => state.modelStatus);
   const uiState = useTektraStore((state) => state.uiState);
+  const toggleRightSidebar = useTektraStore((state) => state.toggleRightSidebar);
 
   const getStatusColor = () => {
     if (modelStatus.isLoading) return 'text-warning';
@@ -87,6 +89,17 @@ const SimpleHeaderBar: React.FC<HeaderBarProps> = ({ className = '' }) => {
 
       {/* Right Section - User Controls */}
       <div className="flex items-center space-x-3">
+        {/* Right Sidebar Toggle */}
+        {!uiState.rightSidebarVisible && (
+          <button 
+            onClick={toggleRightSidebar}
+            className="p-2 rounded-button bg-accent/10 hover:bg-accent/20 border border-accent/30 transition-colors"
+            title="Open Context Panel"
+          >
+            <PanelRight className="w-5 h-5 text-accent" />
+          </button>
+        )}
+
         {/* Notifications */}
         <button className="p-2 rounded-button hover:bg-surface-hover transition-colors relative">
           <Bell className="w-5 h-5 text-text-secondary" />

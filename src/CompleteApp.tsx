@@ -50,6 +50,14 @@ const EnhancedChatInterface: React.FC = () => {
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  
+  // Ref for auto-scrolling
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when messages change
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -172,9 +180,9 @@ const EnhancedChatInterface: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Chat Header */}
-      <div className="p-4 border-b border-border-primary bg-surface/30">
+      <div className="flex-shrink-0 p-4 border-b border-border-primary bg-surface/30">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-text-primary">AI Assistant Chat</h2>
@@ -192,7 +200,7 @@ const EnhancedChatInterface: React.FC = () => {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 min-h-0" style={{height: 'calc(100vh - 200px)'}}>
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <MessageSquare className="w-12 h-12 text-text-tertiary mx-auto mb-4" />
@@ -210,7 +218,7 @@ const EnhancedChatInterface: React.FC = () => {
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
+                className={`max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl px-4 py-3 rounded-lg ${
                   message.role === 'user'
                     ? 'bg-accent text-white'
                     : message.role === 'system'
@@ -218,7 +226,7 @@ const EnhancedChatInterface: React.FC = () => {
                     : 'bg-surface border border-border-primary text-text-primary'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                 <p className="text-xs opacity-70 mt-1">
                   {message.timestamp.toLocaleTimeString()}
                 </p>
@@ -239,10 +247,13 @@ const EnhancedChatInterface: React.FC = () => {
             </div>
           </div>
         )}
+        
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-border-primary p-4 bg-surface/30">
+      <div className="flex-shrink-0 border-t border-border-primary p-4 bg-surface/30">
         <div className="flex items-center space-x-3">
           {/* Voice Input */}
           <button
@@ -726,7 +737,7 @@ const CompleteAppContent: React.FC = () => {
       <SimpleHeaderBar />
 
       {/* Main Layout */}
-      <div className="flex pt-16 pb-8">
+      <div className="flex pt-16 pb-8 h-screen">
         {/* Left Sidebar */}
         <LeftSidebar />
 
@@ -748,7 +759,7 @@ const CompleteAppContent: React.FC = () => {
           </div>
 
           {/* Chat Interface */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
             <EnhancedChatInterface />
           </div>
         </main>
