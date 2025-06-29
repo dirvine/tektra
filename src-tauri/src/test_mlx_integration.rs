@@ -24,25 +24,13 @@ async fn main() {
     // Test backend creation
     println!("\nTesting Backend Creation:");
     
-    // Test GGUF (should always work)
-    match ai::InferenceManager::new(ai::BackendType::GGUF) {
-        Ok(_) => println!("✓ GGUF backend created successfully"),
-        Err(e) => println!("✗ GGUF backend failed: {}", e),
-    }
-    
-    // Test MLX (expected to fail without XCode tools)
+    // Test MLX (may fail without XCode tools on non-Apple Silicon)
     match ai::InferenceManager::new(ai::BackendType::MLX) {
-        Ok(_) => println!("✓ MLX backend created successfully"),
-        Err(e) => println!("✗ MLX backend failed (expected): {}", e),
-    }
-    
-    // Test Auto (should fall back to GGUF)
-    match ai::InferenceManager::new(ai::BackendType::Auto) {
         Ok(manager) => {
-            println!("✓ Auto backend created successfully");
+            println!("✓ MLX backend created successfully");
             println!("  Selected backend: {}", manager.backend_name().await);
         }
-        Err(e) => println!("✗ Auto backend failed: {}", e),
+        Err(e) => println!("✗ MLX backend failed: {}", e),
     }
     
     // Test configuration
@@ -56,12 +44,11 @@ async fn main() {
     
     // Benchmark test (with dummy model)
     println!("\nTesting Benchmark (without actual model):");
-    if let Ok(manager) = ai::InferenceManager::new(ai::BackendType::Auto) {
-        match manager.benchmark_backends("What is 2+2?", &ai::InferenceConfig::default()).await {
-            Ok(results) => {
-                for (backend, metrics) in results {
-                    println!("  {} benchmark completed (placeholder)", backend);
-                }
+    if let Ok(manager) = ai::InferenceManager::new(ai::BackendType::MLX) {
+        match manager.benchmark_backend("What is 2+2?", &ai::InferenceConfig::default()).await {
+            Ok(metrics) => {
+                println!("  MLX benchmark completed (placeholder)");
+                println!("  Metrics: {:?}", metrics);
             }
             Err(e) => println!("  Benchmark failed (expected without model): {}", e),
         }

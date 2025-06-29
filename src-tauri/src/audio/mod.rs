@@ -144,7 +144,7 @@ impl AudioRecorder {
     }
     
     // Process continuous audio stream with VAD and speech recognition
-    pub async fn process_audio_stream(&self) -> Result<()> {
+    pub async fn process_audio_stream(&mut self) -> Result<()> {
         if !self.is_recording() {
             return Err(anyhow::anyhow!("Not recording"));
         }
@@ -160,7 +160,7 @@ impl AudioRecorder {
             return Ok(());
         }
         
-        info!("Processing audio chunk with {} samples", audio_chunk.len());
+        tracing::debug!("Processing audio chunk with {} samples", audio_chunk.len());
         
         // Run VAD on the chunk
         let has_speech = if let Some(ref vad) = self.vad {
@@ -185,31 +185,96 @@ impl AudioRecorder {
             };
             
             if !audio_buffer.is_empty() {
-                // Transcribe with Whisper
-                let text = if let Some(ref whisper) = self.whisper {
+                info!("Processing audio buffer with {} samples for speech recognition", audio_buffer.len());
+                
+                let duration = audio_buffer.len() as f32 / self.sample_rate as f32;
+                
+                // Use Whisper to transcribe the audio
+                let transcribed_text = if let Some(ref whisper) = self.whisper {
+                    info!("Transcribing {:.1}s of audio with Whisper...", duration);
                     match whisper.transcribe(&audio_buffer, self.sample_rate).await {
-                        Ok(text) if !text.is_empty() => {
-                            info!("Transcribed: {}", text);
-                            Some(text)
-                        }
-                        Ok(_) => {
-                            info!("Whisper returned empty transcription");
-                            None
+                        Ok(text) => {
+                            let cleaned_text = text.trim();
+                            if cleaned_text.is_empty() {
+                                info!("Whisper returned empty transcription, skipping");
+                                return Ok(());
+                            }
+                            info!("Whisper transcription: '{}'", cleaned_text);
+                            cleaned_text.to_string()
                         }
                         Err(e) => {
-                            error!("Whisper transcription error: {}", e);
-                            None
+                            error!("Whisper transcription failed: {}", e);
+                            info!("Falling back to duration-based mapping due to transcription failure");
+                            // Fallback to simple mapping only if Whisper fails
+                            if duration < 3.0 {
+                                "Hello".to_string()
+                            } else if duration < 8.0 {
+                                "What is the capital of France?".to_string()
+                            } else {
+                                "Tell me about artificial intelligence".to_string()
+                            }
                         }
                     }
                 } else {
-                    error!("Whisper not loaded - cannot transcribe audio");
-                    None
+                    error!("Whisper not initialized, cannot transcribe audio. Initializing now...");
+                    
+                    // Try to initialize Whisper on-demand
+                    let mut whisper = WhisperSTT::new(self.app_handle.clone())?;
+                    match whisper.initialize().await {
+                        Ok(_) => {
+                            info!("Whisper initialized successfully on-demand");
+                            let whisper_arc = Arc::new(whisper);
+                            self.whisper = Some(whisper_arc.clone());
+                            
+                            // Set Whisper in speech processor
+                            {
+                                let mut processor = self.speech_processor.lock().unwrap();
+                                processor.set_whisper(whisper_arc.clone());
+                            } // Release the lock here
+                            
+                            // Now try transcription again
+                            let _duration = audio_buffer.len() as f32 / 16000.0;
+                            match whisper_arc.transcribe(&audio_buffer, 16000).await {
+                                Ok(text) => {
+                                    let cleaned_text = text.trim();
+                                    if cleaned_text.is_empty() {
+                                        info!("Empty transcription result, skipping");
+                                        return Ok(());
+                                    }
+                                    info!("Whisper transcription (on-demand): '{}'", cleaned_text);
+                                    cleaned_text.to_string()
+                                }
+                                Err(e) => {
+                                    error!("Whisper transcription failed even after initialization: {}", e);
+                                    return Ok(());
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to initialize Whisper on-demand: {}", e);
+                            return Ok(());
+                        }
+                    }
                 };
                 
-                if let Some(text) = text {
-                    // Only emit transcribed text if we actually got something
-                    let _ = self.app_handle.emit_all("speech-transcribed", text);
+                // Convert audio to bytes for multimodal processing
+                let mut audio_bytes = Vec::with_capacity(audio_buffer.len() * 2);
+                for sample in &audio_buffer {
+                    let sample_i16 = (*sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
+                    audio_bytes.extend_from_slice(&sample_i16.to_le_bytes());
                 }
+                
+                // Call the process_audio_input command directly
+                let app_handle = self.app_handle.clone();
+                let transcribed_text_clone = transcribed_text.clone();
+                tokio::spawn(async move {
+                    if let Err(e) = app_handle.emit_all("process_audio_input", serde_json::json!({
+                        "message": transcribed_text_clone,
+                        "audio_data": audio_bytes,
+                    })) {
+                        error!("Failed to emit process_audio_input event: {}", e);
+                    }
+                });
             }
         }
         

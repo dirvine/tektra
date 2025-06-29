@@ -37,28 +37,22 @@ hound = "3.5"
 # rubato = "0.15"  # For resampling if needed later
 
 # Speech processing
-# whisper-rs = "0.11"  # For Whisper STT when ready
+whisper-rs = "0.11"  # For Whisper STT
 # ort = "2.0"  # ONNX Runtime for Silero VAD when ready
 
-# Tokenizer support for both GGUF and MLX
-tokenizers = { version = "0.20", features = ["onig"] }
+# Legacy dependencies removed - using Ollama for model management
 
-# GGUF model inference (cross-platform - available on all systems)
-candle-core = "0.8"
-candle-nn = "0.8"
-candle-transformers = "0.8"
+# Ollama integration for reliable model management
+ollama-rs = { version = "0.3.2", features = ["stream", "tokio"] }
+ollama_td = "0.4.0"
+async-trait = "0.1"
 
-# Model inference backends
-[target.'cfg(target_os = "macos")'.dependencies]
-# MLX for Apple Silicon (much faster on M1/M2/M3)
-# NOTE: Requires XCode Command Line Tools and metal compiler
-mlx-rs = { version = "0.25.0-alpha.1", features = ["metal", "accelerate"] }
 
 # For downloading models
 # (already have hf-hub, reqwest, futures, dirs)
 
-# For camera/video input (temporarily disabled - using test mode)
-# nokhwa = { version = "0.10", features = ["input-avfoundation"], default-features = false }
+# For camera/video input
+nokhwa = { version = "0.10", features = ["input-avfoundation"] }
 
 # For avatar rendering (3D - not needed for 2D canvas)
 # wgpu = "0.20"
@@ -68,6 +62,31 @@ base64 = "0.22"
 
 # For image encoding
 png = "0.17"
+
+# For half precision float handling
+half = "2.4"
+
+# Multimodal support dependencies
+image = { version = "0.25.2", features = ["jpeg", "png", "gif", "webp", "tiff"] }
+symphonia = { version = "0.5.4", features = ["mp3", "aac", "flac", "wav"] }
+
+# Video processing (conditionally compiled for platforms that support it)
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+ffmpeg-next = { version = "7.0.0", optional = true }
+
+# Computer vision and image processing
+imageproc = "0.25.0"
+nalgebra = "0.33.0"  # Linear algebra for image transformations
+
+# Multimodal data visualization and debugging
+# rerun = { version = "0.18.2", optional = true } # Disabled due to wasm-bindgen conflicts
+
+# Feature flags for optional components
+[features]
+default = ["video-processing"]
+video-processing = ["ffmpeg-next"]
+# debug-tools = ["rerun"] # Disabled due to wasm-bindgen conflicts
+# full-multimodal = ["video-processing", "debug-tools"] # Disabled due to wasm-bindgen conflicts
 
 [[bin]]
 name = "tektra"

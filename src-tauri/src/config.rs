@@ -18,7 +18,7 @@ pub struct AppConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InferenceConfig {
-    /// Backend type to use (Auto, MLX, GGUF)
+    /// Backend type to use (Ollama)
     pub backend: BackendType,
     
     /// Enable backend benchmarking on startup
@@ -65,7 +65,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             inference: InferenceConfig {
-                backend: BackendType::Auto,  // Auto will use MLX on Apple Silicon, GGUF elsewhere
+                backend: BackendType::Ollama,  // Using Ollama backend only
                 benchmark_on_startup: false,
                 max_tokens: 512,
                 temperature: 0.7,
@@ -124,10 +124,8 @@ impl AppConfig {
         // Backend override
         if let Ok(backend_str) = std::env::var("TEKTRA_BACKEND") {
             match backend_str.to_lowercase().as_str() {
-                "mlx" => self.inference.backend = BackendType::MLX,
-                "gguf" => self.inference.backend = BackendType::GGUF,
-                "auto" => self.inference.backend = BackendType::Auto,
-                _ => tracing::warn!("Unknown backend type in TEKTRA_BACKEND: {}", backend_str),
+                "ollama" => self.inference.backend = BackendType::Ollama,
+                _ => tracing::warn!("Unknown backend type in TEKTRA_BACKEND: {}. Only Ollama backend is supported.", backend_str),
             }
         }
         

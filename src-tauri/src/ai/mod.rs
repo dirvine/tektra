@@ -4,27 +4,23 @@ pub use gemma3n::AIManager;
 
 // Inference backend abstraction
 mod inference_backend;
-pub use inference_backend::{InferenceBackend, InferenceConfig, InferenceMetrics, BackendType};
+pub use inference_backend::{InferenceMetrics, BackendType};
 
-// GGUF inference engine
-mod gguf_inference;
-pub use gguf_inference::GGUFInference;
-
-// MLX inference engine (Apple Silicon only)
-mod mlx_inference;
-pub use mlx_inference::MLXInference;
+// Ollama inference backend for reliable model management
+mod ollama_inference;
+// pub use ollama_inference::OllamaInference;
 
 // Unified inference manager
 mod inference_manager;
-pub use inference_manager::InferenceManager;
+// pub use inference_manager::InferenceManager;
 
 // Speech processing module for conversational AI
 mod speech_processor;
-pub use speech_processor::{SpeechProcessor, ConversationState};
+pub use speech_processor::SpeechProcessor;
 
 // Whisper STT and VAD module
 mod whisper;
 pub use whisper::{WhisperSTT, SileroVAD};
 
 // Keep other implementations for reference
-mod tinyllama_v2;
+// Removed legacy tinyllama_v2 implementation

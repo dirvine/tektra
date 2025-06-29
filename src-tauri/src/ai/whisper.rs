@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tokio::fs;
 use tracing::info;
+use whisper_rs::{WhisperContext, WhisperContextParameters, FullParams, SamplingStrategy};
 
 // Whisper model options (GGML format for CPU inference)
 const WHISPER_REPO: &str = "ggerganov/whisper.cpp";
@@ -37,8 +38,7 @@ pub struct WhisperSTT {
     app_handle: AppHandle,
     model_path: Option<PathBuf>,
     config: WhisperConfig,
-    // In a real implementation, we'd load the actual Whisper model here
-    // For now, this is a placeholder structure
+    context: Option<WhisperContext>,
 }
 
 impl WhisperSTT {
@@ -47,6 +47,7 @@ impl WhisperSTT {
             app_handle,
             model_path: None,
             config: WhisperConfig::default(),
+            context: None,
         })
     }
 
@@ -58,12 +59,17 @@ impl WhisperSTT {
         
         // Download the model
         let model_path = self.download_model().await?;
-        self.model_path = Some(model_path);
+        self.model_path = Some(model_path.clone());
         
-        // Load the model (placeholder for now)
+        // Load the actual Whisper model
         self.emit_progress(95, "Loading Whisper model...", "Whisper").await;
         
-        // In a real implementation, we'd initialize the actual model here
+        let context = WhisperContext::new_with_params(
+            &model_path.to_string_lossy(),
+            WhisperContextParameters::default()
+        ).map_err(|e| anyhow::anyhow!("Failed to load Whisper model: {}", e))?;
+        
+        self.context = Some(context);
         info!("Whisper model loaded successfully");
         
         // Complete
@@ -181,37 +187,102 @@ impl WhisperSTT {
 
     pub async fn transcribe(&self, audio_data: &[f32], sample_rate: u32) -> Result<String> {
         // Check if model is loaded
-        if self.model_path.is_none() {
-            return Err(anyhow::anyhow!("Whisper model not loaded"));
-        }
+        let context = self.context.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Whisper model not loaded"))?;
 
         info!("Transcribing {} audio samples at {} Hz", audio_data.len(), sample_rate);
-
-        // In a real implementation, we would:
-        // 1. Convert f32 audio to the format Whisper expects
-        // 2. Run inference through the Whisper model
-        // 3. Return the transcribed text
-
-        // For now, return a placeholder based on audio length
-        let duration_secs = audio_data.len() as f32 / sample_rate as f32;
         
-        if duration_secs < 0.5 {
-            Ok("".to_string())
-        } else if duration_secs < 2.0 {
-            Ok("Hello there!".to_string())
-        } else if duration_secs < 5.0 {
-            Ok("What is the capital of Scotland?".to_string())
-        } else {
-            Ok("This is a longer message that was transcribed from the audio input.".to_string())
+        let duration_secs = audio_data.len() as f32 / sample_rate as f32;
+        info!("Audio duration: {:.2} seconds", duration_secs);
+        
+        // Skip transcription for very short audio
+        if duration_secs < 0.1 {
+            return Ok("".to_string());
         }
+
+        // Convert to 16kHz if needed (Whisper expects 16kHz)
+        let audio_16k = if sample_rate != 16000 {
+            self.resample_audio(audio_data, sample_rate, 16000)?
+        } else {
+            audio_data.to_vec()
+        };
+        
+        // Create a state for running the model
+        let mut state = context.create_state()
+            .map_err(|e| anyhow::anyhow!("Failed to create Whisper state: {}", e))?;
+        
+        // Create parameters for Whisper
+        let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+        
+        // Set language if specified
+        if let Some(ref lang) = self.config.language {
+            params.set_language(Some(lang.as_str()));
+        }
+        
+        params.set_translate(self.config.translate);
+        params.set_print_progress(false);
+        params.set_print_special(false);
+        params.set_print_realtime(false);
+        params.set_temperature(self.config.temperature);
+        
+        // Create a state for running the model
+        let mut state = context.create_state()
+            .map_err(|e| anyhow::anyhow!("Failed to create Whisper state: {}", e))?;
+        
+        // Run Whisper inference
+        state.full(params, &audio_16k)
+            .map_err(|e| anyhow::anyhow!("Whisper inference failed: {}", e))?;
+        
+        // Extract transcribed text
+        let num_segments = state.full_n_segments()
+            .map_err(|e| anyhow::anyhow!("Failed to get segments: {}", e))?;
+        
+        let mut result = String::new();
+        for i in 0..num_segments {
+            let segment = state.full_get_segment_text(i)
+                .map_err(|e| anyhow::anyhow!("Failed to get segment text: {}", e))?;
+            result.push_str(&segment);
+        }
+        
+        let transcribed_text = result.trim().to_string();
+        info!("Whisper transcription: '{}'" , transcribed_text);
+        
+        Ok(transcribed_text)
     }
 
     pub fn is_loaded(&self) -> bool {
-        self.model_path.is_some()
+        self.context.is_some()
     }
 
     pub fn get_model_info(&self) -> String {
         format!("Whisper {} model", self.config.model_size)
+    }
+
+    /// Simple linear interpolation resampling
+    /// For production use, consider using a proper resampling library like rubato
+    fn resample_audio(&self, input: &[f32], input_rate: u32, output_rate: u32) -> Result<Vec<f32>> {
+        if input_rate == output_rate {
+            return Ok(input.to_vec());
+        }
+        
+        let ratio = output_rate as f64 / input_rate as f64;
+        let output_len = (input.len() as f64 * ratio) as usize;
+        let mut output = Vec::with_capacity(output_len);
+        
+        for i in 0..output_len {
+            let input_index = i as f64 / ratio;
+            let index = input_index as usize;
+            
+            if index >= input.len() - 1 {
+                output.push(input[input.len() - 1]);
+            } else {
+                let frac = input_index - index as f64;
+                let sample = input[index] * (1.0 - frac) as f32 + input[index + 1] * frac as f32;
+                output.push(sample);
+            }
+        }
+        
+        Ok(output)
     }
 
     async fn emit_progress(&self, progress: u32, status: &str, model_name: &str) {

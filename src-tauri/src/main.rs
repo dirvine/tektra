@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tauri::{Manager, State};
 use tokio::sync::Mutex;
+use tracing::{info, error};
 
 mod ai;
 use ai::AIManager;
@@ -40,12 +41,12 @@ struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            model_name: "Gemma-3n-E2B".to_string(),
+            model_name: "gemma3n:e2b".to_string(),
             max_tokens: 512,
             temperature: 0.7,
-            voice_enabled: true,
+            voice_enabled: false,
             auto_speech: false,
-            system_prompt: Some("You are Tektra, a helpful AI assistant. Provide clear, conversational responses without using markdown formatting, emojis, or special characters unless specifically asked. Keep your responses natural and friendly.".to_string()),
+            system_prompt: Some("You are Tektra, a helpful AI assistant. Provide clear, conversational responses. Use natural formatting with line breaks and structure your responses naturally. Be helpful and friendly in your interactions.".to_string()),
             user_prefix: Some("User: ".to_string()),
             assistant_prefix: Some("Assistant: ".to_string()),
         }
@@ -85,7 +86,7 @@ async fn is_recording(audio: State<'_, AudioRec>) -> Result<bool, String> {
 
 #[tauri::command]
 async fn process_audio_stream(audio: State<'_, AudioRec>) -> Result<(), String> {
-    let recorder = audio.lock().await;
+    let mut recorder = audio.lock().await;
     match recorder.process_audio_stream().await {
         Ok(_) => Ok(()),
         Err(e) => Err(format!("Failed to process audio stream: {}", e)),
@@ -199,7 +200,7 @@ async fn send_message_with_camera(
 
     // Capture camera frame if camera is active
     let vision_manager = vision.lock().await;
-    let frame_data = if vision_manager.is_capturing() {
+    let frame_data: Option<Vec<u8>> = if vision_manager.is_capturing() {
         match vision_manager.capture_frame().await {
             Ok(frame) => {
                 // Convert RGB to raw bytes for AI processing
@@ -213,7 +214,6 @@ async fn send_message_with_camera(
     } else {
         None
     };
-    drop(vision_manager);
 
     // Generate response using AI
     let ai_manager = ai.lock().await;
@@ -292,8 +292,7 @@ async fn check_model_status(ai: State<'_, AI>) -> Result<bool, String> {
 #[tauri::command]
 async fn get_available_models() -> Result<Vec<String>, String> {
     Ok(vec![
-        "TinyLlama-1.1B-Chat".to_string(),
-        "TinyLlama-1.1B-Chat-v1.0-GGUF".to_string(),
+        "gemma3n:e2b".to_string(),
     ])
 }
 
@@ -332,6 +331,310 @@ async fn get_camera_frame(vision: State<'_, Vision>) -> Result<String, String> {
         Ok(frame) => Ok(frame),
         Err(e) => Err(format!("Failed to get camera frame: {}", e)),
     }
+}
+
+// Multimodal input commands
+#[tauri::command]
+async fn process_image_input(
+    message: String,
+    image_data: Vec<u8>,
+    chat_history: State<'_, ChatHistory>,
+    ai: State<'_, AI>,
+    settings: State<'_, Settings>,
+) -> Result<String, String> {
+    // Add user message to history with image indicator
+    let user_msg = ChatMessage {
+        role: "user".to_string(),
+        content: format!("{} [Image attached]", message),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    
+    chat_history.lock().await.push(user_msg);
+
+    // Get settings
+    let settings_guard = settings.lock().await;
+    let max_tokens = settings_guard.max_tokens;
+    let system_prompt = settings_guard.system_prompt.clone();
+    drop(settings_guard);
+
+    // Generate response using AI with image
+    let ai_manager = ai.lock().await;
+    
+    let response = if ai_manager.is_loaded() {
+        match ai_manager.generate_response_with_image_and_system_prompt(&message, &image_data, max_tokens, system_prompt).await {
+            Ok(resp) => resp,
+            Err(e) => {
+                eprintln!("Error generating response with image: {}", e);
+                format!("I can see the image you've shared, but I'm still learning to process visual information. Error: {}", e)
+            }
+        }
+    } else {
+        "The AI model is still loading. Please wait a moment and try again.".to_string()
+    };
+    
+    drop(ai_manager);
+    
+    // Add assistant response to history
+    let assistant_msg = ChatMessage {
+        role: "assistant".to_string(),
+        content: response.clone(),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    
+    chat_history.lock().await.push(assistant_msg);
+    
+    Ok(response)
+}
+
+#[tauri::command]
+async fn process_camera_feed(
+    vision: State<'_, Vision>,
+    ai: State<'_, AI>,
+    settings: State<'_, Settings>,
+    chat_history: State<'_, ChatHistory>,
+) -> Result<(), String> {
+    let vision_manager = vision.lock().await;
+    if !vision_manager.is_capturing() {
+        return Err("Camera is not capturing".to_string());
+    }
+
+    let vision_processor = crate::vision::VisionProcessor::new_default().unwrap();
+
+    loop {
+        let vision_check = vision.lock().await;
+        if !vision_check.is_capturing() {
+            drop(vision_check);
+            break;
+        }
+        drop(vision_check);
+
+        match vision_manager.capture_frame().await {
+            Ok(frame) => {
+                match vision_processor.process_camera_frame(&frame) {
+                    Ok(_) => {
+                        let ai_manager = ai.lock().await;
+                        let settings_guard = settings.lock().await;
+                        let max_tokens = settings_guard.max_tokens;
+                        let system_prompt = settings_guard.system_prompt.clone();
+                        
+                        let response = if ai_manager.is_loaded() {
+                            match ai_manager.generate_response_with_image_and_system_prompt("Describe what you see.", &frame.data, max_tokens, system_prompt).await {
+                                Ok(resp) => resp,
+                                Err(e) => {
+                                    eprintln!("Error generating response with image: {}", e);
+                                    format!("I apologize, but I encountered an error processing the image: {}. Please try again.", e)
+                                }
+                            }
+                        } else {
+                            "The AI model is still loading. Please wait a moment and try again.".to_string()
+                        };
+                        
+                        drop(ai_manager);
+                        
+                        let assistant_msg = ChatMessage {
+                            role: "assistant".to_string(),
+                            content: response.clone(),
+                            timestamp: std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs(),
+                        };
+                        
+                        chat_history.lock().await.push(assistant_msg);
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to process camera frame: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to capture camera frame: {}", e);
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn process_audio_input(
+    message: String,
+    audio_data: Vec<u8>,
+    chat_history: State<'_, ChatHistory>,
+    ai: State<'_, AI>,
+    settings: State<'_, Settings>,
+) -> Result<String, String> {
+    info!("Processing audio input: {} bytes of audio data", audio_data.len());
+    
+    // Add user message to history
+    let user_msg = ChatMessage {
+        role: "user".to_string(),
+        content: format!("{} [Audio: {:.2}s]", message, audio_data.len() as f32 / (16000.0 * 2.0)), // Approximate duration
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    
+    chat_history.lock().await.push(user_msg);
+
+    // Get settings
+    let settings_guard = settings.lock().await;
+    let max_tokens = settings_guard.max_tokens;
+    let _system_prompt = settings_guard.system_prompt.clone();
+    drop(settings_guard);
+
+    // Generate response using AI with audio data
+    let ai_manager = ai.lock().await;
+    
+    let response = if ai_manager.is_loaded() {
+        // Use multimodal generation with audio data
+        match ai_manager.generate_response_with_audio(&message, &audio_data, max_tokens).await {
+            Ok(resp) => resp,
+            Err(e) => {
+                error!("Error generating response with audio: {}", e);
+                format!("I heard your audio input but encountered an error processing it: {}. Please try again.", e)
+            }
+        }
+    } else {
+        "The AI model is still loading. Please wait a moment and try again.".to_string()
+    };
+    
+    drop(ai_manager);
+    
+    // Add assistant response to history
+    let assistant_msg = ChatMessage {
+        role: "assistant".to_string(),
+        content: response.clone(),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    
+    chat_history.lock().await.push(assistant_msg);
+    
+    Ok(response)
+}
+
+#[tauri::command]
+async fn process_multimodal_input(
+    message: String,
+    image_data: Option<Vec<u8>>,
+    audio_data: Option<Vec<u8>>,
+    video_data: Option<Vec<u8>>,
+    chat_history: State<'_, ChatHistory>,
+    ai: State<'_, AI>,
+    vision: State<'_, Vision>,
+    settings: State<'_, Settings>,
+) -> Result<String, String> {
+    // Create a description of the multimodal input
+    let mut input_description = message.clone();
+    let mut modality_count = 0;
+    
+    if image_data.is_some() {
+        input_description.push_str(" [Image attached]");
+        modality_count += 1;
+    }
+    if audio_data.is_some() {
+        input_description.push_str(" [Audio attached]");
+        modality_count += 1;
+    }
+    if video_data.is_some() {
+        input_description.push_str(" [Video attached]");
+        modality_count += 1;
+    }
+    
+    let user_msg = ChatMessage {
+        role: "user".to_string(),
+        content: input_description,
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    
+    chat_history.lock().await.push(user_msg);
+
+    // Get settings
+    let settings_guard = settings.lock().await;
+    let max_tokens = settings_guard.max_tokens;
+    let system_prompt = settings_guard.system_prompt.clone();
+    drop(settings_guard);
+
+    // Process multimodal input
+    let ai_manager = ai.lock().await;
+    
+    let vision_manager = vision.lock().await;
+    let response = if ai_manager.is_loaded() {
+        if let Some(img_data) = image_data {
+            // Process image input
+            match ai_manager.generate_response_with_image_and_system_prompt(&message, &img_data, max_tokens, system_prompt).await {
+                Ok(resp) => resp,
+                Err(e) => {
+                    eprintln!("Error generating multimodal response: {}", e);
+                    format!("I can see your multimodal input ({} modalities), but I'm still learning to process all types. Error: {}", modality_count, e)
+                }
+            }
+        } else if vision_manager.is_capturing() {
+            // Process camera feed
+            match vision_manager.capture_frame().await {
+                Ok(frame) => {
+                    match ai_manager.generate_response_with_image_and_system_prompt("Describe what you see.", &frame.data, max_tokens, system_prompt).await {
+                        Ok(resp) => resp,
+                        Err(e) => {
+                            eprintln!("Error generating response with image: {}", e);
+                            format!("I apologize, but I encountered an error processing the image: {}. Please try again.", e)
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to capture camera frame: {}", e);
+                    "I couldn't capture a frame from the camera.".to_string()
+                }
+            }
+        } else {
+            // Fall back to text-only processing
+            match ai_manager.generate_response_with_system_prompt(&message, max_tokens, system_prompt).await {
+                Ok(resp) => {
+                    if modality_count > 0 {
+                        format!("{}\n\nNote: I received {} additional input modalities that I'm still learning to process fully.", resp, modality_count)
+                    } else {
+                        resp
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error generating response: {}", e);
+                    format!("I apologize, but I encountered an error: {}. Please try again.", e)
+                }
+            }
+        }
+    } else {
+        "The AI model is still loading. Please wait a moment and try again.".to_string()
+    };
+    
+    drop(ai_manager);
+    
+    // Add assistant response to history
+    let assistant_msg = ChatMessage {
+        role: "assistant".to_string(),
+        content: response.clone(),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    
+    chat_history.lock().await.push(assistant_msg);
+    
+    Ok(response)
 }
 
 // Avatar commands
@@ -406,8 +709,13 @@ fn main() {
         return;
     }
     
-    // Initialize tracing
-    tracing_subscriber::fmt::init();
+    // Initialize tracing with clean format (no timestamps)
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .without_time()
+        .with_level(true)
+        .compact()
+        .init();
     
     tauri::Builder::default()
         .setup(|app| {
@@ -433,8 +741,8 @@ fn main() {
                 .map_err(|e| format!("Failed to create AI manager: {}", e))?;
             
             let audio_recorder = AudioRecorder::new(app_handle.clone());
-            let vision_manager = VisionManager::new(app_handle.clone());
             let avatar_manager = AvatarManager::new(app_handle.clone());
+            let vision_manager = VisionManager::new(app_handle.clone()).unwrap();
             
             app.manage(ChatHistory::new(Mutex::new(Vec::new())));
             app.manage(Settings::new(Mutex::new(AppSettings::default())));
@@ -467,6 +775,10 @@ fn main() {
             start_camera_capture,
             stop_camera_capture,
             get_camera_frame,
+            process_image_input,
+            process_camera_feed,
+            process_audio_input,
+            process_multimodal_input,
             set_avatar_expression,
             start_avatar_speaking,
             stop_avatar_speaking,

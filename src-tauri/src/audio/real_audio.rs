@@ -83,7 +83,7 @@ impl RealAudioRecorder {
             match response {
                 AudioResponse::Buffer(buffer) => {
                     if !buffer.is_empty() {
-                        info!("Got audio buffer with {} samples", buffer.len());
+                        tracing::debug!("Got audio buffer with {} samples", buffer.len());
                     }
                     Ok(buffer)
                 },
@@ -211,7 +211,7 @@ fn audio_thread_main(
                 // Clear the buffer after getting it
                 buffer_guard.clear();
                 drop(buffer_guard);
-                info!("Sending buffer with {} samples", buffer.len());
+                tracing::debug!("Sending buffer with {} samples", buffer.len());
                 let _ = response_tx.send(AudioResponse::Buffer(buffer));
             }
             Err(_) => {

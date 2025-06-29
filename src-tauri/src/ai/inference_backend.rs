@@ -36,25 +36,32 @@ impl Default for InferenceConfig {
     }
 }
 
-/// Trait for different inference backends (GGUF, MLX, etc.)
+/// Trait for different inference backends (Ollama only)
+#[async_trait::async_trait]
 pub trait InferenceBackend: Send + Sync {
     /// Load a model from the given path
-    fn load_model(&mut self, model_path: &Path) -> Result<()>;
+    async fn load_model(&mut self, model_path: &Path) -> Result<()>;
     
     /// Check if a model is loaded
     fn is_loaded(&self) -> bool;
     
     /// Generate text from a prompt
-    fn generate(&self, prompt: &str, config: &InferenceConfig) -> Result<String>;
+    async fn generate(&self, prompt: &str, config: &InferenceConfig) -> Result<String>;
+    
+    /// Generate multimodal response with text and optional image or audio
+    async fn generate_multimodal(&self, prompt: &str, media_data: Option<&[u8]>, media_type: Option<&str>, config: &InferenceConfig) -> Result<String>;
+    
+    /// Allow downcasting to concrete types for backend-specific methods
+    fn as_any(&self) -> &dyn std::any::Any;
     
     /// Generate text with performance metrics
-    fn generate_with_metrics(&self, prompt: &str, config: &InferenceConfig) -> Result<(String, InferenceMetrics)> {
+    async fn generate_with_metrics(&self, prompt: &str, config: &InferenceConfig) -> Result<(String, InferenceMetrics)> {
         let start = Instant::now();
         let first_token_time = None;
         let initial_memory = self.get_memory_usage_mb();
         
         // Default implementation - backends can override for more accurate metrics
-        let result = self.generate(prompt, config)?;
+        let result = self.generate(prompt, config).await?;
         
         let total_time = start.elapsed();
         let tokens = result.split_whitespace().count(); // Rough estimate
@@ -83,19 +90,15 @@ pub trait InferenceBackend: Send + Sync {
     fn is_available() -> bool where Self: Sized;
 }
 
-/// Backend selection strategy
+/// Backend selection strategy - Ollama only
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum BackendType {
-    /// Use MLX if available, fallback to GGUF
-    Auto,
-    /// Force MLX backend (will fail on non-Apple Silicon)
-    MLX,
-    /// Force GGUF backend
-    GGUF,
+    /// Use Ollama backend (cross-platform, reliable)
+    Ollama,
 }
 
 impl Default for BackendType {
     fn default() -> Self {
-        BackendType::Auto
+        BackendType::Ollama
     }
 }
