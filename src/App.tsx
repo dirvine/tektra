@@ -87,15 +87,30 @@ const AppContent: React.FC = () => {
     } catch (error) {
       console.error('Model initialization error:', error);
       setModelStatus({ isLoading: false });
-      addMessage({
-        role: 'system',
-        content: `❌ Failed to load AI model: ${error}`
-      });
       
-      addNotification({
-        type: 'error',
-        message: 'Failed to initialize AI model'
-      });
+      // Provide specific error messaging for common issues
+      const errorMessage = String(error);
+      if (errorMessage.includes('Ollama') || errorMessage.includes('connection') || errorMessage.includes('download')) {
+        addMessage({
+          role: 'system',
+          content: `🔧 Setting up AI backend...\n\nTektra is downloading and installing the necessary AI components. This may take a few minutes on first run.\n\nError details: ${error}`
+        });
+        
+        addNotification({
+          type: 'info',
+          message: 'Downloading AI components - please wait...'
+        });
+      } else {
+        addMessage({
+          role: 'system',
+          content: `❌ Failed to load AI model: ${error}`
+        });
+        
+        addNotification({
+          type: 'error',
+          message: 'Failed to initialize AI model'
+        });
+      }
     }
   };
 

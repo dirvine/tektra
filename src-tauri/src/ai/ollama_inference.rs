@@ -55,8 +55,62 @@ impl OllamaInference {
         
         // Use default download configuration
         let download_config = ollama_td::OllamaDownload::default();
-        let ollama_binary = ollama_td::download(download_config).await
+        let downloaded_path = ollama_td::download(download_config).await
             .map_err(|e| anyhow::anyhow!("Failed to download Ollama: {}", e))?;
+        
+        info!("Ollama downloaded to: {:?}", downloaded_path);
+        
+        // Check if downloaded file is a zip archive and extract it
+        let ollama_binary = if downloaded_path.extension().and_then(|s| s.to_str()) == Some("zip") {
+            info!("Extracting Ollama zip archive...");
+            
+            // Extract zip to the data directory
+            let extract_dir = data_dir.join("extracted");
+            fs::create_dir_all(&extract_dir).await?;
+            
+            // Use std::process::Command to extract zip (cross-platform)
+            #[cfg(target_os = "macos")]
+            let extract_cmd = Command::new("unzip")
+                .arg("-o") // Overwrite existing files
+                .arg(&downloaded_path)
+                .arg("-d")
+                .arg(&extract_dir)
+                .output()
+                .map_err(|e| anyhow::anyhow!("Failed to run unzip command: {}", e))?;
+                
+            #[cfg(not(target_os = "macos"))]
+            let extract_cmd = Command::new("unzip")
+                .arg("-o")
+                .arg(&downloaded_path)
+                .arg("-d") 
+                .arg(&extract_dir)
+                .output()
+                .map_err(|e| anyhow::anyhow!("Failed to run unzip command: {}", e))?;
+            
+            if !extract_cmd.status.success() {
+                let stderr = String::from_utf8_lossy(&extract_cmd.stderr);
+                return Err(anyhow::anyhow!("Failed to extract Ollama zip: {}", stderr));
+            }
+            
+            // Find the Ollama binary in the extracted contents
+            #[cfg(target_os = "macos")]
+            let ollama_path = extract_dir.join("Ollama.app").join("Contents").join("Resources").join("ollama");
+            
+            #[cfg(target_os = "linux")]
+            let ollama_path = extract_dir.join("ollama");
+            
+            #[cfg(target_os = "windows")]  
+            let ollama_path = extract_dir.join("ollama.exe");
+            
+            if !ollama_path.exists() {
+                return Err(anyhow::anyhow!("Ollama binary not found in extracted archive at: {:?}", ollama_path));
+            }
+            
+            info!("Extracted Ollama binary to: {:?}", ollama_path);
+            ollama_path
+        } else {
+            downloaded_path
+        };
         
         // Make binary executable
         #[cfg(unix)]
@@ -65,7 +119,7 @@ impl OllamaInference {
             fs::set_permissions(&ollama_binary, std::fs::Permissions::from_mode(0o755)).await?;
         }
         
-        info!("Ollama binary downloaded to: {:?}", ollama_binary);
+        info!("Ollama binary ready at: {:?}", ollama_binary);
         Ok(OllamaExe::Embedded(ollama_binary))
     }
 
@@ -216,11 +270,10 @@ impl InferenceBackend for OllamaInference {
         
         info!("Loading Ollama model: {}", model_name);
         
-        // Initialize Ollama client if not already done
+        // Initialize Ollama if not already done (this handles finding/downloading Ollama)
         if self.ollama_client.is_none() {
-            info!("Initializing Ollama client...");
-            let ollama = Ollama::default();
-            self.ollama_client = Some(ollama);
+            info!("Initializing Ollama backend...");
+            self.initialize().await?;
         }
         
         // Check if model is available, pull if not
