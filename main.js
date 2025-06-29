@@ -268,19 +268,15 @@ class ProjectTektra {
         messageDiv.className = `message ${type}`;
         messageDiv.id = messageId;
         
-        const timestamp = new Date().toLocaleTimeString();
-        
         if (type === 'user') {
             messageDiv.innerHTML = `
                 <div class="message-content">${this.escapeHtml(content)}</div>
-                <div class="message-time">${timestamp}</div>
             `;
         } else if (type === 'assistant') {
             messageDiv.innerHTML = `
                 <div class="message-avatar">🤖</div>
                 <div class="message-body">
-                    <div class="message-content">${this.escapeHtml(content)}</div>
-                    <div class="message-time">${timestamp}</div>
+                    <div class="message-content">${this.formatResponse(content)}</div>
                 </div>
             `;
         } else {
@@ -306,6 +302,49 @@ class ProjectTektra {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    formatResponse(text) {
+        // Keep basic HTML escaping but preserve line breaks and formatting
+        let formatted = this.escapeHtml(text);
+        
+        // Convert line breaks to <br> tags
+        formatted = formatted.replace(/\n/g, '<br>');
+        
+        // Convert double line breaks to paragraph breaks
+        formatted = formatted.replace(/(<br>){2,}/g, '</p><p>');
+        
+        // Wrap in paragraphs if there are paragraph breaks
+        if (formatted.includes('</p><p>')) {
+            formatted = '<p>' + formatted + '</p>';
+        }
+        
+        // Handle basic markdown-style formatting
+        // Bold text **text**
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Italic text *text*
+        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Code blocks ```code```
+        formatted = formatted.replace(/```(.*?)```/gs, '<pre><code>$1</code></pre>');
+        
+        // Inline code `code`
+        formatted = formatted.replace(/`(.*?)`/g, '<code>$1</code>');
+        
+        // Handle numbered lists (1. item)
+        formatted = formatted.replace(/^(\d+)\.\s(.+)$/gm, '<li>$2</li>');
+        if (formatted.includes('<li>')) {
+            formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
+        }
+        
+        // Handle bullet lists (- item or * item)
+        formatted = formatted.replace(/^[-*]\s(.+)$/gm, '<li>$1</li>');
+        if (formatted.includes('<li>') && !formatted.includes('<ol>')) {
+            formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+        }
+        
+        return formatted;
     }
 
     
@@ -335,10 +374,53 @@ class ProjectTektra {
                 this.addMessage('system', `🎤 Heard: "${text}"`);
                 
                 this.elements.messageInput.value = text;
-                // Auto-send if enabled
-                if (this.continuousListening) {
-                    this.sendMessage();
+                
+                // Auto-send if continuous listening is enabled
+                console.log('Continuous listening enabled:', this.continuousListening);
+                console.log('Voice enabled checkbox:', this.elements.voiceEnabled.checked);
+                
+                if (this.continuousListening && this.elements.voiceEnabled.checked) {
+                    console.log('Auto-sending transcribed message:', text);
+                    // Small delay to ensure UI is updated
+                    setTimeout(() => {
+                        this.sendMessage();
+                    }, 100);
+                } else {
+                    console.log('Not auto-sending - continuous listening disabled or voice not enabled');
                 }
+            }
+        });
+        
+        // Listen for audio data for multimodal processing
+        await listen('audio-for-processing', async (event) => {
+            console.log('Received audio data for multimodal processing:', event.payload);
+            const { audio_data, sample_rate, duration_secs, prompt } = event.payload;
+            
+            try {
+                // Show that we're processing audio
+                this.addMessage('system', `🎤 Processing ${duration_secs.toFixed(1)}s audio with Gemma-3n...`);
+                
+                // Show typing indicator
+                const typingId = this.addMessage('assistant', 'Listening and understanding...');
+                
+                // Send audio data to multimodal AI endpoint
+                const response = await invoke('process_audio_input', {
+                    message: prompt,
+                    audioData: audio_data
+                });
+                
+                // Remove typing indicator and add response
+                this.removeMessage(typingId);
+                this.addMessage('assistant', response);
+                
+                // Text-to-speech if enabled
+                if (this.elements.autoSpeech.checked) {
+                    this.speak(response);
+                }
+                
+            } catch (error) {
+                console.error('Audio processing error:', error);
+                this.addMessage('system', `❌ Audio processing failed: ${error}`);
             }
         });
         

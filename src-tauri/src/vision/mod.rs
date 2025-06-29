@@ -441,6 +441,111 @@ impl VisionManager {
     }
 }
 
+// Helper function to convert NV12 format to RGB
+fn convert_nv12_to_rgb(frame: &nokhwa::Buffer) -> Result<image::ImageBuffer<image::Rgb<u8>, Vec<u8>>, nokhwa::NokhwaError> {
+    let resolution = frame.resolution();
+    let width = resolution.width_x;
+    let height = resolution.height_y;
+    let data = frame.buffer();
+    
+    // Debug buffer size issue
+    info!("NV12 conversion attempt: {}x{}, buffer size: {} bytes", width, height, data.len());
+    
+    // NV12 format: Y plane followed by interleaved UV plane
+    let y_size = (width * height) as usize;
+    let standard_nv12_size = y_size + (y_size / 2); // Y + UV/2
+    
+    info!("Expected standard NV12 size: {} bytes, actual: {} bytes", standard_nv12_size, data.len());
+    
+    // Check for different possible layouts
+    let uv_size = if data.len() == y_size * 2 {
+        // This might be YUYV format mislabeled as NV12, or NV12 with full UV plane
+        info!("Buffer size suggests YUYV format or padded NV12");
+        y_size // Use full Y plane size for UV
+    } else if data.len() >= standard_nv12_size {
+        // Standard NV12 or with padding
+        info!("Using standard NV12 layout");
+        y_size / 2
+    } else {
+        return Err(nokhwa::NokhwaError::ProcessFrameError {
+            src: nokhwa::utils::FrameFormat::NV12,
+            destination: "RGB".to_string(),
+            error: format!("Buffer too small: {} bytes for {}x{} (need at least {})", 
+                           data.len(), width, height, standard_nv12_size),
+        });
+    };
+    
+    // Ensure we don't read beyond buffer
+    let safe_uv_size = std::cmp::min(uv_size, data.len() - y_size);
+    info!("Using Y plane: {} bytes, UV plane: {} bytes", y_size, safe_uv_size);
+    
+    let y_plane = &data[0..y_size];
+    let uv_plane = &data[y_size..y_size + safe_uv_size];
+    
+    let mut rgb_data = vec![0u8; (width * height * 3) as usize];
+    
+    for y in 0..height {
+        for x in 0..width {
+            let y_index = (y * width + x) as usize;
+            let uv_index = (((y / 2) * (width / 2) + (x / 2)) * 2) as usize;
+            
+            let y_val = y_plane[y_index] as f32;
+            let u_val = if uv_index < uv_plane.len() { uv_plane[uv_index] as f32 - 128.0 } else { 0.0 };
+            let v_val = if uv_index + 1 < uv_plane.len() { uv_plane[uv_index + 1] as f32 - 128.0 } else { 0.0 };
+            
+            // YUV to RGB conversion
+            let r = (y_val + 1.402 * v_val).clamp(0.0, 255.0) as u8;
+            let g = (y_val - 0.344 * u_val - 0.714 * v_val).clamp(0.0, 255.0) as u8;
+            let b = (y_val + 1.772 * u_val).clamp(0.0, 255.0) as u8;
+            
+            let rgb_index = y_index * 3;
+            if rgb_index + 2 < rgb_data.len() {
+                rgb_data[rgb_index] = r;
+                rgb_data[rgb_index + 1] = g;
+                rgb_data[rgb_index + 2] = b;
+            }
+        }
+    }
+    
+    match image::ImageBuffer::from_raw(width, height, rgb_data) {
+        Some(img) => Ok(img),
+        None => Err(nokhwa::NokhwaError::ProcessFrameError {
+            src: nokhwa::utils::FrameFormat::NV12,
+            destination: "RGB".to_string(),
+            error: "Failed to create RGB image buffer from converted data".to_string(),
+        })
+    }
+}
+
+// Helper function to convert various frame formats to RGB
+fn convert_frame_to_rgb(frame: &nokhwa::Buffer) -> Result<image::ImageBuffer<image::Rgb<u8>, Vec<u8>>, nokhwa::NokhwaError> {
+    use nokhwa::pixel_format::*;
+    
+    match frame.source_frame_format() {
+        nokhwa::utils::FrameFormat::MJPEG => {
+            // MJPEG should decode normally, this is a fallback
+            frame.decode_image::<RgbFormat>()
+        }
+        nokhwa::utils::FrameFormat::YUYV => {
+            // Try YUYV format
+            frame.decode_image::<YuyvFormat>()
+                .and_then(|img| {
+                    // Convert YUYV to RGB
+                    Ok(img) // YuyvFormat should already be RGB-compatible
+                })
+        }
+        nokhwa::utils::FrameFormat::NV12 => {
+            // NV12 format handling - implement basic conversion
+            info!("Converting NV12 to RGB");
+            convert_nv12_to_rgb(frame)
+        }
+        _ => {
+            // For other formats, try the default RGB decode
+            frame.decode_image::<RgbFormat>()
+        }
+    }
+}
+
 fn camera_thread_main(
     command_rx: Receiver<CameraCommand>,
     response_tx: Sender<CameraResponse>,
@@ -448,12 +553,39 @@ fn camera_thread_main(
     let cameras = nokhwa::query(nokhwa::utils::ApiBackend::Auto)?;
     let camera_info = cameras.first().ok_or_else(|| anyhow::anyhow!("No cameras found"))?;
 
-    let mut camera = Camera::new(
-        camera_info.index().clone(),
-        nokhwa::utils::RequestedFormat::new::<nokhwa::pixel_format::RgbFormat>(nokhwa::utils::RequestedFormatType::Exact(CameraFormat::new_from(640, 480, FrameFormat::YUYV, 30))),
-    )?;
+    // Try different formats until one works
+    let formats_to_try = vec![
+        FrameFormat::MJPEG,
+        FrameFormat::YUYV,
+        FrameFormat::NV12,
+        FrameFormat::RAWRGB
+    ];
+    
+    let mut camera = None;
+    for format in formats_to_try {
+        match Camera::new(
+            camera_info.index().clone(),
+            nokhwa::utils::RequestedFormat::new::<nokhwa::pixel_format::RgbFormat>(
+                nokhwa::utils::RequestedFormatType::Exact(CameraFormat::new_from(640, 480, format, 30))
+            ),
+        ) {
+            Ok(cam) => {
+                info!("Successfully initialized camera with format: {:?}", format);
+                camera = Some(cam);
+                break;
+            }
+            Err(e) => {
+                info!("Failed to initialize camera with format {:?}: {}", format, e);
+                continue;
+            }
+        }
+    }
+    
+    let mut camera = camera.ok_or_else(|| anyhow::anyhow!("Failed to initialize camera with any supported format"))?;
 
     let mut is_capturing = false;
+    let mut conversion_failure_count = 0;
+    const MAX_CONVERSION_FAILURES: u32 = 3;
 
     loop {
         match command_rx.try_recv() {
@@ -475,11 +607,26 @@ fn camera_thread_main(
                 let _ = response_tx.send(CameraResponse::CaptureStopped);
             }
             Ok(CameraCommand::GetFrame) => {
-                if is_capturing {
+                if is_capturing && conversion_failure_count < MAX_CONVERSION_FAILURES {
                     match camera.frame() {
                         Ok(frame) => {
-                            match frame.decode_image::<nokhwa::pixel_format::RgbFormat>() {
+                            // Try to decode directly first
+                            let decoded_result = frame.decode_image::<nokhwa::pixel_format::RgbFormat>()
+                                .or_else(|initial_error| {
+                                    // Only log on first few failures to avoid spam
+                                    if conversion_failure_count == 0 {
+                                        info!("Direct RGB decode failed for format {:?}: {}. Trying format-specific conversion.", 
+                                            frame.source_frame_format(), initial_error);
+                                    }
+                                    
+                                    // Try format-specific conversion
+                                    convert_frame_to_rgb(&frame)
+                                });
+                            
+                            match decoded_result {
                                 Ok(decoded) => {
+                                    // Reset failure count on success
+                                    conversion_failure_count = 0;
                                     let _ = response_tx.send(CameraResponse::Frame(CameraFrame {
                                         width: decoded.width(),
                                         height: decoded.height(),
@@ -490,8 +637,20 @@ fn camera_thread_main(
                                             .as_millis() as u64,
                                     }));
                                 }
-                                Err(e) => {
-                                    let _ = response_tx.send(CameraResponse::Error(e.to_string()));
+                                Err(_e) => {
+                                    conversion_failure_count += 1;
+                                    
+                                    if conversion_failure_count >= MAX_CONVERSION_FAILURES {
+                                        // Send final error message and stop trying
+                                        let error_msg = format!("Camera format {} not supported after {} attempts. Stopping camera capture to prevent log spam.", 
+                                            frame.source_frame_format(), MAX_CONVERSION_FAILURES);
+                                        let _ = response_tx.send(CameraResponse::Error(error_msg));
+                                        
+                                        // Stop trying to capture frames
+                                        camera.stop_stream().ok();
+                                        is_capturing = false;
+                                        info!("Camera capture disabled due to repeated conversion failures");
+                                    }
                                 }
                             }
                         }
@@ -499,6 +658,9 @@ fn camera_thread_main(
                             let _ = response_tx.send(CameraResponse::Error(e.to_string()));
                         }
                     }
+                } else if conversion_failure_count >= MAX_CONVERSION_FAILURES {
+                    // Don't attempt any more frame captures
+                    let _ = response_tx.send(CameraResponse::Error("Camera disabled due to format conversion failures".to_string()));
                 } else {
                     let _ = response_tx.send(CameraResponse::Error("Camera not capturing".to_string()));
                 }

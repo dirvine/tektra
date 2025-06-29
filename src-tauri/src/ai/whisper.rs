@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tokio::fs;
-use tracing::info;
+use tracing::{info, error};
 use whisper_rs::{WhisperContext, WhisperContextParameters, FullParams, SamplingStrategy};
 
 // Whisper model options (GGML format for CPU inference)
@@ -57,17 +57,55 @@ impl WhisperSTT {
         // Emit initial progress
         self.emit_progress(0, "Starting Whisper model download...", "Whisper").await;
         
-        // Download the model
-        let model_path = self.download_model().await?;
+        // Download the model with better error handling
+        let model_path = match self.download_model().await {
+            Ok(path) => path,
+            Err(e) => {
+                let error_msg = format!("Failed to download Whisper model: {}", e);
+                error!("{}", error_msg);
+                self.emit_completion(false, Some(error_msg.clone())).await;
+                return Err(anyhow::anyhow!(error_msg));
+            }
+        };
+        
         self.model_path = Some(model_path.clone());
+        
+        // Verify model file exists and is valid
+        if !model_path.exists() {
+            let error_msg = "Downloaded Whisper model file does not exist".to_string();
+            error!("{}", error_msg);
+            self.emit_completion(false, Some(error_msg.clone())).await;
+            return Err(anyhow::anyhow!(error_msg));
+        }
+        
+        // Check file size
+        let file_size = std::fs::metadata(&model_path)?.len();
+        if file_size < 1_000_000 { // Less than 1MB indicates a corrupt download
+            let error_msg = format!("Whisper model file appears corrupted (size: {} bytes)", file_size);
+            error!("{}", error_msg);
+            // Remove the corrupt file
+            let _ = std::fs::remove_file(&model_path);
+            self.emit_completion(false, Some(error_msg.clone())).await;
+            return Err(anyhow::anyhow!(error_msg));
+        }
         
         // Load the actual Whisper model
         self.emit_progress(95, "Loading Whisper model...", "Whisper").await;
         
-        let context = WhisperContext::new_with_params(
+        let context = match WhisperContext::new_with_params(
             &model_path.to_string_lossy(),
             WhisperContextParameters::default()
-        ).map_err(|e| anyhow::anyhow!("Failed to load Whisper model: {}", e))?;
+        ) {
+            Ok(ctx) => ctx,
+            Err(e) => {
+                let error_msg = format!("Failed to create Whisper context: {}. The model file may be corrupted.", e);
+                error!("{}", error_msg);
+                // Remove the potentially corrupt file
+                let _ = std::fs::remove_file(&model_path);
+                self.emit_completion(false, Some(error_msg.clone())).await;
+                return Err(anyhow::anyhow!(error_msg));
+            }
+        };
         
         self.context = Some(context);
         info!("Whisper model loaded successfully");

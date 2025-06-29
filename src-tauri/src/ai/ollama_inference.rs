@@ -200,10 +200,11 @@ impl OllamaInference {
         Ok(models.iter().any(|m| m.name == model_name))
     }
 
-    /// Get recommended Gemma 3n model based on system resources
+    /// Get recommended Gemma model based on system resources
     pub fn get_recommended_gemma_model() -> &'static str {
-        // Use the correct Gemma 3n E2B model
-        "gemma3n:e2b"
+        // Use Gemma2 2B model - confirmed available and works well
+        // Smaller model for better performance on most systems
+        "gemma2:2b"
     }
 }
 

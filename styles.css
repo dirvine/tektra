@@ -165,6 +165,80 @@ body {
     font-size: 0.9rem;
 }
 
+/* Message content formatting */
+.message-content {
+    line-height: 1.6;
+}
+
+.message-content p {
+    margin: 0.5rem 0;
+}
+
+.message-content p:first-child {
+    margin-top: 0;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.message-content strong {
+    font-weight: 600;
+}
+
+.message-content em {
+    font-style: italic;
+}
+
+.message-content code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+.message-content pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+}
+
+.message-content pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.85em;
+    line-height: 1.4;
+}
+
+.message-content ul, .message-content ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.message-content li {
+    margin: 0.25rem 0;
+}
+
+/* Different styling for assistant vs user messages */
+.message.assistant .message-content code {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.message.user .message-content code {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.message.assistant .message-content pre {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.message.user .message-content pre {
+    background: rgba(255, 255, 255, 0.1);
+}
+
 .chat-input-container {
     display: flex;
     padding: 1rem;
