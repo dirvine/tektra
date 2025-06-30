@@ -344,3 +344,4 @@ pub async fn load_model(&mut self, model_name: &str) -> Result<()> {
 This approach ensures robust, user-friendly model management that aligns with the Tektra specification while providing excellent developer and user experience.
 
 - #remember and use UV at all times
+- Remember we use our bundled ollama here when it's not installed in the system. So please dont ever try and install ollama, use our bundled one
