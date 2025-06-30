@@ -754,42 +754,25 @@ impl InferenceBackend for OllamaInference {
         if let Some(data_bytes) = media_data {
             match media_type {
                 Some("audio") => {
-                    info!("Processing audio input with Gemma-3n ({} bytes)", data_bytes.len());
+                    info!("Processing audio input - using transcribed text with model: {}", model_name);
                     
-                    // Convert raw audio to a simple analysis for Gemma-3n
+                    // Audio should be transcribed to text first by Whisper, then sent as text to the model
+                    // This is the proper approach since Gemma 3n doesn't support raw audio input in Ollama
+                    // The audio transcription happens in the frontend/Whisper layer
+                    
                     let duration = data_bytes.len() as f32 / (16000.0 * 2.0);
-                    let sample_count = data_bytes.len() / 2;
+                    info!("Received {:.1} seconds of audio data - should be transcribed first", duration);
                     
-                    // Analyze audio characteristics
-                    let mut energy_sum = 0.0f32;
-                    let mut peak_amplitude = 0.0f32;
-                    
-                    for chunk in data_bytes.chunks(2) {
-                        if chunk.len() == 2 {
-                            let sample = i16::from_le_bytes([chunk[0], chunk[1]]) as f32 / 32768.0;
-                            energy_sum += sample * sample;
-                            peak_amplitude = peak_amplitude.max(sample.abs());
-                        }
-                    }
-                    
-                    let avg_energy = energy_sum / sample_count as f32;
-                    let volume_level = if avg_energy > 0.01 { "loud" } else if avg_energy > 0.001 { "normal" } else { "quiet" };
-                    
-                    // Create a more intelligent prompt for Gemma-3n
-                    let audio_prompt = format!(
-                        "The user just spoke for {:.1} seconds with {} volume. Based on the context that they asked: '{}', please provide a helpful response. If this sounds like a question about capitals, geography, or general knowledge, please answer appropriately.",
-                        duration, volume_level, prompt
-                    );
-                    
+                    // Send the transcribed text directly to the model
                     let request = ChatMessageRequest::new(
                         model_name.clone(),
-                        vec![ChatMessage::user(audio_prompt)],
+                        vec![ChatMessage::user(prompt.to_string())],
                     );
                     
                     match ollama.send_chat_messages(request).await {
                         Ok(response) => {
                             let content = response.message.content;
-                            info!("Generated audio-contextual response: {}", content);
+                            info!("Generated response for transcribed audio: {}", content);
                             Ok(content)
                         }
                         Err(e) => {
@@ -801,25 +784,19 @@ impl InferenceBackend for OllamaInference {
                 Some("image") => {
                     info!("Multimodal request with image data ({} bytes) using model: {}", data_bytes.len(), model_name);
                     
-                    // Check if this model supports vision (most Gemma models don't)
-                    if model_name.contains("gemma") || model_name.contains("llama") && !model_name.contains("llava") {
-                        info!("Model {} is text-only, providing helpful response about image limitations", model_name);
+                    // Gemma 3n supports multimodal vision inputs according to the model card
+                    if model_name.contains("gemma3n") || model_name.contains("llava") || model_name.contains("bakllava") || model_name.contains("moondream") {
+                        info!("Using multimodal-capable model {} for vision processing", model_name);
                         
-                        // Provide a helpful response indicating the model can't see images
-                        let vision_response = format!(
-                            "I can see that you've shared an image with me! However, I'm currently running on {}, which is a text-only model and cannot process visual information.\n\nTo help you with image analysis, I would need to be running on a vision-capable model like:\n- LLaVA (llava:7b or llava:13b)\n- Moondream (moondream:latest)\n- Bakllava (bakllava:latest)\n\nWould you like me to help you in another way, or could you describe what's in the image so I can assist with text-based analysis?", 
-                            model_name
-                        );
-                        
-                        Ok(vision_response)
-                    } else {
-                        // Try multimodal generation for vision-capable models
-                        let mut request = GenerationRequest::new(model_name.clone(), prompt.to_string());
-                        
-                        // Add image if provided
+                        // Use proper Ollama generation API with base64 image encoding as per documentation
                         use base64::{Engine as _, engine::general_purpose};
                         let base64_image = general_purpose::STANDARD.encode(data_bytes);
+                        
+                        // Create image using ollama_rs Image type
                         let image = ollama_rs::generation::images::Image::from_base64(&base64_image);
+                        
+                        // Use GenerationRequest which supports images
+                        let mut request = GenerationRequest::new(model_name.clone(), prompt.to_string());
                         request = request.images(vec![image]);
                         
                         match ollama.generate(request).await {
@@ -830,17 +807,30 @@ impl InferenceBackend for OllamaInference {
                             }
                             Err(e) => {
                                 error!("Failed to generate vision response: {}", e);
-                                
-                                // Fallback to explaining the limitation
-                                let fallback_response = format!(
-                                    "I can see that you've shared an image, but I'm having trouble processing it with the current model configuration. The error was: {}\n\nThis might mean the model doesn't support vision, or there's a configuration issue. Would you like to describe what's in the image so I can help in another way?", 
-                                    e
-                                );
-                                
-                                Ok(fallback_response)
+                                Err(anyhow::anyhow!("Ollama vision processing failed: {}", e))
                             }
                         }
+                    } else {
+                        info!("Model {} is text-only, providing helpful response about image limitations", model_name);
+                        
+                        // Provide a helpful response indicating the model can't see images
+                        let vision_response = format!(
+                            "I can see that you've shared an image with me! However, I'm currently running on {}, which doesn't support vision processing.\n\nTo analyze images, I would need to be running on a vision-capable model like:\n- Gemma 3n (gemma3n:e4b)\n- LLaVA (llava:7b or llava:13b)\n- Moondream (moondream:latest)\n- Bakllava (bakllava:latest)\n\nWould you like me to help you in another way, or could you describe what's in the image so I can assist with text-based analysis?", 
+                            model_name
+                        );
+                        
+                        Ok(vision_response)
                     }
+                }
+                Some("video") => {
+                    info!("Video input requested, but Ollama doesn't support video for Gemma 3n");
+                    
+                    // Video is not supported in Ollama for Gemma 3n (only available in HuggingFace/MLX)
+                    let video_response = format!(
+                        "I can see that you've shared a video with me! However, video processing for Gemma 3n is currently only available through platforms like HuggingFace or MLX, not through Ollama.\n\nOllama currently supports:\n- Text processing\n- Image analysis (with models like gemma3n:e4b, llava, bakllava)\n\nFor video analysis, you would need to:\n1. Extract frames from the video\n2. Process individual frames as images\n3. Or use the model on HuggingFace with video support\n\nWould you like me to help in another way?"
+                    );
+                    
+                    Ok(video_response)
                 }
                 _ => {
                     // No media type or unsupported media type, use chat API for better text formatting

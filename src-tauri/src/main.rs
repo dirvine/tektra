@@ -43,7 +43,7 @@ struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            model_name: "gemma3:4b".to_string(),
+            model_name: "gemma3n:e4b".to_string(),
             max_tokens: 512,
             temperature: 0.7,
             voice_enabled: false,

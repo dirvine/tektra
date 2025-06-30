@@ -57,7 +57,7 @@ impl AIManager {
             model_loaded: false,
             model_path: None,
             chat_template: MultimodalChatTemplate::default(),
-            selected_model: "gemma3:4b".to_string(), // Gemma 3 4B with multimodal capabilities
+            selected_model: "gemma3n:e4b".to_string(), // Gemma 3n E4B with enhanced multimodal capabilities
             inference_manager,
             backend_type,
         })
@@ -71,7 +71,7 @@ impl AIManager {
             model_loaded: false,
             model_path: None,
             chat_template: MultimodalChatTemplate::default(),
-            selected_model: "gemma3:4b".to_string(), // Gemma 3 4B with multimodal capabilities
+            selected_model: "gemma3n:e4b".to_string(), // Gemma 3n E4B with enhanced multimodal capabilities
             inference_manager,
             backend_type,
         })
