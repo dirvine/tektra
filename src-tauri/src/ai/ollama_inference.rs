@@ -721,7 +721,7 @@ impl InferenceBackend for OllamaInference {
         
         // Add timeout to prevent infinite hanging
         match tokio::time::timeout(
-            tokio::time::Duration::from_secs(120), // 2 minute timeout
+            tokio::time::Duration::from_secs(30), // 30 second timeout for faster failure detection
             ollama.send_chat_messages(request)
         ).await {
             Ok(result) => match result {
@@ -736,8 +736,8 @@ impl InferenceBackend for OllamaInference {
                 }
             },
             Err(_) => {
-                error!("Ollama request timed out after 2 minutes");
-                Err(anyhow::anyhow!("Request timed out - the prompt may be too long or the model is overloaded"))
+                error!("Ollama request timed out after 30 seconds");
+                Err(anyhow::anyhow!("Request timed out after 30 seconds - the context may be too long or the model is overloaded"))
             }
         }
     }

@@ -149,7 +149,7 @@ async fn send_message(
     {
         let query_embedding = vector_db::generate_simple_embedding(&message);
         let vector_db = vector_store.lock().await;
-        match vector_db.search(query_embedding, None, 5, 0.2).await { // Lower threshold for better recall
+        match vector_db.search(query_embedding, None, 3, 0.2).await { // Reduced chunks with low threshold
             Ok(results) => {
                 info!("Vector search found {} results for query: '{}'", results.len(), message);
                 for result in results {
@@ -175,9 +175,9 @@ async fn send_message(
         
         // Limit total context size to prevent model hanging
         let full_context = context_documents.join("\n");
-        let context_to_use = if full_context.len() > 2000 {
-            warn!("Document context too large ({} chars), truncating to 2000 chars to prevent model hanging", full_context.len());
-            let truncated = &full_context[0..2000];
+        let context_to_use = if full_context.len() > 1200 {
+            warn!("Document context too large ({} chars), truncating to 1200 chars to prevent model hanging", full_context.len());
+            let truncated = &full_context[0..1200];
             format!("{}...\n[Context truncated due to length]", truncated)
         } else {
             info!("Using full document context ({} chars)", full_context.len());
@@ -1048,41 +1048,32 @@ async fn process_uploaded_files(
             Err(_) => return Err("File is not valid UTF-8 text".to_string()),
         };
         
-        // Store the file content in vector database for future RAG queries
-        let document_id = format!("uploaded_file_{}", file_name);
-        let project_id = "default".to_string();
-        
         info!("Processing file content: {} ({} bytes)", file_name, text_content.len());
         
-        // Add to vector database
-        match add_document_to_vector_db(
-            document_id,
-            project_id,
-            text_content.clone(),
-            vector_store.clone(),
-        ).await {
-            Ok(chunk_count) => {
-                info!("Successfully added {} chunks to vector database for file: {}", chunk_count, file_name);
-            }
-            Err(e) => {
-                error!("Failed to add file to vector database: {}", e);
-                return Err(format!("Failed to process file: {}", e));
-            }
-        }
-        
-        // Add a file upload message to chat history
-        let upload_msg = ChatMessage {
-            role: "user".to_string(),
-            content: format!("Uploaded file: {}", file_name),
-            timestamp: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
+        // Limit file content size to prevent model hanging
+        let content_to_send = if text_content.len() > 3000 {
+            warn!("File content too large ({} chars), truncating to 3000 chars", text_content.len());
+            format!("{}...\n[Content truncated - showing first 3000 characters]", &text_content[0..3000])
+        } else {
+            text_content
         };
-        chat_history.lock().await.push(upload_msg);
         
-        // Return success message - the actual file content will be retrieved via RAG when needed
-        return Ok(format!("Successfully uploaded and processed '{}'. You can now ask questions about this file and I'll analyze its content.", file_name));
+        // Directly send the file content to the model for analysis
+        // Create a clear message that includes the file content
+        let file_analysis_message = format!(
+            "I've uploaded a text file called '{}' with the following content:\n\n--- File Content ---\n{}\n--- End of File ---\n\nPlease analyze and describe this file for me.",
+            file_name,
+            content_to_send
+        );
+        
+        // Send this to the chat system to get immediate analysis
+        return send_message(
+            file_analysis_message,
+            chat_history,
+            ai,
+            settings,
+            vector_store,
+        ).await;
     } else {
         return Err(format!("Unsupported file type: {}", file_name));
     }
