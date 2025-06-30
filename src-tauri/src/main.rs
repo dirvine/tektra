@@ -149,18 +149,17 @@ async fn send_message(
     {
         let query_embedding = vector_db::generate_simple_embedding(&message);
         let vector_db = vector_store.lock().await;
-        match vector_db.search(query_embedding, None, 3, 0.5).await { // Reduced from 5 to 3 results, increased threshold
+        match vector_db.search(query_embedding, None, 5, 0.2).await { // Lower threshold for better recall
             Ok(results) => {
                 info!("Vector search found {} results for query: '{}'", results.len(), message);
                 for result in results {
                     info!("Found document chunk with similarity {}: {}", result.similarity_score, result.chunk.document_id);
-                    if result.similarity_score > 0.6 { // Higher threshold for more relevant results
-                        context_documents.push(format!(
-                            "Document: {}\nContent: {}\n",
-                            result.chunk.document_id,
-                            result.chunk.content
-                        ));
-                    }
+                    // Include all results above low threshold - Gemma 3 can handle context well
+                    context_documents.push(format!(
+                        "Document: {}\nContent: {}\n",
+                        result.chunk.document_id,
+                        result.chunk.content
+                    ));
                 }
                 info!("Added {} context documents to response", context_documents.len());
             }
@@ -186,7 +185,7 @@ async fn send_message(
         };
         
         let enhanced = format!(
-            "User Question: {}\n\nRelevant Documents from uploaded files:\n{}\n\nPlease answer based on the provided documents and your knowledge. If the documents contain relevant information, reference them in your response:",
+            "User Question: {}\n\nUploaded File Content:\n{}\n\nBased on the file content above, please provide a helpful response. You can describe, analyze, summarize, or answer questions about this content:",
             message,
             context_to_use
         );
