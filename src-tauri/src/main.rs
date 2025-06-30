@@ -144,58 +144,8 @@ async fn send_message(
     let system_prompt = settings_guard.system_prompt.clone();
     drop(settings_guard);
 
-    // Search for relevant documents before generating response
-    let mut context_documents = Vec::new();
-    {
-        let query_embedding = vector_db::generate_simple_embedding(&message);
-        let vector_db = vector_store.lock().await;
-        match vector_db.search(query_embedding, None, 3, 0.2).await { // Reduced chunks with low threshold
-            Ok(results) => {
-                info!("Vector search found {} results for query: '{}'", results.len(), message);
-                for result in results {
-                    info!("Found document chunk with similarity {}: {}", result.similarity_score, result.chunk.document_id);
-                    // Include all results above low threshold - Gemma 3 can handle context well
-                    context_documents.push(format!(
-                        "Document: {}\nContent: {}\n",
-                        result.chunk.document_id,
-                        result.chunk.content
-                    ));
-                }
-                info!("Added {} context documents to response", context_documents.len());
-            }
-            Err(e) => {
-                info!("Document search failed: {}", e);
-            }
-        }
-    }
-    
-    // Prepare enhanced message with document context (limit context size)
-    let enhanced_message = if !context_documents.is_empty() {
-        info!("Enhancing response with {} document contexts", context_documents.len());
-        
-        // Limit total context size to prevent model hanging
-        let full_context = context_documents.join("\n");
-        let context_to_use = if full_context.len() > 1200 {
-            warn!("Document context too large ({} chars), truncating to 1200 chars to prevent model hanging", full_context.len());
-            let truncated = &full_context[0..1200];
-            format!("{}...\n[Context truncated due to length]", truncated)
-        } else {
-            info!("Using full document context ({} chars)", full_context.len());
-            full_context
-        };
-        
-        let enhanced = format!(
-            "User Question: {}\n\nUploaded File Content:\n{}\n\nBased on the file content above, please provide a helpful response. You can describe, analyze, summarize, or answer questions about this content:",
-            message,
-            context_to_use
-        );
-        
-        info!("Enhanced message length: {} characters", enhanced.len());
-        enhanced
-    } else {
-        info!("No relevant documents found, responding without additional context");
-        message.clone()
-    };
+    // Send message directly to AI model without vector database processing
+    let enhanced_message = message.clone();
 
     // Generate response using AI
     let ai_manager = ai.lock().await;
@@ -1066,14 +1016,50 @@ async fn process_uploaded_files(
             content_to_send
         );
         
-        // Send this to the chat system to get immediate analysis
-        return send_message(
-            file_analysis_message,
-            chat_history,
-            ai,
-            settings,
-            vector_store,
-        ).await;
+        // Add user message to chat history
+        let user_msg = ChatMessage {
+            role: "user".to_string(),
+            content: format!("Uploaded file: {}", file_name),
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        };
+        chat_history.lock().await.push(user_msg);
+
+        // Get settings for AI generation
+        let settings_guard = settings.lock().await;
+        let max_tokens = settings_guard.max_tokens;
+        let system_prompt = settings_guard.system_prompt.clone();
+        drop(settings_guard);
+
+        // Send directly to AI model without any vector database processing
+        let ai_manager = ai.lock().await;
+        let response = if ai_manager.is_loaded() {
+            match ai_manager.generate_response_with_system_prompt(&file_analysis_message, max_tokens, system_prompt).await {
+                Ok(resp) => resp,
+                Err(e) => {
+                    error!("Error generating response for file: {}", e);
+                    format!("I apologize, but I encountered an error analyzing the file: {}. Please try again.", e)
+                }
+            }
+        } else {
+            "The AI model is still loading. Please wait a moment and try again.".to_string()
+        };
+        drop(ai_manager);
+
+        // Add assistant response to history
+        let assistant_msg = ChatMessage {
+            role: "assistant".to_string(),
+            content: response.clone(),
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        };
+        chat_history.lock().await.push(assistant_msg);
+
+        return Ok(response);
     } else {
         return Err(format!("Unsupported file type: {}", file_name));
     }
