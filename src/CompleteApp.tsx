@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SimpleHeaderBar from './components/SimpleHeaderBar';
@@ -597,6 +597,81 @@ const ProfessionalStatusBar: React.FC = () => {
   );
 };
 
+// Loading Progress Component
+const LoadingProgress: React.FC<{ 
+  progress: number; 
+  status: string; 
+  visible: boolean 
+}> = ({ progress, status, visible }) => {
+  if (!visible) return null;
+
+  return (
+    <div className="fixed inset-0 bg-primary-bg/90 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="bg-surface border border-border-primary rounded-lg p-8 max-w-lg w-full mx-4">
+        <div className="text-center mb-6">
+          <h3 className="text-xl font-semibold text-text-primary mb-2">Setting up Tektra AI</h3>
+          <p className="text-text-secondary text-sm leading-relaxed">{status}</p>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="mb-6">
+          <div className="flex justify-between text-sm text-text-secondary mb-2">
+            <span>Setup Progress</span>
+            <span className="font-medium">{Math.round(progress)}%</span>
+          </div>
+          <div className="w-full bg-surface-hover rounded-full h-3">
+            <div 
+              className="bg-gradient-to-r from-accent to-accent-hover h-3 rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+              style={{ width: `${progress}%` }}
+            >
+              {progress > 10 && (
+                <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Setup Steps */}
+        <div className="space-y-3 mb-6">
+          <div className={`flex items-center space-x-3 text-sm ${progress >= 50 ? 'text-text-primary' : 'text-text-tertiary'}`}>
+            <div className={`w-2 h-2 rounded-full ${progress >= 50 ? 'bg-accent' : 'bg-surface-hover'}`}></div>
+            <span>Tektra Components</span>
+            {progress >= 50 && <span className="text-accent">✓</span>}
+          </div>
+          <div className={`flex items-center space-x-3 text-sm ${progress >= 70 ? 'text-text-primary' : 'text-text-tertiary'}`}>
+            <div className={`w-2 h-2 rounded-full ${progress >= 70 ? 'bg-accent' : 'bg-surface-hover'}`}></div>
+            <span>Speech Recognition</span>
+            {progress >= 70 && <span className="text-accent">✓</span>}
+          </div>
+          <div className={`flex items-center space-x-3 text-sm ${progress >= 100 ? 'text-text-primary' : 'text-text-tertiary'}`}>
+            <div className={`w-2 h-2 rounded-full ${progress >= 100 ? 'bg-accent' : 'bg-surface-hover'} ${progress >= 80 && progress < 100 ? 'animate-pulse' : ''}`}></div>
+            <span>AI Model (Gemma3n:e4b)</span>
+            {progress >= 100 && <span className="text-accent">✓</span>}
+            {progress >= 80 && progress < 100 && <span className="text-warning">Downloading...</span>}
+          </div>
+        </div>
+
+        {/* Loading Animation */}
+        <div className="flex items-center justify-center space-x-2">
+          <div className="w-2 h-2 bg-accent rounded-full animate-bounce"></div>
+          <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+          <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        </div>
+        
+        {progress >= 80 && progress < 100 && (
+          <div className="mt-4 text-center">
+            <p className="text-xs text-text-tertiary">
+              First-time setup requires downloading AI models (~2-4GB)
+              <br />
+              This may take several minutes depending on your internet connection
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const CompleteAppContent: React.FC = () => {
   // Use individual selectors
   const modelStatus = useTektraStore((state) => state.modelStatus);
@@ -610,72 +685,293 @@ const CompleteAppContent: React.FC = () => {
 
   // Local state for UI
   const [isTyping, setIsTyping] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStatus, setLoadingStatus] = useState('Initializing Tektra AI...');
+  const [showLoading, setShowLoading] = useState(true);
 
   useEffect(() => {
     initializeApp();
     setupEventListeners();
   }, []);
 
+  const waitForTauriReady = async (): Promise<boolean> => {
+    const maxAttempts = 50; // 10 seconds max wait
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      try {
+        // Check if we're in a web browser vs bundled app
+        if (typeof window === 'undefined') {
+          return false;
+        }
+
+        const isWebBrowser = window.location.protocol === 'http:' || 
+                            window.location.protocol === 'https:';
+        
+        if (isWebBrowser) {
+          console.log('Detected web browser environment');
+          return false;
+        }
+
+        console.log(`Waiting for Tauri initialization... (${attempts + 1}/${maxAttempts})`);
+
+        // Wait for Tauri globals to be available
+        if (typeof (window as any).__TAURI_IPC__ === 'function') {
+          console.log('Tauri IPC function detected');
+          
+          // Test IPC with a simple command
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('app_ready');
+            console.log('Tauri IPC verified successfully');
+            return true;
+          } catch (ipcError) {
+            console.log('IPC test failed, retrying...', ipcError);
+          }
+        }
+        
+        // Check for other Tauri indicators
+        if (typeof (window as any).__TAURI__ !== 'undefined') {
+          console.log('Tauri global object detected');
+          return true;
+        }
+        
+        // Wait 200ms before next attempt
+        await new Promise(resolve => setTimeout(resolve, 200));
+        attempts++;
+        
+      } catch (error) {
+        console.log('Tauri check error:', error);
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+    
+    // Final fallback: if we're not in a browser, assume Tauri should work
+    const isWebBrowser = window.location.protocol === 'http:' || 
+                        window.location.protocol === 'https:';
+    const result = !isWebBrowser;
+    console.log('Tauri wait timeout, fallback result:', result);
+    return result;
+  };
+
   const initializeApp = async () => {
     try {
-      setModelStatus({ isLoading: true, modelName: 'gemma3n:e4b' });
+      setLoadingProgress(10);
+      setLoadingStatus('Initializing Tektra components...');
       
-      // Initialize Whisper first
-      try {
-        await invoke<boolean>('initialize_whisper');
+      // Wait for Tauri to be fully initialized
+      const isTauriApp = await waitForTauriReady();
+      setLoadingProgress(25);
+      
+      if (!isTauriApp) {
+        // Fallback: we might be in dev mode or Tauri isn't available
+        console.log('Tektra backend not available - running in fallback mode');
+        setLoadingProgress(100);
+        setLoadingStatus('Demo mode active');
+        setModelStatus({ isLoading: false, modelName: 'Demo Mode' });
         addMessage({
           role: 'system',
-          content: '🎤 Speech recognition initialized'
+          content: '⚠️ Running in demo mode - Tektra backend not available'
+        });
+        setTimeout(() => setShowLoading(false), 1000);
+        return;
+      }
+
+      setLoadingProgress(30);
+      setLoadingStatus('Tektra backend connected! Setting up AI services...');
+      setModelStatus({ isLoading: true, modelName: 'gemma3n:e4b', backend: 'Ollama' });
+      
+      // Start model initialization immediately but keep loading screen
+      initializeModelsInBackground();
+      
+    } catch (error) {
+      console.error('App initialization error:', error);
+      setLoadingProgress(100);
+      setLoadingStatus('Initialization failed');
+      setModelStatus({ isLoading: false, modelName: 'gemma3n:e4b' });
+      addMessage({
+        role: 'system',
+        content: `❌ App initialization failed: ${error}`
+      });
+      setTimeout(() => setShowLoading(false), 2000);
+    }
+  };
+
+  const initializeModelsInBackground = async () => {
+    try {
+      setLoadingProgress(35);
+      setLoadingStatus('Initializing speech recognition...');
+      
+      // Initialize Whisper first (faster)
+      try {
+        await invoke<boolean>('initialize_whisper');
+        setLoadingProgress(45);
+        setLoadingStatus('✅ Speech recognition ready');
+        addMessage({
+          role: 'system',
+          content: '✅ Speech recognition ready'
         });
       } catch (whisperError) {
         console.warn('Whisper initialization failed:', whisperError);
+        setLoadingProgress(45);
+        setLoadingStatus('Speech recognition unavailable - continuing...');
         addMessage({
           role: 'system',
-          content: '⚠️ Speech recognition unavailable'
+          content: '⚠️ Speech recognition unavailable - continuing without it'
         });
       }
       
-      // Initialize AI model (gemma3:4b)
-      const modelLoaded = await invoke<boolean>('initialize_model');
-      if (modelLoaded) {
-        setModelStatus({ isLoaded: true, isLoading: false, modelName: 'gemma3n:e4b' });
-        addMessage({
-          role: 'system',
-          content: '✅ Gemma3n:e4b model loaded successfully - multimodal capabilities ready!'
-        });
-        addNotification({
-          type: 'success',
-          message: 'AI model ready'
-        });
-      } else {
-        throw new Error('Model failed to load - check if gemma3n:e4b is available in Ollama');
+      // Initialize AI model (this may take a long time for downloads)
+      setLoadingProgress(50);
+      setLoadingStatus('Initializing AI model - downloading if needed...');
+      
+      // Set up a timeout to prevent hanging at 100%
+      let modelLoadTimeout: NodeJS.Timeout | null = null;
+      const timeoutPromise = new Promise((_, reject) => {
+        modelLoadTimeout = setTimeout(() => {
+          reject(new Error('Model loading timed out after 10 minutes'));
+        }, 600000); // 10 minutes
+      });
+      
+      try {
+        const modelLoaded = await Promise.race([
+          invoke<boolean>('initialize_model'),
+          timeoutPromise
+        ]);
+        
+        if (modelLoadTimeout) clearTimeout(modelLoadTimeout);
+        
+        if (modelLoaded) {
+          // Don't set to 100% immediately - let the progress events handle it
+          setLoadingStatus('✅ All components ready!');
+          setModelStatus({ isLoaded: true, isLoading: false, modelName: 'gemma3n:e4b', backend: 'Ollama' });
+          
+          addMessage({
+            role: 'system',
+            content: '✅ Gemma3n:e4b model loaded successfully! Multimodal AI capabilities are now ready.'
+          });
+          addNotification({
+            type: 'success',
+            message: 'AI model ready'
+          });
+          
+          // Auto-hide loading screen if no completion event comes
+          setTimeout(() => {
+            if (showLoading) {
+              setLoadingProgress(100);
+              setShowLoading(false);
+            }
+          }, 5000);
+        } else {
+          throw new Error('Model failed to load - check if gemma3n:e4b is available in Ollama');
+        }
+      } catch (timeoutError) {
+        if (modelLoadTimeout) clearTimeout(modelLoadTimeout);
+        throw timeoutError;
       }
       
     } catch (error) {
       console.error('Model initialization error:', error);
-      setModelStatus({ isLoading: false, modelName: 'gemma3n:e4b' });
+      setLoadingProgress(100);
+      setLoadingStatus('Setup failed - continuing in limited mode');
+      setModelStatus({ isLoading: false, modelName: 'gemma3n:e4b', backend: 'Ollama' });
+      
       addMessage({
         role: 'system',
-        content: `❌ Failed to load gemma3n:e4b model: ${error}`
+        content: `❌ Failed to load gemma3n:e4b model: ${error}. You can still use the app interface, but AI features won't be available.`
       });
       addNotification({
         type: 'error',
         message: 'Model initialization failed'
       });
+      
+      // Hide loading screen after error
+      setTimeout(() => setShowLoading(false), 3000);
     }
   };
 
   const setupEventListeners = async () => {
     try {
-      // Listen for AI responses
-      await listen('ai-response', (event: any) => {
-        addMessage({
-          role: 'assistant',
-          content: event.payload.content || event.payload.message || event.payload
-        });
-        setIsTyping(false);
-        setAvatarSpeaking(false);
-      });
+      // Wait for Tauri to be available before setting up listeners
+      const maxRetries = 10;
+      let retries = 0;
+      
+      while (retries < maxRetries) {
+        try {
+          const { listen } = await import('@tauri-apps/api/event');
+          
+          // Listen for AI responses
+          await listen('ai-response', (event: any) => {
+            addMessage({
+              role: 'assistant',
+              content: event.payload.content || event.payload.message || event.payload
+            });
+            setIsTyping(false);
+            setAvatarSpeaking(false);
+          });
+
+          // Listen for model loading progress
+          await listen('model-loading-progress', (event: any) => {
+            const { progress, status, model_name } = event.payload;
+            
+            // Show progress in the loading screen if still visible
+            if (showLoading) {
+              // Ensure progress stays within 50-95% range during download
+              const adjustedProgress = Math.min(95, Math.max(50, progress));
+              setLoadingProgress(adjustedProgress);
+              setLoadingStatus(status);
+            }
+            
+            // Also add chat message for transparency
+            addMessage({
+              role: 'system',
+              content: `📥 ${status} (${Math.round(progress)}%)`
+            });
+          });
+
+          // Listen for model loading completion
+          await listen('model-loading-complete', (event: any) => {
+            const { success, error, model_name } = event.payload;
+            if (success) {
+              setLoadingProgress(100);
+              setLoadingStatus('✅ All components ready!');
+              setModelStatus({ isLoaded: true, isLoading: false, modelName: model_name, backend: 'Ollama' });
+              addMessage({
+                role: 'system',
+                content: `✅ ${model_name} model ready! You can now chat with the AI.`
+              });
+              
+              // Hide loading screen after success with shorter delay
+              setTimeout(() => setShowLoading(false), 1500);
+            } else {
+              setLoadingProgress(100);
+              setLoadingStatus('Setup failed - continuing in limited mode');
+              setModelStatus({ isLoading: false, modelName: model_name, backend: 'Ollama' });
+              addMessage({
+                role: 'system',
+                content: `❌ Model loading failed: ${error || 'Unknown error'}`
+              });
+              
+              // Hide loading screen after error
+              setTimeout(() => setShowLoading(false), 3000);
+            }
+          });
+          
+          break; // Success, exit retry loop
+        } catch (error) {
+          console.log(`Event listener setup attempt ${retries + 1} failed:`, error);
+          retries++;
+          if (retries < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+      
+      if (retries >= maxRetries) {
+        console.log('Could not set up event listeners - continuing without them');
+        return;
+      }
 
       // Listen for transcription results
       await listen('transcription-result', (event: any) => {
@@ -733,6 +1029,13 @@ const CompleteAppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-primary-bg text-text-primary overflow-hidden">
+      {/* Loading Progress Overlay */}
+      <LoadingProgress 
+        progress={loadingProgress}
+        status={loadingStatus}
+        visible={showLoading}
+      />
+
       {/* Header Bar */}
       <SimpleHeaderBar />
 

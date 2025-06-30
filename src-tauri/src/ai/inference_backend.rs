@@ -90,11 +90,13 @@ pub trait InferenceBackend: Send + Sync {
     fn is_available() -> bool where Self: Sized;
 }
 
-/// Backend selection strategy - Ollama only
+/// Backend selection strategy - Ollama with bundled fallback
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum BackendType {
     /// Use Ollama backend (cross-platform, reliable)
     Ollama,
+    /// Use bundled local AI backend (fallback when Ollama not available)
+    Bundled,
 }
 
 impl Default for BackendType {

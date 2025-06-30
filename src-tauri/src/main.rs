@@ -698,6 +698,12 @@ async fn benchmark_backends(
     }
 }
 
+// Simple command to check if Tauri backend is ready
+#[tauri::command]
+async fn app_ready() -> Result<bool, String> {
+    Ok(true)
+}
+
 
 fn main() {
     // Check if running as CLI
@@ -721,6 +727,8 @@ fn main() {
         .init();
     
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let app_handle = app.handle();
             
@@ -760,6 +768,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            app_ready,
             initialize_model,
             send_message,
             send_message_with_camera,

@@ -1,0 +1,35 @@
+# Cargo configuration for faster builds
+
+[build]
+# Use all available CPU cores (0 = auto-detect)
+# jobs = 0
+
+# [target.x86_64-apple-darwin]
+# Use faster linker on macOS (disabled - lld not available)
+# rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# [target.aarch64-apple-darwin]
+# Use faster linker on Apple Silicon (disabled - lld not available)
+# rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+# Speed up compilation
+[profile.dev]
+# Faster linking
+incremental = true
+# Faster debug builds
+debug = 1
+opt-level = 1
+
+[profile.release]
+# Balance between speed and build time
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+
+# Use faster registry
+[source.crates-io]
+registry = "https://github.com/rust-lang/crates.io-index"
+
+# Cache builds aggressively
+[cargo-new]
+edition = "2021"

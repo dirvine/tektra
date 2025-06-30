@@ -5,28 +5,46 @@ use tokio::sync::Mutex;
 use tracing::{info, warn};
 use super::inference_backend::{InferenceBackend, InferenceConfig, InferenceMetrics, BackendType};
 use super::ollama_inference::OllamaInference;
+use tauri::AppHandle;
 
 /// Unified inference manager that can switch between different backends
 pub struct InferenceManager {
     backend: Arc<Mutex<Box<dyn InferenceBackend>>>,
     backend_type: BackendType,
+    app_handle: Option<AppHandle>,
 }
 
 impl InferenceManager {
     /// Create a new inference manager with the specified backend type
     pub fn new(backend_type: BackendType) -> Result<Self> {
-        let backend = Self::create_backend(backend_type)?;
+        let backend = Self::create_backend(backend_type, None)?;
         
         Ok(Self {
             backend: Arc::new(Mutex::new(backend)),
             backend_type,
+            app_handle: None,
+        })
+    }
+    
+    /// Create a new inference manager with app handle for progress tracking
+    pub fn with_app_handle(backend_type: BackendType, app_handle: AppHandle) -> Result<Self> {
+        let backend = Self::create_backend(backend_type, Some(app_handle.clone()))?;
+        
+        Ok(Self {
+            backend: Arc::new(Mutex::new(backend)),
+            backend_type,
+            app_handle: Some(app_handle),
         })
     }
     
     /// Create the Ollama backend (only option)
-    fn create_backend(_backend_type: BackendType) -> Result<Box<dyn InferenceBackend>> {
+    fn create_backend(_backend_type: BackendType, app_handle: Option<AppHandle>) -> Result<Box<dyn InferenceBackend>> {
         info!("Using Ollama backend");
-        Ok(Box::new(OllamaInference::new()))
+        if let Some(handle) = app_handle {
+            Ok(Box::new(OllamaInference::with_app_handle(handle)))
+        } else {
+            Ok(Box::new(OllamaInference::new()))
+        }
     }
     
     /// Load a model file
@@ -74,7 +92,7 @@ impl InferenceManager {
     pub async fn switch_backend(&mut self, backend_type: BackendType) -> Result<()> {
         warn!("Switching inference backend from {:?} to {:?}", self.backend_type, backend_type);
         
-        let new_backend = Self::create_backend(backend_type)?;
+        let new_backend = Self::create_backend(backend_type, self.app_handle.clone())?;
         self.backend = Arc::new(Mutex::new(new_backend));
         self.backend_type = backend_type;
         

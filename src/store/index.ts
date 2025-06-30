@@ -137,8 +137,8 @@ const defaultAvatarState: AvatarState = {
 };
 
 const defaultUIState: UIState = {
-  leftSidebarCollapsed: false,
-  rightSidebarVisible: true,
+  leftSidebarCollapsed: true,
+  rightSidebarVisible: false,
   activeTab: 'analytics',
   theme: 'dark',
   currentProject: 'My Project',

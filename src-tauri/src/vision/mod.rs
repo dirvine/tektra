@@ -406,7 +406,7 @@ impl VisionManager {
         match self.response_rx.lock().unwrap().recv()? {
             CameraResponse::CaptureStarted => {
                 *self.is_capturing.lock().unwrap() = true;
-                let _ = self.app_handle.emit("camera-capture-started", true);
+                let _ = self.app_handle.emit_to(tauri::EventTarget::Any, "camera-capture-started", true);
                 Ok(())
             }
             CameraResponse::Error(e) => Err(anyhow::anyhow!(e)),
@@ -419,7 +419,7 @@ impl VisionManager {
         match self.response_rx.lock().unwrap().recv()? {
             CameraResponse::CaptureStopped => {
                 *self.is_capturing.lock().unwrap() = false;
-                let _ = self.app_handle.emit("camera-capture-stopped", true);
+                let _ = self.app_handle.emit_to(tauri::EventTarget::Any, "camera-capture-stopped", true);
                 Ok(())
             }
             CameraResponse::Error(e) => Err(anyhow::anyhow!(e)),

@@ -17,7 +17,9 @@ edition = "2021"
 tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.0", features = ["devtools"] }
+tauri = { version = "2.0", features = [] }
+tauri-plugin-shell = "2.0"
+tauri-plugin-opener = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
@@ -92,15 +94,6 @@ video-processing = ["ffmpeg-next"]
 [[bin]]
 name = "tektra"
 path = "src/main.rs"
-
-include = [
-    "src/**/*",
-    "Cargo.toml", 
-    "build.rs",
-    "tauri.conf.json",
-    "icons/**/*",
-    "../dist/**/*"
-]
 
 [profile.release]
 opt-level = 3

@@ -324,7 +324,8 @@ impl WhisperSTT {
     }
 
     async fn emit_progress(&self, progress: u32, status: &str, model_name: &str) {
-        let _ = self.app_handle.emit(
+        let _ = self.app_handle.emit_to(
+            tauri::EventTarget::Any,
             "model-loading-progress",
             serde_json::json!({
                 "progress": progress,
@@ -335,7 +336,8 @@ impl WhisperSTT {
     }
 
     async fn emit_completion(&self, success: bool, error: Option<String>) {
-        let _ = self.app_handle.emit(
+        let _ = self.app_handle.emit_to(
+            tauri::EventTarget::Any,
             "model-loading-complete",
             serde_json::json!({
                 "success": success,

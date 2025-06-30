@@ -50,35 +50,35 @@ impl AIManager {
     pub fn new(app_handle: AppHandle) -> Result<Self> {
         // Always use Ollama backend (only option)
         let backend_type = BackendType::Ollama;
-        let inference_manager = InferenceManager::new(backend_type)?;
+        let inference_manager = InferenceManager::with_app_handle(backend_type, app_handle.clone())?;
         
         Ok(Self {
             app_handle,
             model_loaded: false,
             model_path: None,
             chat_template: MultimodalChatTemplate::default(),
-            selected_model: "gemma3n:e2b".to_string(), // Gemma 3n E2B with multimodal capabilities
+            selected_model: "gemma3n:e4b".to_string(), // Gemma 3n E4B with multimodal capabilities
             inference_manager,
             backend_type,
         })
     }
     
     pub fn with_backend(app_handle: AppHandle, backend_type: BackendType) -> Result<Self> {
-        let inference_manager = InferenceManager::new(backend_type)?;
+        let inference_manager = InferenceManager::with_app_handle(backend_type, app_handle.clone())?;
         
         Ok(Self {
             app_handle,
             model_loaded: false,
             model_path: None,
             chat_template: MultimodalChatTemplate::default(),
-            selected_model: "gemma3n:e2b".to_string(),
+            selected_model: "gemma3n:e4b".to_string(), // Gemma 3n E4B with multimodal capabilities
             inference_manager,
             backend_type,
         })
     }
 
     pub async fn load_model(&mut self) -> Result<()> {
-        self.emit_progress(0, "Starting Gemma-3n E2B multimodal model initialization...", &self.selected_model).await;
+        self.emit_progress(0, "Starting Gemma3n E4B multimodal model initialization...", &self.selected_model).await;
         self.load_ollama_model().await
     }
 
@@ -101,7 +101,7 @@ impl AIManager {
         match self.inference_manager.load_model(model_path).await {
             Ok(_) => {
                 self.model_loaded = true;
-                self.emit_progress(100, &format!("Gemma-3n {} ready with Ollama! Multimodal AI with vision capabilities at your service.", self.selected_model), &self.selected_model).await;
+                self.emit_progress(100, &format!("Gemma3n {} ready with Ollama! Multimodal AI with vision capabilities at your service.", self.selected_model), &self.selected_model).await;
                 self.emit_completion(true, None).await;
                 
                 info!("Gemma-3n model {} loaded successfully with Ollama", self.selected_model);
@@ -356,13 +356,14 @@ impl AIManager {
             model_name: model_name.to_string(),
         };
         
-        if let Err(e) = self.app_handle.emit("model-loading-progress", &progress_data) {
+        if let Err(e) = self.app_handle.emit_to(tauri::EventTarget::Any, "model-loading-progress", &progress_data) {
             error!("Failed to emit progress: {}", e);
         }
     }
 
     async fn emit_completion(&self, success: bool, error: Option<String>) {
-        let _ = self.app_handle.emit(
+        let _ = self.app_handle.emit_to(
+            tauri::EventTarget::Any,
             "model-loading-complete",
             serde_json::json!({
                 "success": success,

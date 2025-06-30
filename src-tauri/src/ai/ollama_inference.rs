@@ -2,9 +2,11 @@ use anyhow::Result;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tokio::fs;
-use tracing::{info, error};
+use tracing::{info, error, warn};
 use ollama_rs::{Ollama, generation::completion::request::GenerationRequest, generation::chat::{ChatMessage, request::ChatMessageRequest}};
 use super::inference_backend::{InferenceBackend, InferenceConfig};
+use tauri::{AppHandle, Emitter};
+use serde_json::json;
 
 #[derive(Debug, Clone)]
 pub enum OllamaExe {
@@ -18,6 +20,7 @@ pub struct OllamaInference {
     model_loaded: bool,
     current_model: Option<String>,
     ollama_port: u16,
+    app_handle: Option<AppHandle>,
 }
 
 impl OllamaInference {
@@ -28,6 +31,32 @@ impl OllamaInference {
             model_loaded: false,
             current_model: None,
             ollama_port: 11434, // Default Ollama port
+            app_handle: None,
+        }
+    }
+    
+    pub fn with_app_handle(app_handle: AppHandle) -> Self {
+        Self {
+            ollama_exe: None,
+            ollama_client: None,
+            model_loaded: false,
+            current_model: None,
+            ollama_port: 11434, // Default Ollama port
+            app_handle: Some(app_handle),
+        }
+    }
+    
+    pub fn set_app_handle(&mut self, app_handle: AppHandle) {
+        self.app_handle = Some(app_handle);
+    }
+    
+    async fn emit_progress(&self, progress: f64, status: &str, model_name: &str) {
+        if let Some(ref app_handle) = self.app_handle {
+            let _ = app_handle.emit_to(tauri::EventTarget::Any, "model-loading-progress", json!({
+                "progress": progress,
+                "status": status,
+                "model_name": model_name
+            }));
         }
     }
 
@@ -45,11 +74,10 @@ impl OllamaInference {
 
         info!("System Ollama not found, downloading embedded version...");
         
-        // Download embedded Ollama
-        let data_dir = dirs::data_dir()
-            .ok_or_else(|| anyhow::anyhow!("Could not find data directory"))?
-            .join("tektra")
-            .join("ollama");
+        // Download embedded Ollama - use a different location to avoid macOS restrictions
+        let data_dir = std::env::temp_dir()
+            .join("tektra_ollama")
+            .join("extracted");
         
         fs::create_dir_all(&data_dir).await?;
         
@@ -64,37 +92,109 @@ impl OllamaInference {
         let ollama_binary = if downloaded_path.extension().and_then(|s| s.to_str()) == Some("zip") {
             info!("Extracting Ollama zip archive...");
             
-            // Extract zip to the data directory
-            let extract_dir = data_dir.join("extracted");
-            fs::create_dir_all(&extract_dir).await?;
+            // Use a different extraction approach - extract directly to temp directory to avoid macOS restrictions
+            let extract_dir = data_dir.clone();
             
-            // Use std::process::Command to extract zip (cross-platform)
+            // On macOS, use a different strategy - copy to temp first, then extract
             #[cfg(target_os = "macos")]
-            let extract_cmd = Command::new("unzip")
-                .arg("-o") // Overwrite existing files
-                .arg(&downloaded_path)
-                .arg("-d")
-                .arg(&extract_dir)
-                .output()
-                .map_err(|e| anyhow::anyhow!("Failed to run unzip command: {}", e))?;
+            {
+                info!("Using macOS-specific extraction strategy...");
                 
-            #[cfg(not(target_os = "macos"))]
-            let extract_cmd = Command::new("unzip")
-                .arg("-o")
-                .arg(&downloaded_path)
-                .arg("-d") 
-                .arg(&extract_dir)
-                .output()
-                .map_err(|e| anyhow::anyhow!("Failed to run unzip command: {}", e))?;
+                // Copy zip to temp directory first
+                let temp_zip = extract_dir.join("ollama_temp.zip");
+                fs::copy(&downloaded_path, &temp_zip).await?;
+                
+                // Remove quarantine from temp copy
+                let xattr_result = Command::new("xattr")
+                    .arg("-c")
+                    .arg(&temp_zip)
+                    .output();
+                
+                if let Ok(output) = xattr_result {
+                    if output.status.success() {
+                        info!("Cleared extended attributes from temp zip");
+                    }
+                }
+                
+                // Extract using ditto (more macOS-friendly)
+                let extract_cmd = Command::new("ditto")
+                    .arg("-x")
+                    .arg("-k")
+                    .arg(&temp_zip)
+                    .arg(&extract_dir)
+                    .output()
+                    .map_err(|e| anyhow::anyhow!("Failed to run ditto command: {}", e))?;
+                
+                if !extract_cmd.status.success() {
+                    let stderr = String::from_utf8_lossy(&extract_cmd.stderr);
+                    
+                    // Fallback to manual unzip if ditto fails
+                    info!("Ditto failed, trying unzip as fallback...");
+                    let unzip_cmd = Command::new("unzip")
+                        .arg("-o")
+                        .arg("-j") // Junk paths - extract all files to same directory
+                        .arg(&temp_zip)
+                        .arg("-d")
+                        .arg(&extract_dir)
+                        .output()
+                        .map_err(|e| anyhow::anyhow!("Failed to run unzip command: {}", e))?;
+                    
+                    if !unzip_cmd.status.success() {
+                        let unzip_stderr = String::from_utf8_lossy(&unzip_cmd.stderr);
+                        return Err(anyhow::anyhow!("Both ditto and unzip failed. Ditto: {}, Unzip: {}", stderr, unzip_stderr));
+                    }
+                }
+                
+                // Clean up temp zip
+                let _ = fs::remove_file(&temp_zip).await;
+            }
             
-            if !extract_cmd.status.success() {
-                let stderr = String::from_utf8_lossy(&extract_cmd.stderr);
-                return Err(anyhow::anyhow!("Failed to extract Ollama zip: {}", stderr));
+            #[cfg(not(target_os = "macos"))]
+            {
+                let extract_cmd = Command::new("unzip")
+                    .arg("-o")
+                    .arg(&downloaded_path)
+                    .arg("-d") 
+                    .arg(&extract_dir)
+                    .output()
+                    .map_err(|e| anyhow::anyhow!("Failed to run unzip command: {}", e))?;
+                
+                if !extract_cmd.status.success() {
+                    let stderr = String::from_utf8_lossy(&extract_cmd.stderr);
+                    return Err(anyhow::anyhow!("Failed to extract Ollama zip: {}", stderr));
+                }
             }
             
             // Find the Ollama binary in the extracted contents
             #[cfg(target_os = "macos")]
-            let ollama_path = extract_dir.join("Ollama.app").join("Contents").join("Resources").join("ollama");
+            let ollama_path = {
+                // Try different locations - prefer the app structure if available as it has all resources
+                let app_resources_path = extract_dir.join("Ollama.app").join("Contents").join("Resources").join("ollama");
+                let flattened_path = extract_dir.join("ollama");
+                
+                info!("Looking for Ollama binary in extracted files...");
+                info!("App structure path: {:?}", app_resources_path);
+                info!("Flattened path: {:?}", flattened_path);
+                
+                if app_resources_path.exists() {
+                    info!("Using app structure Ollama binary");
+                    app_resources_path
+                } else if flattened_path.exists() {
+                    info!("Using flattened Ollama binary");
+                    flattened_path
+                } else {
+                    // List what files are actually in the extract directory
+                    if let Ok(entries) = std::fs::read_dir(&extract_dir) {
+                        info!("Files in extract directory:");
+                        for entry in entries {
+                            if let Ok(entry) = entry {
+                                info!("  {:?}", entry.path());
+                            }
+                        }
+                    }
+                    return Err(anyhow::anyhow!("Ollama binary not found in extracted archive. Tried: {:?} and {:?}", app_resources_path, flattened_path));
+                }
+            };
             
             #[cfg(target_os = "linux")]
             let ollama_path = extract_dir.join("ollama");
@@ -116,7 +216,33 @@ impl OllamaInference {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&ollama_binary, std::fs::Permissions::from_mode(0o755)).await?;
+            info!("Setting executable permissions for Ollama binary...");
+            
+            // Set executable permissions (rwxr-xr-x)
+            match fs::set_permissions(&ollama_binary, std::fs::Permissions::from_mode(0o755)).await {
+                Ok(_) => info!("Successfully set executable permissions"),
+                Err(e) => {
+                    error!("Failed to set executable permissions: {}", e);
+                    // Try using chmod command as fallback
+                    let chmod_result = Command::new("chmod")
+                        .arg("+x")
+                        .arg(&ollama_binary)
+                        .output();
+                    
+                    match chmod_result {
+                        Ok(output) => {
+                            if output.status.success() {
+                                info!("Successfully set executable permissions using chmod");
+                            } else {
+                                warn!("chmod command failed: {}", String::from_utf8_lossy(&output.stderr));
+                            }
+                        }
+                        Err(e) => {
+                            warn!("Could not run chmod command: {}", e);
+                        }
+                    }
+                }
+            }
         }
         
         info!("Ollama binary ready at: {:?}", ollama_binary);
@@ -127,14 +253,25 @@ impl OllamaInference {
     pub async fn initialize(&mut self) -> Result<()> {
         info!("Initializing Ollama inference backend...");
         
-        let ollama_exe = Self::find_ollama().await?;
+        // Wrap the heavy operation in a timeout and better error handling
+        let ollama_exe = match tokio::time::timeout(
+            tokio::time::Duration::from_secs(300), // 5 minute timeout for download
+            Self::find_ollama()
+        ).await {
+            Ok(Ok(exe)) => exe,
+            Ok(Err(e)) => return Err(anyhow::anyhow!("Failed to find/download Ollama: {}", e)),
+            Err(_) => return Err(anyhow::anyhow!("Ollama download timed out after 5 minutes")),
+        };
+        
         self.ollama_exe = Some(ollama_exe.clone());
         
         // Start Ollama server if using embedded version
         match &ollama_exe {
             OllamaExe::Embedded(path) => {
                 info!("Starting embedded Ollama server...");
-                self.start_ollama_server(path).await?;
+                if let Err(e) = self.start_ollama_server(path).await {
+                    return Err(anyhow::anyhow!("Failed to start Ollama server: {}", e));
+                }
             }
             OllamaExe::System(_) => {
                 info!("Using system Ollama (assuming it's running)");
@@ -145,28 +282,72 @@ impl OllamaInference {
         let ollama_url = format!("http://localhost:{}", self.ollama_port);
         self.ollama_client = Some(Ollama::new(ollama_url, self.ollama_port));
         
-        // Test connection
-        self.test_connection().await?;
+        // Test connection with timeout
+        match tokio::time::timeout(
+            tokio::time::Duration::from_secs(30),
+            self.test_connection()
+        ).await {
+            Ok(Ok(_)) => info!("Ollama inference backend initialized successfully"),
+            Ok(Err(e)) => return Err(anyhow::anyhow!("Ollama connection test failed: {}", e)),
+            Err(_) => return Err(anyhow::anyhow!("Ollama connection test timed out")),
+        }
         
-        info!("Ollama inference backend initialized successfully");
         Ok(())
     }
 
     /// Start Ollama server (for embedded version)
     async fn start_ollama_server(&self, ollama_path: &Path) -> Result<()> {
-        info!("Starting Ollama server...");
+        info!("Starting Ollama server at: {:?}", ollama_path);
         
         let mut cmd = Command::new(ollama_path);
         cmd.arg("serve");
+        
+        // Set environment variables for embedded Ollama
+        cmd.env("OLLAMA_HOST", "127.0.0.1:11434");
+        cmd.env("OLLAMA_ORIGINS", "*");
+        
+        // Critical: Set the binary path for runner processes
+        // Ollama server spawns runner processes that need to find the binary
+        cmd.env("OLLAMA_EXECUTABLE", ollama_path);
+        
+        // Set the working directory to the directory containing the binary
+        if let Some(parent_dir) = ollama_path.parent() {
+            cmd.current_dir(parent_dir);
+            info!("Setting working directory to: {:?}", parent_dir);
+        }
+        
+        // For embedded Ollama, set the models directory in temp to avoid permissions issues
+        let models_dir = std::env::temp_dir().join("tektra_ollama_models");
+        std::fs::create_dir_all(&models_dir).unwrap_or_default();
+        cmd.env("OLLAMA_MODELS", models_dir);
+        
+        // Set library path for embedded resources
+        if let Some(app_dir) = ollama_path.parent().and_then(|p| p.parent()).and_then(|p| p.parent()) {
+            if app_dir.file_name().and_then(|n| n.to_str()) == Some("Ollama.app") {
+                let resources_dir = app_dir.join("Contents").join("Resources");
+                if resources_dir.exists() {
+                    cmd.env("OLLAMA_LIBRARY_PATH", &resources_dir);
+                    info!("Set OLLAMA_LIBRARY_PATH to: {:?}", resources_dir);
+                }
+            }
+        }
+        
+        // Add the binary directory to PATH so runner processes can find ollama executable
+        if let Some(bin_dir) = ollama_path.parent() {
+            let current_path = std::env::var("PATH").unwrap_or_default();
+            let new_path = format!("{}:{}", bin_dir.display(), current_path);
+            cmd.env("PATH", new_path);
+            info!("Added binary directory to PATH: {:?}", bin_dir);
+        }
         
         // Start the server in background
         let child = cmd.spawn()
             .map_err(|e| anyhow::anyhow!("Failed to start Ollama server: {}", e))?;
         
-        info!("Ollama server started with PID: {}", child.id());
+        info!("Ollama server started with PID: {} at {:?}", child.id(), ollama_path);
         
         // Wait a moment for server to start
-        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         
         Ok(())
     }
@@ -204,6 +385,102 @@ impl OllamaInference {
         // Pull the model (simplified approach)
         let _result = ollama.pull_model(model_name.to_string(), false).await?;
         info!("Model pull initiated for: {}", model_name);
+        
+        info!("Model {} pulled successfully", model_name);
+        Ok(())
+    }
+    
+    /// Pull a model with progress tracking using streaming API
+    async fn pull_model_with_progress(&self, model_name: &str) -> Result<()> {
+        let ollama = self.ollama_client.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Ollama client not initialized"))?;
+        
+        info!("Pulling model with progress tracking: {}", model_name);
+        
+        // Use streaming pull model to get progress updates
+        use futures::StreamExt;
+        
+        self.emit_progress(15.0, &format!("Starting download of {}", model_name), model_name).await;
+        
+        // Create pull model stream with allow_insecure=false
+        let mut stream = ollama.pull_model_stream(model_name.to_string(), false).await
+            .map_err(|e| anyhow::anyhow!("Failed to start model pull stream: {}", e))?;
+            
+        let mut progress = 15.0;
+        let mut last_progress = 0.0;
+        
+        while let Some(response) = stream.next().await {
+            match response {
+                Ok(response_data) => {
+                    // Parse the progress from the response - use message field
+                    let message = &response_data.message;
+                    if !message.is_empty() {
+                        match message.as_str() {
+                            "pulling manifest" => {
+                                progress = 20.0;
+                                self.emit_progress(progress, "Downloading model manifest...", model_name).await;
+                            }
+                            "downloading" => {
+                                // Extract progress information if available
+                                if let (Some(completed), Some(total)) = (response_data.completed, response_data.total) {
+                                    let download_progress = (completed as f64 / total as f64) * 60.0; // 60% of total progress for download
+                                    progress = 20.0 + download_progress;
+                                    
+                                    // Only emit if progress increased by at least 1%
+                                    if progress - last_progress >= 1.0 {
+                                        let mb_completed = completed as f64 / (1024.0 * 1024.0);
+                                        let mb_total = total as f64 / (1024.0 * 1024.0);
+                                        self.emit_progress(progress, &format!("Downloading model files... ({:.1} MB / {:.1} MB)", mb_completed, mb_total), model_name).await;
+                                        last_progress = progress;
+                                    }
+                                } else {
+                                    // Generic downloading message if no size info
+                                    progress = std::cmp::max(progress as u64, 25) as f64;
+                                    self.emit_progress(progress, "Downloading model files...", model_name).await;
+                                }
+                            }
+                            "verifying sha256 digest" => {
+                                progress = 85.0;
+                                self.emit_progress(progress, "Verifying download integrity...", model_name).await;
+                            }
+                            "writing manifest" => {
+                                progress = 90.0;
+                                self.emit_progress(progress, "Finalizing model installation...", model_name).await;
+                            }
+                            "success" => {
+                                progress = 95.0;
+                                self.emit_progress(progress, &format!("Model {} ready!", model_name), model_name).await;
+                                break;
+                            }
+                            _ => {
+                                // Log other status messages
+                                info!("Model pull status: {}", message);
+                                if !message.is_empty() {
+                                    self.emit_progress(progress, &format!("Processing: {}", message), model_name).await;
+                                }
+                            }
+                        }
+                    } else {
+                        // Handle progress without message - use digest or basic progress
+                        if let (Some(completed), Some(total)) = (response_data.completed, response_data.total) {
+                            let download_progress = (completed as f64 / total as f64) * 60.0;
+                            progress = 20.0 + download_progress;
+                            
+                            if progress - last_progress >= 1.0 {
+                                let mb_completed = completed as f64 / (1024.0 * 1024.0);
+                                let mb_total = total as f64 / (1024.0 * 1024.0);
+                                self.emit_progress(progress, &format!("Downloading... ({:.1} MB / {:.1} MB)", mb_completed, mb_total), model_name).await;
+                                last_progress = progress;
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Error during model pull stream: {}", e);
+                    return Err(anyhow::anyhow!("Model pull stream error: {}", e));
+                }
+            }
+        }
         
         info!("Model {} pulled successfully", model_name);
         Ok(())
@@ -281,13 +558,26 @@ impl InferenceBackend for OllamaInference {
             match ollama.show_model_info(model_name.clone()).await {
                 Ok(_) => {
                     info!("Model {} is already available", model_name);
+                    self.emit_progress(95.0, &format!("Model {} already available", model_name), &model_name).await;
                 }
                 Err(_) => {
                     info!("Model {} not found, pulling from Ollama registry...", model_name);
-                    match ollama.pull_model(model_name.clone(), false).await {
-                        Ok(_) => info!("Model {} pulled successfully", model_name),
-                        Err(e) => {
+                    self.emit_progress(10.0, &format!("Downloading {} model - this may take several minutes...", model_name), &model_name).await;
+                    
+                    // Use streaming pull_model with progress tracking
+                    match tokio::time::timeout(
+                        tokio::time::Duration::from_secs(1200), // 20 minute timeout for model pull
+                        self.pull_model_with_progress(&model_name)
+                    ).await {
+                        Ok(Ok(_)) => {
+                            info!("Model {} pulled successfully", model_name);
+                            self.emit_progress(95.0, &format!("Model {} downloaded successfully", model_name), &model_name).await;
+                        }
+                        Ok(Err(e)) => {
                             return Err(anyhow::anyhow!("Failed to pull model {}: {}", model_name, e));
+                        }
+                        Err(_) => {
+                            return Err(anyhow::anyhow!("Model {} pull timed out after 20 minutes", model_name));
                         }
                     }
                 }

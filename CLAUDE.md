@@ -7,10 +7,10 @@ This file contains the development standards and practices that Claude should fo
 Tektra is a voice-interactive robotics AI assistant that merges voice, vision, and action understanding using cutting-edge open models. It features:
 
 - **Desktop Application**: Built with Rust/Tauri + React TypeScript
-- **AI Engine**: Native Rust implementation with Candle ML framework
-- **Multimodal Capabilities**: Text, voice, vision, and robotic action control
-- **Apple Silicon Optimization**: Metal GPU acceleration for optimal performance
-- **Automated Model Management**: HuggingFace Hub integration with progress tracking
+- **AI Engine**: Ollama-based inference with automatic fallback to bundled Ollama
+- **Multimodal Capabilities**: Text, voice, vision, and robotic action control using Gemma3n:e4b model
+- **Apple Silicon Optimization**: Optimized for performance across platforms
+- **Autonomous Ollama Management**: Detects system Ollama or automatically downloads and manages bundled version
 
 ## Architecture Guidelines
 
@@ -40,6 +40,45 @@ src-tauri/src/
 ├── robot/mod.rs       # Robot control
 └── state/mod.rs       # Application state
 ```
+
+## Ollama Integration Architecture
+
+### Autonomous Ollama Management
+Tektra includes a sophisticated Ollama management system that ensures users never need to manually install Ollama:
+
+```rust
+// Ollama detection and management in src-tauri/src/ai/ollama_inference.rs
+pub async fn find_ollama() -> Result<OllamaExe> {
+    // 1. Check for system Ollama installation
+    if let Ok(output) = Command::new("ollama").arg("--version").output() {
+        if output.status.success() {
+            return Ok(OllamaExe::System(PathBuf::from("ollama")));
+        }
+    }
+    
+    // 2. Download and extract bundled Ollama using ollama_td crate
+    let download_config = ollama_td::OllamaDownload::default();
+    let downloaded_path = ollama_td::download(download_config).await?;
+    
+    // 3. Extract and configure for platform
+    // 4. Return embedded Ollama instance
+    Ok(OllamaExe::Embedded(ollama_binary))
+}
+```
+
+### Key Features:
+- **Zero Manual Setup**: Users never need to install Ollama separately
+- **System Integration**: Automatically detects and uses system Ollama if available
+- **Cross-Platform Support**: Works on macOS, Linux, and Windows
+- **Model Management**: Automatically pulls `gemma3n:e4b` model if not available
+- **Background Operation**: Ollama server runs transparently in background
+
+### Implementation Details:
+- Uses `ollama_td` crate for reliable Ollama downloads
+- Extracts platform-specific binaries from archives
+- Manages Ollama server lifecycle (start/stop)
+- Provides fallback error handling for network issues
+- Caches downloaded Ollama in user data directory
 
 ## Development Workflow
 

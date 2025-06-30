@@ -42,7 +42,7 @@ impl AvatarManager {
         state.expression = expression.to_string();
         
         // Emit state change
-        let _ = self.app_handle.emit("avatar-state-changed", state.clone());
+        let _ = self.app_handle.emit_to(tauri::EventTarget::Any, "avatar-state-changed", state.clone());
         
         info!("Avatar expression changed to: {}", expression);
         Ok(())
@@ -67,7 +67,7 @@ impl AvatarManager {
         // Close mouth
         let mut state = self.current_state.lock().unwrap();
         state.mouth_open = 0.0;
-        let _ = self.app_handle.emit("avatar-state-changed", state.clone());
+        let _ = self.app_handle.emit_to(tauri::EventTarget::Any, "avatar-state-changed", state.clone());
         
         Ok(())
     }
@@ -132,7 +132,7 @@ impl AvatarManager {
                 // Update mouth position
                 let mut state = state_clone.lock().unwrap();
                 state.mouth_open = frame.mouth_open;
-                let _ = app_handle_clone.emit("avatar-state-changed", state.clone());
+                let _ = app_handle_clone.emit_to(tauri::EventTarget::Any, "avatar-state-changed", state.clone());
             }
         });
     }
@@ -146,7 +146,7 @@ impl AvatarManager {
             {
                 let mut state = state_clone.lock().unwrap();
                 state.eye_blink = 1.0;
-                let _ = app_handle_clone.emit("avatar-state-changed", state.clone());
+                let _ = app_handle_clone.emit_to(tauri::EventTarget::Any, "avatar-state-changed", state.clone());
             } // state lock is dropped here
             
             // Keep closed for 150ms
@@ -156,7 +156,7 @@ impl AvatarManager {
             {
                 let mut state = state_clone.lock().unwrap();
                 state.eye_blink = 0.0;
-                let _ = app_handle_clone.emit("avatar-state-changed", state.clone());
+                let _ = app_handle_clone.emit_to(tauri::EventTarget::Any, "avatar-state-changed", state.clone());
             }
         });
         
