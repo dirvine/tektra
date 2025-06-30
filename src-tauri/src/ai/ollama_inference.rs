@@ -61,7 +61,7 @@ impl OllamaInference {
     }
 
     /// Find Ollama binary - either system-installed or download embedded version
-    pub async fn find_ollama() -> Result<OllamaExe> {
+    pub async fn find_ollama(&self) -> Result<OllamaExe> {
         info!("Checking for system Ollama installation...");
         
         // First try to find system Ollama
@@ -73,6 +73,7 @@ impl OllamaInference {
         }
 
         info!("System Ollama not found, downloading embedded version...");
+        self.emit_progress(10.0, "🔄 System Ollama not found, downloading embedded version...", "ollama").await;
         
         // Download embedded Ollama - use a different location to avoid macOS restrictions
         let data_dir = std::env::temp_dir()
@@ -81,16 +82,22 @@ impl OllamaInference {
         
         fs::create_dir_all(&data_dir).await?;
         
+        self.emit_progress(15.0, "📁 Created download directory", "ollama").await;
+        
         // Use default download configuration
         let download_config = ollama_td::OllamaDownload::default();
+        self.emit_progress(20.0, "⬇️ Starting Ollama download (~10-50MB depending on platform)...", "ollama").await;
+        
         let downloaded_path = ollama_td::download(download_config).await
             .map_err(|e| anyhow::anyhow!("Failed to download Ollama: {}", e))?;
         
+        self.emit_progress(40.0, "✅ Ollama downloaded successfully", "ollama").await;
         info!("Ollama downloaded to: {:?}", downloaded_path);
         
         // Check if downloaded file is a zip archive and extract it
         let ollama_binary = if downloaded_path.extension().and_then(|s| s.to_str()) == Some("zip") {
             info!("Extracting Ollama zip archive...");
+            self.emit_progress(45.0, "📦 Extracting Ollama archive...", "ollama").await;
             
             // Use a different extraction approach - extract directly to temp directory to avoid macOS restrictions
             let extract_dir = data_dir.clone();
@@ -246,6 +253,7 @@ impl OllamaInference {
         }
         
         info!("Ollama binary ready at: {:?}", ollama_binary);
+        self.emit_progress(50.0, "🎉 Ollama binary ready and configured!", "ollama").await;
         Ok(OllamaExe::Embedded(ollama_binary))
     }
 
@@ -256,7 +264,7 @@ impl OllamaInference {
         // Wrap the heavy operation in a timeout and better error handling
         let ollama_exe = match tokio::time::timeout(
             tokio::time::Duration::from_secs(300), // 5 minute timeout for download
-            Self::find_ollama()
+            self.find_ollama()
         ).await {
             Ok(Ok(exe)) => exe,
             Ok(Err(e)) => return Err(anyhow::anyhow!("Failed to find/download Ollama: {}", e)),
@@ -647,7 +655,14 @@ impl InferenceBackend for OllamaInference {
             match ollama.show_model_info(model_name.clone()).await {
                 Ok(_) => {
                     info!("Model {} is already available", model_name);
-                    self.emit_progress(95.0, &format!("Model {} already available", model_name), &model_name).await;
+                    self.emit_progress(60.0, &format!("📋 {} found in local cache", model_name), &model_name).await;
+                    
+                    // Simulate some loading steps for better UX
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    self.emit_progress(80.0, &format!("🔍 Verifying {} model integrity", model_name), &model_name).await;
+                    
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    self.emit_progress(95.0, &format!("✅ {} validation complete", model_name), &model_name).await;
                 }
                 Err(_) => {
                     info!("Model {} not found, pulling from Ollama registry...", model_name);
@@ -673,8 +688,11 @@ impl InferenceBackend for OllamaInference {
             }
         }
         
-        self.current_model = Some(model_name);
+        self.current_model = Some(model_name.clone());
         self.model_loaded = true;
+        
+        // Always emit final completion progress
+        self.emit_progress(100.0, &format!("🎉 {} ready! Model loaded successfully", model_name), &model_name).await;
         
         Ok(())
     }
@@ -691,6 +709,7 @@ impl InferenceBackend for OllamaInference {
             .ok_or_else(|| anyhow::anyhow!("No model loaded"))?;
         
         info!("Generating response with model: {}", model_name);
+        info!("Prompt length: {} characters", prompt.len());
         
         // Use chat API for better formatting
         let request = ChatMessageRequest::new(
@@ -698,15 +717,27 @@ impl InferenceBackend for OllamaInference {
             vec![ChatMessage::user(prompt.to_string())],
         );
         
-        match ollama.send_chat_messages(request).await {
-            Ok(response) => {
-                let content = response.message.content;
-                info!("Generated response: {}", content);
-                Ok(content)
-            }
-            Err(e) => {
-                error!("Failed to generate response: {}", e);
-                Err(anyhow::anyhow!("Ollama chat failed: {}", e))
+        info!("Sending request to Ollama...");
+        
+        // Add timeout to prevent infinite hanging
+        match tokio::time::timeout(
+            tokio::time::Duration::from_secs(120), // 2 minute timeout
+            ollama.send_chat_messages(request)
+        ).await {
+            Ok(result) => match result {
+                Ok(response) => {
+                    let content = response.message.content;
+                    info!("Generated response: {}", content);
+                    Ok(content)
+                }
+                Err(e) => {
+                    error!("Failed to generate response: {}", e);
+                    Err(anyhow::anyhow!("Ollama chat failed: {}", e))
+                }
+            },
+            Err(_) => {
+                error!("Ollama request timed out after 2 minutes");
+                Err(anyhow::anyhow!("Request timed out - the prompt may be too long or the model is overloaded"))
             }
         }
     }

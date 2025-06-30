@@ -18,6 +18,8 @@ use avatar::AvatarManager;
 mod cli;
 mod config;
 use config::AppConfig;
+mod vector_db;
+use vector_db::VectorDB;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct ChatMessage {
@@ -41,7 +43,7 @@ struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
-            model_name: "gemma3n:e4b".to_string(),
+            model_name: "gemma3:4b".to_string(),
             max_tokens: 512,
             temperature: 0.7,
             voice_enabled: false,
@@ -59,6 +61,7 @@ type AI = Arc<Mutex<AIManager>>;
 type AudioRec = Arc<Mutex<AudioRecorder>>;
 type Vision = Arc<Mutex<VisionManager>>;
 type Avatar = Arc<Mutex<AvatarManager>>;
+type VectorStore = Arc<Mutex<VectorDB>>;
 
 #[tauri::command]
 async fn start_audio_recording(audio: State<'_, AudioRec>) -> Result<bool, String> {
@@ -121,6 +124,7 @@ async fn send_message(
     chat_history: State<'_, ChatHistory>,
     ai: State<'_, AI>,
     settings: State<'_, Settings>,
+    vector_store: State<'_, VectorStore>,
 ) -> Result<String, String> {
     // Add user message to history
     let user_msg = ChatMessage {
@@ -140,11 +144,65 @@ async fn send_message(
     let system_prompt = settings_guard.system_prompt.clone();
     drop(settings_guard);
 
+    // Search for relevant documents before generating response
+    let mut context_documents = Vec::new();
+    {
+        let query_embedding = vector_db::generate_simple_embedding(&message);
+        let vector_db = vector_store.lock().await;
+        match vector_db.search(query_embedding, None, 3, 0.5).await { // Reduced from 5 to 3 results, increased threshold
+            Ok(results) => {
+                info!("Vector search found {} results for query: '{}'", results.len(), message);
+                for result in results {
+                    info!("Found document chunk with similarity {}: {}", result.similarity_score, result.chunk.document_id);
+                    if result.similarity_score > 0.6 { // Higher threshold for more relevant results
+                        context_documents.push(format!(
+                            "Document: {}\nContent: {}\n",
+                            result.chunk.document_id,
+                            result.chunk.content
+                        ));
+                    }
+                }
+                info!("Added {} context documents to response", context_documents.len());
+            }
+            Err(e) => {
+                info!("Document search failed: {}", e);
+            }
+        }
+    }
+    
+    // Prepare enhanced message with document context (limit context size)
+    let enhanced_message = if !context_documents.is_empty() {
+        info!("Enhancing response with {} document contexts", context_documents.len());
+        
+        // Limit total context size to prevent model hanging
+        let full_context = context_documents.join("\n");
+        let context_to_use = if full_context.len() > 2000 {
+            warn!("Document context too large ({} chars), truncating to 2000 chars to prevent model hanging", full_context.len());
+            let truncated = &full_context[0..2000];
+            format!("{}...\n[Context truncated due to length]", truncated)
+        } else {
+            info!("Using full document context ({} chars)", full_context.len());
+            full_context
+        };
+        
+        let enhanced = format!(
+            "User Question: {}\n\nRelevant Documents from uploaded files:\n{}\n\nPlease answer based on the provided documents and your knowledge. If the documents contain relevant information, reference them in your response:",
+            message,
+            context_to_use
+        );
+        
+        info!("Enhanced message length: {} characters", enhanced.len());
+        enhanced
+    } else {
+        info!("No relevant documents found, responding without additional context");
+        message.clone()
+    };
+
     // Generate response using AI
     let ai_manager = ai.lock().await;
     
     let response = if ai_manager.is_loaded() {
-        match ai_manager.generate_response_with_system_prompt(&message, max_tokens, system_prompt).await {
+        match ai_manager.generate_response_with_system_prompt(&enhanced_message, max_tokens, system_prompt).await {
             Ok(resp) => resp,
             Err(e) => {
                 eprintln!("Error generating response: {}", e);
@@ -179,6 +237,7 @@ async fn send_message_with_camera(
     ai: State<'_, AI>,
     vision: State<'_, Vision>,
     settings: State<'_, Settings>,
+    vector_store: State<'_, VectorStore>,
 ) -> Result<String, String> {
     // Add user message to history
     let user_msg = ChatMessage {
@@ -292,7 +351,7 @@ async fn check_model_status(ai: State<'_, AI>) -> Result<bool, String> {
 #[tauri::command]
 async fn get_available_models() -> Result<Vec<String>, String> {
     Ok(vec![
-        "gemma3n:e4b".to_string(),
+        "gemma3:4b".to_string(),
         "gemma2:2b".to_string(),
         "qwen2.5:7b".to_string(),
     ])
@@ -339,7 +398,7 @@ async fn get_camera_frame(vision: State<'_, Vision>) -> Result<String, String> {
 #[tauri::command]
 async fn process_image_input(
     message: String,
-    image_data: Vec<u8>,
+    imageData: Vec<u8>,
     chat_history: State<'_, ChatHistory>,
     ai: State<'_, AI>,
     settings: State<'_, Settings>,
@@ -366,7 +425,7 @@ async fn process_image_input(
     let ai_manager = ai.lock().await;
     
     let response = if ai_manager.is_loaded() {
-        match ai_manager.generate_response_with_image_and_system_prompt(&message, &image_data, max_tokens, system_prompt).await {
+        match ai_manager.generate_response_with_image_and_system_prompt(&message, &imageData, max_tokens, system_prompt).await {
             Ok(resp) => resp,
             Err(e) => {
                 eprintln!("Error generating response with image: {}", e);
@@ -698,6 +757,310 @@ async fn benchmark_backends(
     }
 }
 
+// Project management commands
+#[tauri::command]
+async fn create_project(name: String, description: Option<String>) -> Result<serde_json::Value, String> {
+    use std::collections::HashMap;
+    
+    let project_id = uuid::Uuid::new_v4().to_string();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    
+    let mut project = HashMap::new();
+    project.insert("id".to_string(), serde_json::Value::String(project_id));
+    project.insert("name".to_string(), serde_json::Value::String(name));
+    project.insert("description".to_string(), serde_json::Value::String(description.unwrap_or_default()));
+    project.insert("createdAt".to_string(), serde_json::Value::String(now.to_string()));
+    project.insert("updatedAt".to_string(), serde_json::Value::String(now.to_string()));
+    project.insert("documentCount".to_string(), serde_json::Value::Number(0.into()));
+    project.insert("tags".to_string(), serde_json::Value::Array(vec![]));
+    project.insert("isStarred".to_string(), serde_json::Value::Bool(false));
+    
+    // TODO: Save to actual database
+    Ok(serde_json::Value::Object(project.into_iter().collect()))
+}
+
+#[tauri::command]
+async fn get_projects() -> Result<Vec<serde_json::Value>, String> {
+    // TODO: Load from actual database
+    // For now, return empty array
+    Ok(vec![])
+}
+
+#[tauri::command]
+async fn delete_project(project_id: String) -> Result<(), String> {
+    info!("Deleting project: {}", project_id);
+    // TODO: Implement actual deletion
+    Ok(())
+}
+
+#[tauri::command]
+async fn toggle_project_star(project_id: String) -> Result<(), String> {
+    info!("Toggling star for project: {}", project_id);
+    // TODO: Implement actual star toggle
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_project_documents(project_id: String) -> Result<Vec<serde_json::Value>, String> {
+    info!("Getting documents for project: {}", project_id);
+    // TODO: Load from actual database
+    Ok(vec![])
+}
+
+#[tauri::command]
+async fn upload_file_to_project(
+    project_id: String,
+    file_path: String,
+    file_name: String,
+) -> Result<serde_json::Value, String> {
+    use std::collections::HashMap;
+    
+    info!("Uploading file {} to project {}", file_name, project_id);
+    
+    // Read file metadata
+    let metadata = match std::fs::metadata(&file_path) {
+        Ok(meta) => meta,
+        Err(e) => return Err(format!("Failed to read file metadata: {}", e)),
+    };
+    
+    let file_size = metadata.len();
+    let document_id = uuid::Uuid::new_v4().to_string();
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    
+    // Determine file type based on extension
+    let file_type = if file_name.ends_with(".jpg") || file_name.ends_with(".jpeg") || 
+                       file_name.ends_with(".png") || file_name.ends_with(".gif") ||
+                       file_name.ends_with(".webp") || file_name.ends_with(".bmp") {
+        "image"
+    } else if file_name.ends_with(".mp4") || file_name.ends_with(".avi") || 
+              file_name.ends_with(".mov") || file_name.ends_with(".webm") {
+        "video"
+    } else if file_name.ends_with(".mp3") || file_name.ends_with(".wav") || 
+              file_name.ends_with(".flac") || file_name.ends_with(".ogg") {
+        "audio"
+    } else if file_name.ends_with(".txt") || file_name.ends_with(".md") || 
+              file_name.ends_with(".doc") || file_name.ends_with(".docx") ||
+              file_name.ends_with(".pdf") {
+        "text"
+    } else {
+        "other"
+    };
+    
+    let mut document = HashMap::new();
+    document.insert("id".to_string(), serde_json::Value::String(document_id));
+    document.insert("projectId".to_string(), serde_json::Value::String(project_id));
+    document.insert("name".to_string(), serde_json::Value::String(file_name));
+    document.insert("type".to_string(), serde_json::Value::String(file_type.to_string()));
+    document.insert("size".to_string(), serde_json::Value::Number(file_size.into()));
+    document.insert("path".to_string(), serde_json::Value::String(file_path));
+    document.insert("uploadedAt".to_string(), serde_json::Value::String(now.to_string()));
+    document.insert("tags".to_string(), serde_json::Value::Array(vec![]));
+    
+    // TODO: Save to actual database and process file content
+    Ok(serde_json::Value::Object(document.into_iter().collect()))
+}
+
+#[tauri::command]
+async fn semantic_search(
+    query: String,
+    project_id: Option<String>,
+    limit: Option<usize>,
+    vector_store: State<'_, VectorStore>,
+    _ai: State<'_, AI>,
+) -> Result<Vec<serde_json::Value>, String> {
+    info!("Performing semantic search for: '{}'", query);
+    
+    // Generate embedding for the query (simplified)
+    let query_embedding = vector_db::generate_simple_embedding(&query);
+    
+    let vector_db = vector_store.lock().await;
+    match vector_db.search(
+        query_embedding, 
+        project_id, 
+        limit.unwrap_or(10), 
+        0.1 // min similarity threshold
+    ).await {
+        Ok(results) => {
+            let search_results: Vec<serde_json::Value> = results
+                .into_iter()
+                .map(|result| {
+                    serde_json::json!({
+                        "chunk": result.chunk,
+                        "similarity_score": result.similarity_score,
+                        "context_chunks": result.context_chunks
+                    })
+                })
+                .collect();
+            
+            info!("Found {} semantic search results", search_results.len());
+            Ok(search_results)
+        }
+        Err(e) => Err(format!("Search failed: {}", e))
+    }
+}
+
+#[tauri::command]
+async fn add_document_to_vector_db(
+    document_id: String,
+    project_id: String,
+    content: String,
+    vector_store: State<'_, VectorStore>,
+) -> Result<usize, String> {
+    info!("Adding document to vector database: {}", document_id);
+    
+    // Chunk the document
+    let chunks = vector_db::chunk_text(&content, &document_id, &project_id);
+    let chunk_count = chunks.len();
+    
+    let vector_db = vector_store.lock().await;
+    
+    // Add all chunks
+    for chunk in chunks {
+        if let Err(e) = vector_db.add_chunk(chunk).await {
+            error!("Failed to add chunk: {}", e);
+            return Err(format!("Failed to add chunk: {}", e));
+        }
+    }
+    
+    info!("Added {} chunks to vector database", chunk_count);
+    Ok(chunk_count)
+}
+
+#[tauri::command]
+async fn remove_document_from_vector_db(
+    document_id: String,
+    vector_store: State<'_, VectorStore>,
+) -> Result<(), String> {
+    info!("Removing document from vector database: {}", document_id);
+    
+    let vector_db = vector_store.lock().await;
+    match vector_db.remove_document(&document_id).await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to remove document: {}", e))
+    }
+}
+
+#[tauri::command]
+async fn get_vector_db_stats(
+    vector_store: State<'_, VectorStore>,
+) -> Result<std::collections::HashMap<String, serde_json::Value>, String> {
+    let vector_db = vector_store.lock().await;
+    Ok(vector_db.get_stats().await)
+}
+
+#[tauri::command]
+async fn process_file_content(
+    fileName: String,
+    fileContent: Vec<u8>,
+    fileType: String,
+    vector_store: State<'_, VectorStore>,
+) -> Result<String, String> {
+    info!("Processing file content: {} ({} bytes)", fileName, fileContent.len());
+    
+    // Convert content to string for text files
+    let text_content = if fileType.starts_with("text/") || 
+                          fileName.ends_with(".txt") || 
+                          fileName.ends_with(".md") ||
+                          fileName.ends_with(".json") {
+        match String::from_utf8(fileContent.clone()) {
+            Ok(text) => text,
+            Err(_) => return Err("Failed to parse file as UTF-8 text".to_string()),
+        }
+    } else {
+        return Err(format!("File type '{}' is not supported. Please upload text files (.txt, .md, .json) only.", 
+                          if fileName.contains('.') { 
+                              fileName.split('.').last().unwrap_or("unknown") 
+                          } else { 
+                              "unknown" 
+                          }));
+    };
+    
+    // Add to vector database using the existing chunking system
+    let document_id = format!("uploaded_file_{}", fileName);
+    let project_id = "default".to_string(); // Default project for uploaded files
+    
+    // Chunk the document
+    let chunks = vector_db::chunk_text(&text_content, &document_id, &project_id);
+    let chunk_count = chunks.len();
+    
+    // Add all chunks to the vector database
+    let vector_db = vector_store.lock().await;
+    for chunk in chunks {
+        if let Err(e) = vector_db.add_chunk(chunk).await {
+            error!("Failed to add chunk to vector DB: {}", e);
+            return Err(format!("Failed to process file chunk: {}", e));
+        }
+    }
+    
+    info!("Successfully added {} with {} chunks to vector database", fileName, chunk_count);
+    Ok(format!("Successfully processed and indexed '{}' ({} characters, {} chunks)", fileName, text_content.len(), chunk_count))
+}
+
+#[tauri::command]
+async fn process_uploaded_files(
+    files: Vec<String>, // File paths
+    _project_id: Option<String>,
+    chat_history: State<'_, ChatHistory>,
+    ai: State<'_, AI>,
+    settings: State<'_, Settings>,
+    vector_store: State<'_, VectorStore>,
+) -> Result<String, String> {
+    info!("Processing {} uploaded files", files.len());
+    
+    if files.is_empty() {
+        return Err("No files provided".to_string());
+    }
+    
+    // For now, process the first file as an example
+    let file_path = &files[0];
+    
+    // Read file content
+    let file_content = match std::fs::read(file_path) {
+        Ok(content) => content,
+        Err(e) => return Err(format!("Failed to read file: {}", e)),
+    };
+    
+    // Determine if it's an image or text file
+    let file_name = std::path::Path::new(file_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown");
+    
+    if file_name.ends_with(".jpg") || file_name.ends_with(".jpeg") || 
+       file_name.ends_with(".png") || file_name.ends_with(".gif") {
+        // Process as image
+        return process_image_input(
+            format!("I've uploaded an image: {}", file_name),
+            file_content,
+            chat_history,
+            ai,
+            settings,
+        ).await;
+    } else if file_name.ends_with(".txt") || file_name.ends_with(".md") {
+        // Process as text
+        let text_content = match String::from_utf8(file_content) {
+            Ok(text) => text,
+            Err(_) => return Err("File is not valid UTF-8 text".to_string()),
+        };
+        
+        return send_message(
+            format!("I've uploaded a text file '{}' with the following content:\n\n{}", file_name, text_content),
+            chat_history,
+            ai,
+            settings,
+            vector_store,
+        ).await;
+    } else {
+        return Err(format!("Unsupported file type: {}", file_name));
+    }
+}
+
 // Simple command to check if Tauri backend is ready
 #[tauri::command]
 async fn app_ready() -> Result<bool, String> {
@@ -754,6 +1117,7 @@ fn main() {
             let audio_recorder = AudioRecorder::new(app_handle.clone());
             let avatar_manager = AvatarManager::new(app_handle.clone());
             let vision_manager = VisionManager::new(app_handle.clone()).unwrap();
+            let vector_db = VectorDB::new();
             
             app.manage(ChatHistory::new(Mutex::new(Vec::new())));
             app.manage(Settings::new(Mutex::new(AppSettings::default())));
@@ -761,6 +1125,7 @@ fn main() {
             app.manage(AudioRec::new(Mutex::new(audio_recorder)));
             app.manage(Vision::new(Mutex::new(vision_manager)));
             app.manage(Avatar::new(Mutex::new(avatar_manager)));
+            app.manage(VectorStore::new(Mutex::new(vector_db)));
             
             // Store config for later use
             app.manage(Arc::new(Mutex::new(app_config)));
@@ -796,7 +1161,19 @@ fn main() {
             stop_avatar_speaking,
             avatar_blink,
             get_backend_info,
-            benchmark_backends
+            benchmark_backends,
+            create_project,
+            get_projects,
+            delete_project,
+            toggle_project_star,
+            get_project_documents,
+            upload_file_to_project,
+            process_file_content,
+            process_uploaded_files,
+            semantic_search,
+            add_document_to_vector_db,
+            remove_document_from_vector_db,
+            get_vector_db_stats
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

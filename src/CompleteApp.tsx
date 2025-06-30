@@ -24,7 +24,10 @@ import {
   Activity,
   Wifi,
   WifiOff,
-  Volume2
+  Volume2,
+  X,
+  Upload,
+  Image
 } from 'lucide-react';
 import './App.css';
 
@@ -50,6 +53,9 @@ const EnhancedChatInterface: React.FC = () => {
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Ref for auto-scrolling
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -59,38 +65,215 @@ const EnhancedChatInterface: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+  // Alternative approach: focus on making file upload button work reliably
+  const alternativeFileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Tauri v2 drag and drop with correct event names
+  React.useEffect(() => {
+    console.log('🔧 Setting up Tauri v2 drag and drop with correct event names');
     
-    addMessage({
-      role: 'user',
-      content: inputValue
-    });
-    
-    const userMessage = inputValue;
-    setInputValue('');
-    setIsTyping(true);
-    setAvatarSpeaking(true);
+    let unlistenFunctions: (() => void)[] = [];
+
+    const setupTauriV2DragDrop = async () => {
+      try {
+        const { listen } = await import('@tauri-apps/api/event');
+        
+        // Tauri v2 uses these specific event names
+        const events = [
+          'tauri://drag-enter',
+          'tauri://drag-over', 
+          'tauri://drag-drop',
+          'tauri://drag-leave'
+        ];
+        
+        for (const eventName of events) {
+          try {
+            console.log(`📡 Registering: ${eventName}`);
+            const unlisten = await listen(eventName, (event) => {
+              console.log(`🎉 TAURI v2 EVENT: ${eventName}`, event);
+              
+              switch (eventName) {
+                case 'tauri://drag-enter':
+                case 'tauri://drag-over':
+                  setIsDragOver(true);
+                  break;
+                  
+                case 'tauri://drag-leave':
+                  setIsDragOver(false);
+                  break;
+                  
+                case 'tauri://drag-drop':
+                  setIsDragOver(false);
+                  const files = event.payload as string[];
+                  if (files && files.length > 0) {
+                    console.log('📂 Files dropped:', files);
+                    handleTauriFileDrop(files);
+                  }
+                  break;
+              }
+            });
+            
+            unlistenFunctions.push(unlisten);
+            console.log(`✅ Registered: ${eventName}`);
+            
+          } catch (err) {
+            console.log(`❌ Failed to register: ${eventName}`, err);
+          }
+        }
+        
+        console.log(`✅ Tauri v2 drag drop setup complete - registered ${unlistenFunctions.length} events`);
+        
+      } catch (error) {
+        console.error('❌ Failed to setup Tauri v2 drag drop:', error);
+        console.log('📁 File upload button is available as backup');
+      }
+    };
+
+    setupTauriV2DragDrop();
+
+    return () => {
+      console.log('🧹 Cleaning up Tauri v2 drag drop listeners');
+      unlistenFunctions.forEach(unlisten => unlisten());
+    };
+  }, []);
+
+  // Handle Tauri file drops
+  const handleTauriFileDrop = async (filePaths: string[]) => {
+    console.log('🔄 Processing Tauri file drop:', filePaths);
     
     try {
-      // Use real backend - check if camera is enabled for multimodal
-      const result = modelStatus.cameraEnabled 
-        ? await invoke<string>('send_message_with_camera', { message: userMessage })
-        : await invoke<string>('send_message', { message: userMessage });
+      // In Tauri v2, we can use fetch with the file path directly
+      // or use the invoke method to read files through backend commands
+      
+      for (const filePath of filePaths) {
+        console.log('📂 Processing dropped file:', filePath);
+        
+        // Extract filename from path
+        const filename = filePath.split('/').pop() || filePath.split('\\').pop() || 'unknown';
+        console.log('📋 Extracted filename:', filename);
+        
+        try {
+          // For now, just create a placeholder file object to test the drop mechanism
+          // We'll handle actual file reading through the existing backend commands
+          const placeholderFile = new File([''], filename, {
+            type: getFileType(filename)
+          });
+          
+          console.log('📋 Created placeholder file object:', { 
+            name: placeholderFile.name, 
+            type: placeholderFile.type, 
+            path: filePath 
+          });
+          
+          // Add to attachments
+          setAttachments(prev => {
+            const newAttachments = [...prev, placeholderFile];
+            console.log('💾 Updated attachments:', newAttachments.map(f => f.name));
+            return newAttachments;
+          });
+          
+        } catch (fileError) {
+          console.error('❌ Error creating file object:', fileError);
+        }
+      }
       
       addMessage({
-        role: 'assistant',
-        content: result
+        role: 'system',
+        content: `🎉 TAURI FILE DROP WORKS! Added ${filePaths.length} file(s): ${filePaths.map(p => p.split('/').pop() || p.split('\\').pop()).join(', ')}`,
       });
+      
     } catch (error) {
-      console.error('AI response error:', error);
+      console.error('❌ Error processing dropped files:', error);
       addMessage({
-        role: 'assistant',
-        content: `Error: ${error}`
+        role: 'system',
+        content: `❌ Error processing dropped files: ${error}`,
       });
-    } finally {
-      setIsTyping(false);
-      setAvatarSpeaking(false);
+    }
+  };
+
+  // Helper function to determine file type
+  const getFileType = (filename: string): string => {
+    const ext = filename.toLowerCase().split('.').pop();
+    switch (ext) {
+      case 'txt': return 'text/plain';
+      case 'md': return 'text/markdown';
+      case 'json': return 'application/json';
+      case 'png': return 'image/png';
+      case 'jpg':
+      case 'jpeg': return 'image/jpeg';
+      case 'gif': return 'image/gif';
+      case 'webp': return 'image/webp';
+      default: return 'application/octet-stream';
+    }
+  };
+
+  // Simplified file handling - focus on button first
+  const handleAlternativeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('📂 FILE INPUT CHANGE EVENT');
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      console.log('📋 Selected files:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
+      
+      setAttachments(prev => {
+        const newAttachments = [...prev, ...files];
+        console.log('💾 Updated attachments:', newAttachments.map(f => f.name));
+        return newAttachments;
+      });
+      
+      addMessage({
+        role: 'system',
+        content: `📂 Selected ${files.length} file(s) via button: ${files.map(f => f.name).join(', ')}`,
+      });
+    }
+    e.target.value = ''; // Reset for reselection
+  };
+
+  const triggerAlternativeFileSelect = () => {
+    console.log('🖱️ TRIGGERING FILE SELECTOR');
+    alternativeFileInputRef.current?.click();
+  };
+
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() && attachments.length === 0) return;
+    
+    // Process attachments first if any
+    if (attachments.length > 0) {
+      await processAttachments(attachments);
+      setAttachments([]);
+    }
+    
+    if (inputValue.trim()) {
+      addMessage({
+        role: 'user',
+        content: inputValue
+      });
+      
+      const userMessage = inputValue;
+      setInputValue('');
+      setIsTyping(true);
+      setAvatarSpeaking(true);
+    
+      try {
+        // Use real backend - check if camera is enabled for multimodal
+        const result = modelStatus.cameraEnabled 
+          ? await invoke<string>('send_message_with_camera', { message: userMessage })
+          : await invoke<string>('send_message', { message: userMessage });
+        
+        addMessage({
+          role: 'assistant',
+          content: result
+        });
+      } catch (error) {
+        console.error('AI response error:', error);
+        addMessage({
+          role: 'assistant',
+          content: `Error: ${error}`
+        });
+      } finally {
+        setIsTyping(false);
+        setAvatarSpeaking(false);
+      }
     }
   };
 
@@ -179,14 +362,166 @@ const EnhancedChatInterface: React.FC = () => {
     }
   };
 
+  // File upload functions
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setAttachments(prev => [...prev, ...files]);
+    }
+    e.target.value = '';
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const processAttachments = async (files: File[]) => {
+    if (files.length === 0) return;
+
+    addMessage({
+      role: 'system',
+      content: `📎 Processing ${files.length} file(s): ${files.map(f => f.name).join(', ')}`,
+    });
+
+    let processedCount = 0;
+    
+    for (const file of files) {
+      try {
+        const isImage = file.type.startsWith('image/');
+        const isText = file.type.startsWith('text/') || 
+                      file.name.endsWith('.txt') || 
+                      file.name.endsWith('.md') ||
+                      file.name.endsWith('.json');
+        
+        addMessage({
+          role: 'system', 
+          content: `${isImage ? '🖼️' : '📄'} Loading ${file.name} (${(file.size / 1024).toFixed(1)} KB)...`,
+        });
+        
+        if (isImage) {
+          // Process image for multimodal input
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8Array = Array.from(new Uint8Array(arrayBuffer));
+          
+          // Process image through backend multimodal system
+          const result = await invoke('process_image_input', {
+            message: `Analyze this uploaded image: ${file.name}`,
+            imageData: uint8Array,
+          });
+          
+          addMessage({
+            role: 'assistant',
+            content: result,
+          });
+          
+          processedCount++;
+        } else if (isText) {
+          // Process text files for vector database
+          const arrayBuffer = await file.arrayBuffer();
+          const uint8Array = Array.from(new Uint8Array(arrayBuffer));
+          
+          const result = await invoke('process_file_content', {
+            fileName: file.name,
+            fileContent: uint8Array,
+            fileType: file.type,
+          });
+          
+          addMessage({
+            role: 'system',
+            content: `✅ ${result}`,
+          });
+          
+          processedCount++;
+        } else {
+          addMessage({
+            role: 'system',
+            content: `⚠️ ${file.name} is not a supported file type. Please use text (.txt, .md, .json) or image files.`,
+          });
+        }
+      } catch (error) {
+        console.error(`Error processing ${file.name}:`, error);
+        addMessage({
+          role: 'system',
+          content: `❌ Failed to process ${file.name}: ${error}`,
+        });
+      }
+    }
+    
+    if (processedCount > 0) {
+      addMessage({
+        role: 'system',
+        content: `🎉 Successfully processed ${processedCount}/${files.length} file(s)`,
+      });
+    }
+  };
+
+
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div 
+      className="flex flex-col h-full min-h-0 relative"
+    >
+      {/* Hidden Alternative File Input for Testing */}
+      <input
+        ref={alternativeFileInputRef}
+        type="file"
+        multiple
+        accept=".txt,.md,.json,.png,.jpg,.jpeg,.gif,.webp,text/*,image/*"
+        onChange={handleAlternativeFileSelect}
+        style={{ display: 'none' }}
+      />
+      
+      {/* Drag Overlay for Tauri v2 */}
+      {isDragOver && (
+        <div className="absolute inset-0 bg-accent/10 border-4 border-dashed border-accent rounded-lg flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Upload className="w-10 h-10 text-accent" />
+            </div>
+            <p className="text-xl font-medium text-accent mb-2">Drop files here to upload</p>
+            <p className="text-text-secondary">
+              Supports text files (.txt, .md, .json) and images (.png, .jpg, .jpeg, .gif, .webp)
+            </p>
+            <p className="text-xs text-text-tertiary mt-2">
+              ✨ Tauri v2 Native Drag & Drop
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Chat Header */}
       <div className="flex-shrink-0 p-4 border-b border-border-primary bg-surface/30">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-text-primary">AI Assistant Chat</h2>
             <p className="text-sm text-text-secondary">Professional multimodal conversation interface</p>
+            {!modelStatus.isLoaded && (
+              <button 
+                onClick={async () => {
+                  try {
+                    console.log('🔄 Manually initializing model...');
+                    const result = await invoke<boolean>('initialize_model');
+                    console.log('✅ Model initialization result:', result);
+                    addMessage({
+                      role: 'system',
+                      content: result ? '✅ Model initialized successfully' : '❌ Model initialization failed'
+                    });
+                  } catch (error) {
+                    console.error('❌ Model initialization error:', error);
+                    addMessage({
+                      role: 'system',
+                      content: `❌ Model initialization error: ${error}`
+                    });
+                  }
+                }}
+                className="mt-2 px-3 py-1 text-xs bg-warning text-white rounded hover:bg-warning/80"
+              >
+                🔄 Initialize Model
+              </button>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <div className={`w-2 h-2 rounded-full ${
@@ -254,6 +589,52 @@ const EnhancedChatInterface: React.FC = () => {
 
       {/* Input Area */}
       <div className="flex-shrink-0 border-t border-border-primary p-4 bg-surface/30">
+        {/* Attachments Preview */}
+        {attachments.length > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-text-primary">
+                Attached Files ({attachments.length})
+              </span>
+              <button
+                onClick={() => setAttachments([])}
+                className="text-xs text-text-tertiary hover:text-error transition-colors"
+              >
+                Clear all
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center space-x-2 px-3 py-2 bg-surface rounded-lg border border-border-primary group hover:border-accent/30 transition-colors"
+                >
+                  {file.type.startsWith('image/') ? (
+                    <Image className="w-4 h-4 text-text-secondary" />
+                  ) : (
+                    <FileText className="w-4 h-4 text-text-secondary" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-text-primary truncate max-w-32" title={file.name}>
+                      {file.name}
+                    </div>
+                    <div className="text-xs text-text-tertiary">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => removeAttachment(index)}
+                    className="opacity-0 group-hover:opacity-100 text-text-tertiary hover:text-error transition-all p-1 rounded"
+                    title="Remove file"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center space-x-3">
           {/* Voice Input */}
           <button
@@ -282,12 +663,22 @@ const EnhancedChatInterface: React.FC = () => {
           </button>
 
           {/* File Attachment */}
-          <button
-            className="p-3 rounded-full bg-surface border border-border-primary hover:bg-surface-hover text-text-secondary transition-colors"
+          <label
+            htmlFor="file-upload"
+            className="p-3 rounded-full bg-surface border border-border-primary hover:bg-surface-hover text-text-secondary transition-colors cursor-pointer"
             title="Attach file"
           >
             <Paperclip className="w-5 h-5" />
-          </button>
+          </label>
+          <input
+            id="file-upload"
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".txt,.md,.json,.png,.jpg,.jpeg,.gif,.webp,text/*,image/*"
+            onChange={handleAlternativeFileSelect}
+            className="hidden"
+          />
 
           {/* Text Input */}
           <div className="flex-1 relative">
@@ -777,7 +1168,7 @@ const LoadingProgress: React.FC<{
           </div>
           <div className={`flex items-center space-x-3 text-sm ${progress >= 100 ? 'text-text-primary' : 'text-text-tertiary'}`}>
             <div className={`w-2 h-2 rounded-full ${progress >= 100 ? 'bg-accent' : 'bg-surface-hover'} ${progress >= 80 && progress < 100 ? 'animate-pulse' : ''}`}></div>
-            <span>AI Model (Gemma3n:e4b)</span>
+            <span>AI Model (Gemma3:4b)</span>
             {progress >= 100 && <span className="text-accent">✓</span>}
             {progress >= 80 && progress < 100 && <span className="text-warning">Downloading...</span>}
           </div>
@@ -911,7 +1302,7 @@ const CompleteAppContent: React.FC = () => {
 
       setLoadingProgress(30);
       setLoadingStatus('Tektra backend connected! Setting up AI services...');
-      setModelStatus({ isLoading: true, modelName: 'gemma3n:e4b', backend: 'Ollama' });
+      setModelStatus({ isLoading: true, modelName: 'gemma3:4b', backend: 'Ollama' });
       
       // Start model initialization immediately but keep loading screen
       initializeModelsInBackground();
@@ -920,7 +1311,7 @@ const CompleteAppContent: React.FC = () => {
       console.error('App initialization error:', error);
       setLoadingProgress(100);
       setLoadingStatus('Initialization failed');
-      setModelStatus({ isLoading: false, modelName: 'gemma3n:e4b' });
+      setModelStatus({ isLoading: false, modelName: 'gemma3:4b' });
       addMessage({
         role: 'system',
         content: `❌ App initialization failed: ${error}`
@@ -978,11 +1369,11 @@ const CompleteAppContent: React.FC = () => {
         if (modelLoaded) {
           // Don't set to 100% immediately - let the progress events handle it
           setLoadingStatus('✅ All components ready!');
-          setModelStatus({ isLoaded: true, isLoading: false, modelName: 'gemma3n:e4b', backend: 'Ollama' });
+          setModelStatus({ isLoaded: true, isLoading: false, modelName: 'gemma3:4b', backend: 'Ollama' });
           
           addMessage({
             role: 'system',
-            content: '✅ Gemma3n:e4b model loaded successfully! Multimodal AI capabilities are now ready.'
+            content: '✅ Gemma3:4b model loaded successfully! Multimodal AI capabilities are now ready.'
           });
           addNotification({
             type: 'success',
@@ -995,12 +1386,12 @@ const CompleteAppContent: React.FC = () => {
               console.log('⏰ Auto-hiding loading screen after timeout');
               setLoadingProgress(100);
               setLoadingStatus('✅ Model loaded successfully!');
-              setModelStatus({ isLoaded: true, isLoading: false, modelName: 'gemma3n:e4b', backend: 'Ollama' });
+              setModelStatus({ isLoaded: true, isLoading: false, modelName: 'gemma3:4b', backend: 'Ollama' });
               setShowLoading(false);
             }
           }, 3000); // Shorter timeout since model loads quickly
         } else {
-          throw new Error('Model failed to load - check if gemma3n:e4b is available in Ollama');
+          throw new Error('Model failed to load - check if gemma3:4b is available in Ollama');
         }
       } catch (timeoutError) {
         if (modelLoadTimeout) clearTimeout(modelLoadTimeout);
@@ -1051,15 +1442,21 @@ const CompleteAppContent: React.FC = () => {
           await listen('model-loading-progress', (event: any) => {
             const { progress, status, model_name } = event.payload;
             
+            console.log(`🎯 PROGRESS EVENT RECEIVED: ${progress}% - ${status} - model: ${model_name}`);
+            console.log('📊 Raw event payload:', event.payload);
+            
             // Show progress in the loading screen if still visible
             if (showLoading) {
-              // Ensure progress stays within 50-95% range during download
-              const adjustedProgress = Math.min(95, Math.max(50, progress));
-              setLoadingProgress(adjustedProgress);
+              console.log(`📈 Updating loading progress from ${loadingProgress} to ${progress}`);
+              // Use the actual progress from ollama_inference.rs which provides granular file-by-file tracking
+              // The ollama backend already provides detailed progress from 0-100%
+              setLoadingProgress(progress);
               setLoadingStatus(status);
+            } else {
+              console.log('⚠️ Loading screen not visible, ignoring progress update');
             }
             
-            // Also add chat message for transparency
+            // Add chat message for all progress updates during debugging
             addMessage({
               role: 'system',
               content: `📥 ${status} (${Math.round(progress)}%)`

@@ -57,7 +57,7 @@ impl AIManager {
             model_loaded: false,
             model_path: None,
             chat_template: MultimodalChatTemplate::default(),
-            selected_model: "gemma3n:e4b".to_string(), // Gemma 3n E4B with multimodal capabilities
+            selected_model: "gemma3:4b".to_string(), // Gemma 3 4B with multimodal capabilities
             inference_manager,
             backend_type,
         })
@@ -71,7 +71,7 @@ impl AIManager {
             model_loaded: false,
             model_path: None,
             chat_template: MultimodalChatTemplate::default(),
-            selected_model: "gemma3n:e4b".to_string(), // Gemma 3n E4B with multimodal capabilities
+            selected_model: "gemma3:4b".to_string(), // Gemma 3 4B with multimodal capabilities
             inference_manager,
             backend_type,
         })
@@ -85,23 +85,20 @@ impl AIManager {
     /// Load model using Ollama backend
     async fn load_ollama_model(&mut self) -> Result<()> {
         
-        self.emit_progress(10, "Initializing Ollama...", &self.selected_model).await;
-        
-        // Unfortunately, we need a workaround for the mutable reference issue
-        // For now, we'll create a simplified approach
-        
-        self.emit_progress(40, "Checking model availability...", &self.selected_model).await;
+        self.emit_progress(5, "🚀 Starting Ollama model initialization...", &self.selected_model).await;
         
         // For Ollama, we use the model name as the "path"
         let model_path = std::path::Path::new(&self.selected_model);
         
-        self.emit_progress(90, "Loading model...", &self.selected_model).await;
+        // The inference manager will handle detailed progress through the ollama_inference.rs progress system
+        // The ollama_inference.rs pull_model_with_progress() method provides granular file-by-file progress
+        // which will emit progress events directly to the frontend
         
-        // Load the model through the inference manager
+        // Load the model through the inference manager (this handles all the detailed progress internally)
         match self.inference_manager.load_model(model_path).await {
             Ok(_) => {
                 self.model_loaded = true;
-                self.emit_progress(100, &format!("Gemma3n {} ready with Ollama! Multimodal AI with vision capabilities at your service.", self.selected_model), &self.selected_model).await;
+                self.emit_progress(100, &format!("🎉 {} ready with Ollama! Multimodal AI with vision capabilities at your service.", self.selected_model), &self.selected_model).await;
                 self.emit_completion(true, None).await;
                 
                 info!("Gemma-3n model {} loaded successfully with Ollama", self.selected_model);
@@ -109,7 +106,7 @@ impl AIManager {
             }
             Err(e) => {
                 error!("Failed to load Ollama model: {}", e);
-                self.emit_progress(0, &format!("Failed to load Ollama model: {}", e), &self.selected_model).await;
+                self.emit_progress(0, &format!("❌ Failed to load Ollama model: {}", e), &self.selected_model).await;
                 self.emit_completion(false, Some(e.to_string())).await;
                 Err(e)
             }
