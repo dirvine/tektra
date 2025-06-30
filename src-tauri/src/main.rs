@@ -1049,13 +1049,41 @@ async fn process_uploaded_files(
             Err(_) => return Err("File is not valid UTF-8 text".to_string()),
         };
         
-        return send_message(
-            format!("I've uploaded a text file '{}' with the following content:\n\n{}", file_name, text_content),
-            chat_history,
-            ai,
-            settings,
-            vector_store,
-        ).await;
+        // Store the file content in vector database for future RAG queries
+        let document_id = format!("uploaded_file_{}", file_name);
+        let project_id = "default".to_string();
+        
+        info!("Processing file content: {} ({} bytes)", file_name, text_content.len());
+        
+        // Add to vector database
+        match add_document_to_vector_db(
+            document_id,
+            project_id,
+            text_content.clone(),
+            vector_store.clone(),
+        ).await {
+            Ok(chunk_count) => {
+                info!("Successfully added {} chunks to vector database for file: {}", chunk_count, file_name);
+            }
+            Err(e) => {
+                error!("Failed to add file to vector database: {}", e);
+                return Err(format!("Failed to process file: {}", e));
+            }
+        }
+        
+        // Add a file upload message to chat history
+        let upload_msg = ChatMessage {
+            role: "user".to_string(),
+            content: format!("Uploaded file: {}", file_name),
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        };
+        chat_history.lock().await.push(upload_msg);
+        
+        // Return success message - the actual file content will be retrieved via RAG when needed
+        return Ok(format!("Successfully uploaded and processed '{}'. You can now ask questions about this file and I'll analyze its content.", file_name));
     } else {
         return Err(format!("Unsupported file type: {}", file_name));
     }
