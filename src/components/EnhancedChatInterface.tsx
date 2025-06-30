@@ -17,6 +17,10 @@ import {
   ChevronUp,
   Eye,
   EyeOff,
+  Upload,
+  X,
+  Film,
+  File,
 } from 'lucide-react';
 import { useTektraStore } from '../store';
 import { formatResponse } from '../utils/formatting';
@@ -239,7 +243,7 @@ const ProjectContextBar: React.FC = () => {
 const EnhancedInputArea: React.FC<{
   value: string;
   onChange: (value: string) => void;
-  onSubmit: () => void;
+  onSubmit: (attachments?: File[]) => void;
   disabled: boolean;
   isRecording: boolean;
   onToggleRecording: () => void;
@@ -247,6 +251,8 @@ const EnhancedInputArea: React.FC<{
   const [showPreview, setShowPreview] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     if (textareaRef.current) {
@@ -258,33 +264,106 @@ const EnhancedInputArea: React.FC<{
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSubmit();
+      handleSubmit();
     }
   };
 
+  const handleSubmit = () => {
+    console.log('Submit triggered with attachments:', attachments);
+    onSubmit(attachments.length > 0 ? attachments : undefined);
+    setAttachments([]); // Clear attachments after sending
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File upload triggered', e.target.files);
     if (e.target.files) {
-      setAttachments(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      console.log('Files selected:', files);
+      setAttachments(prev => [...prev, ...files]);
+    }
+    // Reset input value to allow selecting the same file again
+    e.target.value = '';
+  };
+
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('image/')) return <Image className="w-4 h-4" />;
+    if (file.type.startsWith('video/')) return <Film className="w-4 h-4" />;
+    if (file.type.startsWith('audio/')) return <Mic className="w-4 h-4" />;
+    if (file.type.includes('text') || file.name.endsWith('.md') || file.name.endsWith('.txt')) return <FileText className="w-4 h-4" />;
+    return <File className="w-4 h-4" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 Bytes';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const triggerFileUpload = () => {
+    console.log('Triggering file upload', fileInputRef.current);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    } else {
+      console.error('File input ref is null');
     }
   };
 
   return (
-    <div className="border-t border-border-primary bg-secondary-bg p-4">
+    <div 
+      ref={dropZoneRef}
+      className="border-t border-border-primary bg-secondary-bg p-4"
+    >
+
       {/* Attachments Preview */}
       {attachments.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-2">
-          {attachments.map((file, index) => (
-            <div key={index} className="flex items-center space-x-2 px-3 py-1.5 bg-surface rounded-card border border-border-primary">
-              <FileText className="w-4 h-4 text-text-secondary" />
-              <span className="text-sm text-text-primary">{file.name}</span>
-              <button 
-                onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
-                className="text-text-tertiary hover:text-error transition-colors"
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-text-primary">
+              Attached Files ({attachments.length})
+            </span>
+            <button
+              onClick={() => setAttachments([])}
+              className="text-xs text-text-tertiary hover:text-error transition-colors"
+            >
+              Clear all
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {attachments.map((file, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="flex items-center space-x-2 px-3 py-2 bg-surface rounded-card border border-border-primary group hover:border-accent/30 transition-colors"
               >
-                ×
-              </button>
-            </div>
-          ))}
+                <div className="text-text-secondary">
+                  {getFileIcon(file)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-text-primary truncate max-w-32" title={file.name}>
+                    {file.name}
+                  </div>
+                  <div className="text-xs text-text-tertiary">
+                    {formatFileSize(file.size)}
+                  </div>
+                </div>
+                <button 
+                  onClick={() => removeAttachment(index)}
+                  className="opacity-0 group-hover:opacity-100 text-text-tertiary hover:text-error transition-all p-1 rounded"
+                  title="Remove file"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </motion.div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -318,15 +397,22 @@ const EnhancedInputArea: React.FC<{
         {/* Action Buttons */}
         <div className="flex items-center space-x-2">
           {/* File Upload */}
-          <label className="p-3 rounded-button hover:bg-surface-hover transition-colors cursor-pointer">
+          <label
+            htmlFor="file-upload-input"
+            className="p-3 rounded-button hover:bg-surface-hover transition-colors cursor-pointer inline-block"
+            title="Upload files"
+          >
             <Paperclip className="w-4 h-4 text-text-secondary" />
-            <input
-              type="file"
-              multiple
-              onChange={handleFileUpload}
-              className="hidden"
-            />
           </label>
+          <input
+            id="file-upload-input"
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".txt,.md,.json,text/*"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
 
           {/* Voice Recording */}
           <button
@@ -357,11 +443,11 @@ const EnhancedInputArea: React.FC<{
 
           {/* Send Button */}
           <button
-            onClick={onSubmit}
-            disabled={disabled || !value.trim()}
+            onClick={handleSubmit}
+            disabled={disabled || (!value.trim() && attachments.length === 0)}
             className={`
               p-3 rounded-button transition-colors
-              ${disabled || !value.trim()
+              ${disabled || (!value.trim() && attachments.length === 0)
                 ? 'bg-surface text-text-tertiary cursor-not-allowed'
                 : 'bg-accent text-white hover:bg-accent-hover'
               }
@@ -406,6 +492,7 @@ interface EnhancedChatInterfaceProps {
 const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({ className = '' }) => {
   const { messages, modelStatus, isRecording, addMessage, setRecording } = useTektraStore();
   const [inputValue, setInputValue] = useState('');
+  const [globalDragOver, setGlobalDragOver] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -416,25 +503,116 @@ const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({ className
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || !modelStatus.isLoaded) return;
+  const handleSendMessage = async (attachments?: File[]) => {
+    if ((!inputValue.trim() && !attachments?.length) || !modelStatus.isLoaded) return;
 
-    const userMessage = {
-      role: 'user' as const,
-      content: inputValue.trim(),
-    };
+    try {
+      // Process file attachments first if any
+      if (attachments && attachments.length > 0) {
+        addMessage({
+          role: 'system',
+          content: `📎 Processing ${attachments.length} file(s): ${attachments.map(f => f.name).join(', ')}`,
+        });
 
-    addMessage(userMessage);
-    setInputValue('');
+        // Process files via Tauri backend
+        const { invoke } = await import('@tauri-apps/api/core');
+        
+        let processedCount = 0;
+        
+        for (const file of attachments) {
+          try {
+            // Read file content
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8Array = Array.from(new Uint8Array(arrayBuffer));
+            
+            addMessage({
+              role: 'system', 
+              content: `📄 Loading ${file.name} (${(file.size / 1024).toFixed(1)} KB)...`,
+            });
+            
+            // Process file through backend
+            const result = await invoke('process_file_content', {
+              fileName: file.name,
+              fileContent: uint8Array,
+              fileType: file.type,
+            });
+            
+            addMessage({
+              role: 'system',
+              content: `✅ ${result}`,
+            });
+            
+            processedCount++;
+          } catch (error) {
+            console.error(`Error processing ${file.name}:`, error);
+            addMessage({
+              role: 'system',
+              content: `❌ Failed to process ${file.name}: ${error}`,
+            });
+          }
+        }
+        
+        if (processedCount > 0) {
+          addMessage({
+            role: 'system',
+            content: `🎉 Successfully processed ${processedCount}/${attachments.length} file(s) and added to knowledge base`,
+          });
+        }
+      }
 
-    // TODO: Integrate with backend
-    // For now, simulate typing indicator
-    setTimeout(() => {
+      // Send the text message if any
+      if (inputValue.trim() || (attachments && attachments.length > 0)) {
+        let combinedMessageContent = inputValue.trim();
+
+        if (attachments && attachments.length > 0) {
+          for (const file of attachments) {
+            // Check if it's a text file
+            if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.json')) {
+              try {
+                const textContent = await file.text();
+                combinedMessageContent += `
+
+--- Start of ${file.name} ---
+${textContent}
+--- End of ${file.name} ---`;
+              } catch (error) {
+                console.error(`Error reading text file ${file.name}:`, error);
+                addMessage({
+                  role: 'system',
+                  content: `❌ Error reading text file ${file.name}: ${error}`,
+                });
+              }
+            }
+          }
+        }
+
+        const userMessage = {
+          role: 'user' as const,
+          content: combinedMessageContent,
+        };
+
+        addMessage(userMessage);
+        setInputValue('');
+        setAttachments([]); // Clear attachments after sending
+
+        // TODO: Integrate with backend for AI response
+        // For now, simulate typing indicator
+        setTimeout(() => {
+          addMessage({
+            role: 'assistant',
+            content: attachments?.length
+              ? `I've received your message and ${attachments.length} file(s). I can analyze the uploaded documents and provide insights based on their content.`
+              : 'I received your message and I\'m processing it...',
+          });
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Message send error:', error);
       addMessage({
-        role: 'assistant',
-        content: 'I received your message and I\'m processing it...',
+        role: 'system',
+        content: `❌ Error sending message: ${error}`,
       });
-    }, 1000);
+    }
   };
 
   const handleToggleRecording = () => {
@@ -442,8 +620,57 @@ const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({ className
     // TODO: Integrate with backend audio recording
   };
 
+  // Global drag and drop handlers
+  const handleGlobalDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Global drag over detected');
+    if (!globalDragOver) setGlobalDragOver(true);
+  };
+
+  const handleGlobalDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if leaving the main container
+    const relatedTarget = e.relatedTarget as Element | null;
+    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+      setGlobalDragOver(false);
+    }
+  };
+
+  const handleGlobalDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Global drop detected', e.dataTransfer.files);
+    setGlobalDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    console.log('Globally dropped files:', files);
+    if (files.length > 0) {
+      handleSendMessage(files);
+    }
+  };
+
   return (
-    <div className={`flex flex-col h-full ${className}`}>
+    <div 
+      className={`flex flex-col h-full ${className} relative`}
+      onDragOver={handleGlobalDragOver}
+      onDragLeave={handleGlobalDragLeave}
+      onDrop={handleGlobalDrop}
+    >
+      {/* Global Drag Overlay */}
+      {globalDragOver && (
+        <div className="absolute inset-0 bg-accent/10 border-4 border-dashed border-accent rounded-lg flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Upload className="w-10 h-10 text-accent" />
+            </div>
+            <p className="text-xl font-medium text-accent mb-2">Drop files here to upload</p>
+            <p className="text-text-secondary">Supports text files (.txt, .md, .json)</p>
+          </div>
+        </div>
+      )}
+
       {/* Project Context Bar */}
       <ProjectContextBar />
 

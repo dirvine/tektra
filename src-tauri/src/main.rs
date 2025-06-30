@@ -908,7 +908,9 @@ async fn process_file_content(
     fileName: String,
     fileContent: Vec<u8>,
     fileType: String,
-    vector_store: State<'_, VectorStore>,
+    chat_history: State<'_, ChatHistory>,
+    ai: State<'_, AI>,
+    settings: State<'_, Settings>,
 ) -> Result<String, String> {
     info!("Processing file content: {} ({} bytes)", fileName, fileContent.len());
     
@@ -930,25 +932,72 @@ async fn process_file_content(
                           }));
     };
     
-    // Add to vector database using the existing chunking system
-    let document_id = format!("uploaded_file_{}", fileName);
-    let project_id = "default".to_string(); // Default project for uploaded files
+    info!("Processing file content: {} ({} characters)", fileName, text_content.len());
     
-    // Chunk the document
-    let chunks = vector_db::chunk_text(&text_content, &document_id, &project_id);
-    let chunk_count = chunks.len();
+    // Limit file content size to prevent model hanging
+    let content_to_send = if text_content.len() > 3000 {
+        warn!("File content too large ({} chars), truncating to 3000 chars", text_content.len());
+        format!("{}...\n[Content truncated - showing first 3000 characters]", &text_content[0..3000])
+    } else {
+        text_content.clone()
+    };
     
-    // Add all chunks to the vector database
-    let vector_db = vector_store.lock().await;
-    for chunk in chunks {
-        if let Err(e) = vector_db.add_chunk(chunk).await {
-            error!("Failed to add chunk to vector DB: {}", e);
-            return Err(format!("Failed to process file chunk: {}", e));
+    // Directly send the file content to the model for analysis
+    // Create a clear message that includes the file content
+    let file_analysis_message = format!(
+        "I've uploaded a text file called '{}' with the following content:\n\n--- File Content ---\n{}\n--- End of File ---\n\nPlease analyze and describe this file for me.",
+        fileName,
+        content_to_send
+    );
+    
+    // Add user message to chat history
+    let user_msg = ChatMessage {
+        role: "user".to_string(),
+        content: format!("Uploaded file: {}", fileName),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    chat_history.lock().await.push(user_msg);
+
+    // Get settings for AI generation
+    let settings_guard = settings.lock().await;
+    let max_tokens = settings_guard.max_tokens;
+    let system_prompt = settings_guard.system_prompt.clone();
+    drop(settings_guard);
+
+    // Send directly to AI model without any vector database processing
+    let ai_manager = ai.lock().await;
+    let response = if ai_manager.is_loaded() {
+        match ai_manager.generate_response_with_system_prompt(&file_analysis_message, max_tokens, system_prompt).await {
+            Ok(resp) => {
+                info!("Successfully generated response for file: {} characters", resp.len());
+                resp
+            },
+            Err(e) => {
+                error!("Error generating response for file: {}", e);
+                format!("I apologize, but I encountered an error analyzing the file: {}. Please try again.", e)
+            }
         }
-    }
+    } else {
+        "The AI model is still loading. Please wait a moment and try again.".to_string()
+    };
+    drop(ai_manager);
     
-    info!("Successfully added {} with {} chunks to vector database", fileName, chunk_count);
-    Ok(format!("Successfully processed and indexed '{}' ({} characters, {} chunks)", fileName, text_content.len(), chunk_count))
+    // Add assistant response to chat history
+    let assistant_msg = ChatMessage {
+        role: "assistant".to_string(),
+        content: response.clone(),
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+    };
+    chat_history.lock().await.push(assistant_msg);
+    
+    info!("Successfully processed file '{}' - content sent directly to model", fileName);
+    Ok(format!("File '{}' has been uploaded and analyzed by the AI model. Check the chat for the analysis.", fileName))
 }
 
 #[tauri::command]

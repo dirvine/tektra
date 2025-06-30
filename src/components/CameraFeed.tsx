@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { Camera, RefreshCw, AlertCircle } from 'lucide-react';
 
 const CameraFeed: React.FC = () => {

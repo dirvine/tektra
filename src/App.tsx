@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HeaderBar from './components/HeaderBar';
