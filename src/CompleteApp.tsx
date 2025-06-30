@@ -380,7 +380,7 @@ const CompleteRightSidebar: React.FC = () => {
         {uiState.activeTab === 'analytics' && (
           <div className="space-y-4">
             <h3 className="font-semibold text-text-primary">Analytics</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="p-3 bg-surface rounded-card border border-border-primary">
                 <p className="text-xs text-text-tertiary">Messages</p>
                 <p className="text-lg font-semibold text-text-primary">{messages.length}</p>
@@ -392,10 +392,6 @@ const CompleteRightSidebar: React.FC = () => {
               <div className="p-3 bg-surface rounded-card border border-border-primary">
                 <p className="text-xs text-text-tertiary">Tokens</p>
                 <p className="text-lg font-semibold text-text-primary">{sessionState.tokenUsage}</p>
-              </div>
-              <div className="p-3 bg-surface rounded-card border border-border-primary">
-                <p className="text-xs text-text-tertiary">Cost</p>
-                <p className="text-lg font-semibold text-text-primary">${sessionState.costEstimate.toFixed(3)}</p>
               </div>
             </div>
 
@@ -587,7 +583,7 @@ const ProfessionalStatusBar: React.FC = () => {
       {/* Right Side Info */}
       <div className="flex items-center space-x-4">
         <span className="text-text-tertiary">
-          Tokens: {sessionState.tokenUsage} | Cost: ${sessionState.costEstimate.toFixed(3)}
+          Tokens: {sessionState.tokenUsage}
         </span>
         <span className="text-text-tertiary">
           Press / for shortcuts
@@ -597,23 +593,100 @@ const ProfessionalStatusBar: React.FC = () => {
   );
 };
 
-// Loading Progress Component
+// Enhanced Loading Progress Component with File-by-File Tracking
 const LoadingProgress: React.FC<{ 
   progress: number; 
   status: string; 
   visible: boolean 
 }> = ({ progress, status, visible }) => {
+  const [fileDownloads, setFileDownloads] = useState<Map<string, {
+    name: string;
+    completedMB: number;
+    totalMB: number;
+    progress: number;
+    isCompleted: boolean;
+  }>>(new Map());
+  const [currentStep, setCurrentStep] = useState('');
+  const [totalFiles, setTotalFiles] = useState(0);
+  const [completedFiles, setCompletedFiles] = useState(0);
+
+  useEffect(() => {
+    // Parse status messages to extract file download information
+    const statusLower = status.toLowerCase();
+    
+    if (status.includes('📋')) {
+      setCurrentStep('manifest');
+    } else if (status.includes('📦')) {
+      setCurrentStep('downloading');
+      // Extract file count: "📦 Downloading Layer abc123 (file 3/7)"
+      const fileCountMatch = status.match(/file (\d+)\/(\d+)/);
+      if (fileCountMatch) {
+        setTotalFiles(parseInt(fileCountMatch[2]));
+      }
+    } else if (status.includes('⬇️')) {
+      setCurrentStep('downloading');
+      // Parse download progress: "⬇️ Layer abc123 • 45.2 MB / 127.8 MB (35.4%)"
+      const downloadMatch = status.match(/⬇️\s+(Layer\s+\w+|[^•]+)\s+•\s+([\d.]+)\s+MB\s+\/\s+([\d.]+)\s+MB\s+\(([\d.]+)%\)/);
+      if (downloadMatch) {
+        const [, layerName, completedMB, totalMB, fileProgress] = downloadMatch;
+        const layerId = layerName.replace('Layer ', '').trim();
+        
+        setFileDownloads(prev => {
+          const newMap = new Map(prev);
+          newMap.set(layerId, {
+            name: layerName,
+            completedMB: parseFloat(completedMB),
+            totalMB: parseFloat(totalMB),
+            progress: parseFloat(fileProgress),
+            isCompleted: false
+          });
+          return newMap;
+        });
+      }
+    } else if (status.includes('✅') && status.includes('Completed layer')) {
+      // Mark file as completed: "✅ Completed layer abc123 (127.8 MB) • 3/7 files done"
+      const completedMatch = status.match(/✅\s+Completed layer\s+(\w+).*?(\d+)\/(\d+)\s+files done/);
+      if (completedMatch) {
+        const [, layerId, completed, total] = completedMatch;
+        setCompletedFiles(parseInt(completed));
+        setTotalFiles(parseInt(total));
+        
+        setFileDownloads(prev => {
+          const newMap = new Map(prev);
+          if (newMap.has(layerId)) {
+            const file = newMap.get(layerId)!;
+            newMap.set(layerId, {
+              ...file,
+              progress: 100,
+              isCompleted: true
+            });
+          }
+          return newMap;
+        });
+      }
+    } else if (status.includes('🔍')) {
+      setCurrentStep('verifying');
+    } else if (status.includes('📝')) {
+      setCurrentStep('installing');
+    } else if (status.includes('🎉')) {
+      setCurrentStep('complete');
+    }
+  }, [status]);
+
   if (!visible) return null;
+
+  const downloadEntries = Array.from(fileDownloads.entries());
+  const isDownloading = currentStep === 'downloading' && downloadEntries.length > 0;
 
   return (
     <div className="fixed inset-0 bg-primary-bg/90 backdrop-blur-sm z-50 flex items-center justify-center">
-      <div className="bg-surface border border-border-primary rounded-lg p-8 max-w-lg w-full mx-4">
+      <div className="bg-surface border border-border-primary rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="text-center mb-6">
           <h3 className="text-xl font-semibold text-text-primary mb-2">Setting up Tektra AI</h3>
           <p className="text-text-secondary text-sm leading-relaxed">{status}</p>
         </div>
         
-        {/* Progress Bar */}
+        {/* Main Progress Bar */}
         <div className="mb-6">
           <div className="flex justify-between text-sm text-text-secondary mb-2">
             <span>Setup Progress</span>
@@ -630,6 +703,65 @@ const LoadingProgress: React.FC<{
             </div>
           </div>
         </div>
+
+        {/* File Download Progress (shown during model download) */}
+        {isDownloading && downloadEntries.length > 0 && (
+          <div className="mb-6 bg-surface-hover/30 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-sm font-medium text-text-primary">Model Files</h4>
+              {totalFiles > 0 && (
+                <span className="text-xs text-text-secondary">
+                  {completedFiles}/{totalFiles} completed
+                </span>
+              )}
+            </div>
+            
+            <div className="space-y-3 max-h-48 overflow-y-auto">
+              {downloadEntries.map(([layerId, file]) => (
+                <div key={layerId} className="bg-surface rounded-md p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center space-x-2">
+                      {file.isCompleted ? (
+                        <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border-2 border-accent animate-spin border-t-transparent"></div>
+                      )}
+                      <span className="text-sm font-medium text-text-primary">
+                        {file.name}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-text-secondary">
+                        {file.completedMB.toFixed(1)} / {file.totalMB.toFixed(1)} MB
+                      </div>
+                      <div className="text-xs font-medium text-text-primary">
+                        {file.progress.toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Individual file progress bar */}
+                  <div className="w-full bg-surface-hover rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        file.isCompleted 
+                          ? 'bg-green-500' 
+                          : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                      }`}
+                      style={{ width: `${file.progress}%` }}
+                    >
+                      {!file.isCompleted && (
+                        <div className="h-full bg-white/30 animate-pulse rounded-full"></div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Setup Steps */}
         <div className="space-y-3 mb-6">
@@ -658,12 +790,22 @@ const LoadingProgress: React.FC<{
           <div className="w-2 h-2 bg-accent rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
         </div>
         
-        {progress >= 80 && progress < 100 && (
+        {progress >= 80 && progress < 100 && !isDownloading && (
           <div className="mt-4 text-center">
             <p className="text-xs text-text-tertiary">
               First-time setup requires downloading AI models (~2-4GB)
               <br />
               This may take several minutes depending on your internet connection
+            </p>
+          </div>
+        )}
+
+        {isDownloading && (
+          <div className="mt-4 text-center">
+            <p className="text-xs text-text-tertiary">
+              Downloading model layers - Each file contains part of the AI model
+              <br />
+              Progress is saved automatically, you can safely close and reopen the app
             </p>
           </div>
         )}

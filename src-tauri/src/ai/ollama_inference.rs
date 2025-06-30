@@ -390,87 +390,176 @@ impl OllamaInference {
         Ok(())
     }
     
-    /// Pull a model with progress tracking using streaming API
+    /// Pull a model with enhanced progress tracking showing individual files
     async fn pull_model_with_progress(&self, model_name: &str) -> Result<()> {
         let ollama = self.ollama_client.as_ref()
             .ok_or_else(|| anyhow::anyhow!("Ollama client not initialized"))?;
         
-        info!("Pulling model with progress tracking: {}", model_name);
+        info!("Pulling model with enhanced progress tracking: {}", model_name);
         
         // Use streaming pull model to get progress updates
         use futures::StreamExt;
+        use std::collections::HashMap;
         
-        self.emit_progress(15.0, &format!("Starting download of {}", model_name), model_name).await;
+        self.emit_progress(5.0, &format!("🔄 Initializing download of {}", model_name), model_name).await;
         
         // Create pull model stream with allow_insecure=false
         let mut stream = ollama.pull_model_stream(model_name.to_string(), false).await
             .map_err(|e| anyhow::anyhow!("Failed to start model pull stream: {}", e))?;
             
-        let mut progress = 15.0;
-        let mut last_progress = 0.0;
+        let mut overall_progress = 5.0;
+        let mut last_emitted_progress = 0.0;
+        let mut file_downloads: HashMap<String, (u64, u64)> = HashMap::new(); // digest -> (completed, total)
+        let mut current_file_name = String::new();
+        let mut total_files_expected = 0;
+        let mut files_completed = 0;
         
         while let Some(response) = stream.next().await {
             match response {
                 Ok(response_data) => {
-                    // Parse the progress from the response - use message field
                     let message = &response_data.message;
+                    let digest = response_data.digest.as_deref().unwrap_or("");
+                    
+                    // Enhanced progress tracking with detailed file information
                     if !message.is_empty() {
                         match message.as_str() {
                             "pulling manifest" => {
-                                progress = 20.0;
-                                self.emit_progress(progress, "Downloading model manifest...", model_name).await;
+                                overall_progress = 10.0;
+                                self.emit_progress(overall_progress, "📋 Downloading model manifest...", model_name).await;
+                            }
+                            msg if msg.starts_with("pulling") && digest.len() > 0 => {
+                                // Extract layer information from pull message
+                                if let Some(layer_id) = digest.get(0..12) {
+                                    current_file_name = format!("Layer {}", layer_id);
+                                    if !file_downloads.contains_key(digest) {
+                                        total_files_expected += 1;
+                                        file_downloads.insert(digest.to_string(), (0, 0));
+                                    }
+                                    
+                                    let file_num = file_downloads.len();
+                                    self.emit_progress(
+                                        overall_progress, 
+                                        &format!("📦 Downloading {} (file {}/{})", current_file_name, file_num, total_files_expected.max(file_num)), 
+                                        model_name
+                                    ).await;
+                                }
                             }
                             "downloading" => {
-                                // Extract progress information if available
                                 if let (Some(completed), Some(total)) = (response_data.completed, response_data.total) {
-                                    let download_progress = (completed as f64 / total as f64) * 60.0; // 60% of total progress for download
-                                    progress = 20.0 + download_progress;
-                                    
-                                    // Only emit if progress increased by at least 1%
-                                    if progress - last_progress >= 1.0 {
+                                    // Update file download progress
+                                    if !digest.is_empty() {
+                                        file_downloads.insert(digest.to_string(), (completed, total));
+                                        
+                                        // Calculate individual file progress
+                                        let file_progress = if total > 0 { (completed as f64 / total as f64) * 100.0 } else { 0.0 };
                                         let mb_completed = completed as f64 / (1024.0 * 1024.0);
                                         let mb_total = total as f64 / (1024.0 * 1024.0);
-                                        self.emit_progress(progress, &format!("Downloading model files... ({:.1} MB / {:.1} MB)", mb_completed, mb_total), model_name).await;
-                                        last_progress = progress;
+                                        
+                                        // Calculate overall progress based on completed files + current file progress
+                                        let base_progress = 15.0; // After manifest
+                                        let download_phase_progress = 70.0; // 70% of total for downloading
+                                        
+                                        // Calculate progress from all files
+                                        let total_downloaded: u64 = file_downloads.values().map(|(c, _)| *c).sum();
+                                        let total_size: u64 = file_downloads.values().map(|(_, t)| *t).sum();
+                                        
+                                        if total_size > 0 {
+                                            let download_ratio = total_downloaded as f64 / total_size as f64;
+                                            overall_progress = base_progress + (download_ratio * download_phase_progress);
+                                        } else {
+                                            overall_progress = base_progress + (file_progress / 100.0 * download_phase_progress);
+                                        }
+                                        
+                                        // Only emit if progress increased significantly
+                                        if overall_progress - last_emitted_progress >= 0.5 || 
+                                           (mb_completed - (mb_completed as u64) as f64).abs() < 0.1 { // Emit on whole MB
+                                            
+                                            let layer_id = if digest.len() >= 12 { &digest[0..12] } else { digest };
+                                            let status_msg = if !current_file_name.is_empty() {
+                                                format!("⬇️ {} • {:.1} MB / {:.1} MB ({:.1}%)", current_file_name, mb_completed, mb_total, file_progress)
+                                            } else {
+                                                format!("⬇️ Downloading layer {} • {:.1} MB / {:.1} MB", layer_id, mb_completed, mb_total)
+                                            };
+                                            
+                                            self.emit_progress(overall_progress, &status_msg, model_name).await;
+                                            last_emitted_progress = overall_progress;
+                                        }
+                                        
+                                        // Check if this file just completed
+                                        if completed == total && total > 0 {
+                                            files_completed += 1;
+                                            let layer_id = if digest.len() >= 12 { &digest[0..12] } else { digest };
+                                            self.emit_progress(
+                                                overall_progress,
+                                                &format!("✅ Completed layer {} ({:.1} MB) • {}/{} files done", 
+                                                        layer_id, mb_total, files_completed, total_files_expected.max(file_downloads.len())),
+                                                model_name
+                                            ).await;
+                                        }
                                     }
                                 } else {
-                                    // Generic downloading message if no size info
-                                    progress = std::cmp::max(progress as u64, 25) as f64;
-                                    self.emit_progress(progress, "Downloading model files...", model_name).await;
+                                    // Generic downloading without size info
+                                    overall_progress = std::cmp::max(overall_progress as u64, 25) as f64;
+                                    self.emit_progress(overall_progress, "⬇️ Downloading model files...", model_name).await;
                                 }
                             }
                             "verifying sha256 digest" => {
-                                progress = 85.0;
-                                self.emit_progress(progress, "Verifying download integrity...", model_name).await;
+                                overall_progress = 90.0;
+                                if !digest.is_empty() {
+                                    let layer_id = if digest.len() >= 12 { &digest[0..12] } else { digest };
+                                    self.emit_progress(overall_progress, &format!("🔍 Verifying layer {}", layer_id), model_name).await;
+                                } else {
+                                    self.emit_progress(overall_progress, "🔍 Verifying download integrity...", model_name).await;
+                                }
                             }
                             "writing manifest" => {
-                                progress = 90.0;
-                                self.emit_progress(progress, "Finalizing model installation...", model_name).await;
+                                overall_progress = 95.0;
+                                self.emit_progress(overall_progress, "📝 Installing model manifest...", model_name).await;
                             }
                             "success" => {
-                                progress = 95.0;
-                                self.emit_progress(progress, &format!("Model {} ready!", model_name), model_name).await;
+                                overall_progress = 100.0;
+                                self.emit_progress(overall_progress, &format!("🎉 {} ready! Downloaded {} files successfully", model_name, files_completed), model_name).await;
                                 break;
                             }
                             _ => {
-                                // Log other status messages
+                                // Log other status messages with better formatting
                                 info!("Model pull status: {}", message);
-                                if !message.is_empty() {
-                                    self.emit_progress(progress, &format!("Processing: {}", message), model_name).await;
+                                if !message.is_empty() && !message.contains("pulling") {
+                                    let formatted_msg = if message.len() > 50 {
+                                        format!("🔄 {}", &message[0..47].trim())
+                                    } else {
+                                        format!("🔄 {}", message)
+                                    };
+                                    self.emit_progress(overall_progress, &formatted_msg, model_name).await;
                                 }
                             }
                         }
-                    } else {
-                        // Handle progress without message - use digest or basic progress
-                        if let (Some(completed), Some(total)) = (response_data.completed, response_data.total) {
-                            let download_progress = (completed as f64 / total as f64) * 60.0;
-                            progress = 20.0 + download_progress;
+                    } else if let (Some(completed), Some(total)) = (response_data.completed, response_data.total) {
+                        // Handle progress without message - use digest for identification
+                        if !digest.is_empty() {
+                            file_downloads.insert(digest.to_string(), (completed, total));
                             
-                            if progress - last_progress >= 1.0 {
-                                let mb_completed = completed as f64 / (1024.0 * 1024.0);
-                                let mb_total = total as f64 / (1024.0 * 1024.0);
-                                self.emit_progress(progress, &format!("Downloading... ({:.1} MB / {:.1} MB)", mb_completed, mb_total), model_name).await;
-                                last_progress = progress;
+                            let mb_completed = completed as f64 / (1024.0 * 1024.0);
+                            let mb_total = total as f64 / (1024.0 * 1024.0);
+                            let file_progress = if total > 0 { (completed as f64 / total as f64) * 100.0 } else { 0.0 };
+                            
+                            // Calculate overall progress
+                            let total_downloaded: u64 = file_downloads.values().map(|(c, _)| *c).sum();
+                            let total_size: u64 = file_downloads.values().map(|(_, t)| *t).sum();
+                            
+                            if total_size > 0 {
+                                let download_ratio = total_downloaded as f64 / total_size as f64;
+                                overall_progress = 15.0 + (download_ratio * 70.0);
+                            }
+                            
+                            if overall_progress - last_emitted_progress >= 1.0 {
+                                let layer_id = if digest.len() >= 12 { &digest[0..12] } else { digest };
+                                self.emit_progress(
+                                    overall_progress, 
+                                    &format!("⬇️ Layer {} • {:.1} MB / {:.1} MB ({:.1}%)", layer_id, mb_completed, mb_total, file_progress), 
+                                    model_name
+                                ).await;
+                                last_emitted_progress = overall_progress;
                             }
                         }
                     }
@@ -482,7 +571,7 @@ impl OllamaInference {
             }
         }
         
-        info!("Model {} pulled successfully", model_name);
+        info!("Model {} pulled successfully with {} files", model_name, files_completed);
         Ok(())
     }
 
