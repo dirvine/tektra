@@ -346,6 +346,115 @@ impl AIManager {
         }
     }
 
+    /// Comprehensive multimodal conversation method supporting text, image, audio, and context
+    pub async fn generate_multimodal_response(
+        &self, 
+        text_prompt: &str,
+        image_data: Option<&[u8]>,
+        audio_data: Option<&[u8]>,
+        system_prompt: Option<String>,
+        conversation_context: Option<&str>,
+        max_tokens: usize
+    ) -> Result<String> {
+        if !self.model_loaded {
+            return Err(anyhow::anyhow!("Model not loaded"));
+        }
+
+        let system = system_prompt.unwrap_or_else(|| 
+            "You are Tektra, a helpful AI assistant powered by Gemma 3N with advanced multimodal capabilities. You can see images, understand audio input, and engage in natural conversation. Respond naturally and helpfully.".to_string()
+        );
+
+        info!("Processing comprehensive multimodal request - Text: {} chars, Image: {}, Audio: {}", 
+              text_prompt.len(),
+              image_data.map(|d| format!("{} bytes", d.len())).unwrap_or("None".to_string()),
+              audio_data.map(|d| format!("{} bytes", d.len())).unwrap_or("None".to_string()));
+
+        // Build comprehensive prompt with context
+        let mut full_prompt = String::new();
+        
+        // Add conversation context if provided
+        if let Some(context) = conversation_context {
+            if !context.is_empty() {
+                full_prompt.push_str("Previous conversation context:\n");
+                full_prompt.push_str(context);
+                full_prompt.push_str("\n\nCurrent request:\n");
+            }
+        }
+        
+        // Add current text prompt
+        full_prompt.push_str(text_prompt);
+
+        // Format prompt using Gemma 3N official chat template for multimodal
+        let formatted_prompt = if !system.is_empty() {
+            format!(
+                "{}{}
+{}
+{}
+{}{}
+{}
+{}
+{}{}
+",
+                self.chat_template.start_of_turn,
+                "system",
+                system,
+                self.chat_template.end_of_turn,
+                self.chat_template.start_of_turn,
+                self.chat_template.user_role,
+                full_prompt,
+                self.chat_template.end_of_turn,
+                self.chat_template.start_of_turn,
+                self.chat_template.model_role
+            )
+        } else {
+            format!(
+                "{}{}
+{}
+{}
+{}{}
+",
+                self.chat_template.start_of_turn,
+                self.chat_template.user_role,
+                full_prompt,
+                self.chat_template.end_of_turn,
+                self.chat_template.start_of_turn,
+                self.chat_template.model_role
+            )
+        };
+
+        // Create inference config optimized for multimodal
+        let config = InferenceConfig {
+            max_tokens,
+            temperature: 0.7,
+            top_p: 0.9,
+            repeat_penalty: 1.1,
+            seed: None,
+            n_threads: None,
+        };
+
+        // Determine media type and data based on what's provided
+        let (media_data, media_type) = if let Some(img_data) = image_data {
+            // Prioritize image if both are provided (most common multimodal case)
+            (Some(img_data), Some("image"))
+        } else if let Some(aud_data) = audio_data {
+            (Some(aud_data), Some("audio"))
+        } else {
+            (None, None)
+        };
+
+        // Use enhanced Ollama multimodal generation with Gemma3NProcessor
+        match self.inference_manager.generate_multimodal(&formatted_prompt, media_data, media_type, &config).await {
+            Ok(response) => {
+                info!("Generated comprehensive multimodal response: {} chars", response.len());
+                Ok(response)
+            }
+            Err(e) => {
+                error!("Comprehensive multimodal inference error: {}", e);
+                Err(anyhow::anyhow!("Multimodal conversation failed: {}", e))
+            }
+        }
+    }
+
     async fn emit_progress(&self, progress: u32, status: &str, model_name: &str) {
         let progress_data = ModelLoadProgress {
             progress,

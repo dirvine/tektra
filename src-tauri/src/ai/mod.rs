@@ -22,5 +22,9 @@ pub use speech_processor::SpeechProcessor;
 mod whisper;
 pub use whisper::{WhisperSTT, SileroVAD};
 
+// Gemma 3N multimodal processor
+mod multimodal_processor;
+pub use multimodal_processor::{Gemma3NProcessor, MultimodalInput, ProcessedMultimodal};
+
 // Keep other implementations for reference
 // Removed legacy tinyllama_v2 implementation

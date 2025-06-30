@@ -5,6 +5,7 @@ use tokio::fs;
 use tracing::{info, error, warn};
 use ollama_rs::{Ollama, generation::completion::request::GenerationRequest, generation::chat::{ChatMessage, request::ChatMessageRequest}};
 use super::inference_backend::{InferenceBackend, InferenceConfig};
+use super::multimodal_processor::{Gemma3NProcessor, MultimodalInput};
 use tauri::{AppHandle, Emitter};
 use serde_json::json;
 
@@ -21,6 +22,7 @@ pub struct OllamaInference {
     current_model: Option<String>,
     ollama_port: u16,
     app_handle: Option<AppHandle>,
+    multimodal_processor: Gemma3NProcessor,
 }
 
 impl OllamaInference {
@@ -32,6 +34,7 @@ impl OllamaInference {
             current_model: None,
             ollama_port: 11434, // Default Ollama port
             app_handle: None,
+            multimodal_processor: Gemma3NProcessor::new(),
         }
     }
     
@@ -43,6 +46,7 @@ impl OllamaInference {
             current_model: None,
             ollama_port: 11434, // Default Ollama port
             app_handle: Some(app_handle),
+            multimodal_processor: Gemma3NProcessor::new(),
         }
     }
     
@@ -749,97 +753,118 @@ impl InferenceBackend for OllamaInference {
         let model_name = self.current_model.as_ref()
             .ok_or_else(|| anyhow::anyhow!("No model loaded"))?;
         
-        info!("Generating multimodal response with model: {}", model_name);
+        info!("Generating multimodal response with Gemma 3N processor for model: {}", model_name);
         
-        if let Some(data_bytes) = media_data {
-            match media_type {
-                Some("audio") => {
-                    info!("Processing audio input - using transcribed text with model: {}", model_name);
-                    
-                    // Audio should be transcribed to text first by Whisper, then sent as text to the model
-                    // This is the proper approach since Gemma 3n doesn't support raw audio input in Ollama
-                    // The audio transcription happens in the frontend/Whisper layer
-                    
-                    let duration = data_bytes.len() as f32 / (16000.0 * 2.0);
-                    info!("Received {:.1} seconds of audio data - should be transcribed first", duration);
-                    
-                    // Send the transcribed text directly to the model
-                    let request = ChatMessageRequest::new(
-                        model_name.clone(),
-                        vec![ChatMessage::user(prompt.to_string())],
-                    );
-                    
-                    match ollama.send_chat_messages(request).await {
-                        Ok(response) => {
-                            let content = response.message.content;
-                            info!("Generated response for transcribed audio: {}", content);
-                            Ok(content)
-                        }
-                        Err(e) => {
-                            error!("Failed to generate audio response: {}", e);
-                            Err(anyhow::anyhow!("Ollama audio processing failed: {}", e))
-                        }
+        // Create multimodal input for the Gemma3NProcessor
+        let multimodal_input = MultimodalInput {
+            text: Some(prompt.to_string()),
+            image_data: if media_type == Some("image") { media_data.map(|d| d.to_vec()) } else { None },
+            audio_data: if media_type == Some("audio") { media_data.map(|d| d.to_vec()) } else { None },
+            video_data: if media_type == Some("video") { media_data.map(|d| d.to_vec()) } else { None },
+        };
+        
+        // Process the multimodal input using Gemma3NProcessor for optimal performance
+        let processed = match self.multimodal_processor.process_multimodal(multimodal_input).await {
+            Ok(processed_data) => processed_data,
+            Err(e) => {
+                error!("Gemma3NProcessor failed: {}", e);
+                return Err(anyhow::anyhow!("Multimodal processing failed: {}", e));
+            }
+        };
+        
+        info!("Processed multimodal input: {} tokens, {} images", 
+              processed.token_count, processed.images.len());
+        
+        // Check if this is a multimodal-capable model
+        let is_multimodal_model = model_name.contains("gemma3n") || 
+                                 model_name.contains("llava") || 
+                                 model_name.contains("bakllava") || 
+                                 model_name.contains("moondream");
+        
+        if !processed.images.is_empty() && !is_multimodal_model {
+            // Handle non-multimodal models gracefully
+            info!("Model {} is text-only, providing helpful response about image limitations", model_name);
+            let vision_response = format!(
+                "I can see that you've shared an image with me! However, I'm currently running on {}, which doesn't support vision processing.\n\nTo analyze images, I would need to be running on a vision-capable model like:\n- Gemma 3n (gemma3n:e4b)\n- LLaVA (llava:7b or llava:13b)\n- Moondream (moondream:latest)\n- Bakllava (bakllava:latest)\n\nWould you like me to help you in another way, or could you describe what's in the image so I can assist with text-based analysis?", 
+                model_name
+            );
+            return Ok(vision_response);
+        }
+        
+        // Generate the response using appropriate API
+        if !processed.images.is_empty() && is_multimodal_model {
+            // Use GenerationRequest for multimodal input (images)
+            info!("Using GenerationRequest for multimodal model with {} images", processed.images.len());
+            
+            // Format prompt with Gemma 3N-specific formatting
+            let formatted_prompt = self.multimodal_processor.format_for_gemma3n(&processed, Some("You are Tektra, a helpful AI assistant with vision capabilities. Analyze any images provided and respond naturally."));
+            
+            let mut request = GenerationRequest::new(model_name.clone(), formatted_prompt);
+            
+            // Add processed images
+            let ollama_images: Vec<ollama_rs::generation::images::Image> = processed.images
+                .iter()
+                .map(|base64_data| ollama_rs::generation::images::Image::from_base64(base64_data))
+                .collect();
+            
+            if !ollama_images.is_empty() {
+                request = request.images(ollama_images);
+            }
+            
+            // Add timeout for multimodal processing
+            match tokio::time::timeout(
+                tokio::time::Duration::from_secs(60), // Longer timeout for multimodal
+                ollama.generate(request)
+            ).await {
+                Ok(result) => match result {
+                    Ok(response) => {
+                        let content = response.response;
+                        info!("Generated multimodal response: {} chars", content.len());
+                        Ok(content)
                     }
-                }
-                Some("image") => {
-                    info!("Multimodal request with image data ({} bytes) using model: {}", data_bytes.len(), model_name);
-                    
-                    // Gemma 3n supports multimodal vision inputs according to the model card
-                    if model_name.contains("gemma3n") || model_name.contains("llava") || model_name.contains("bakllava") || model_name.contains("moondream") {
-                        info!("Using multimodal-capable model {} for vision processing", model_name);
-                        
-                        // Use proper Ollama generation API with base64 image encoding as per documentation
-                        use base64::{Engine as _, engine::general_purpose};
-                        let base64_image = general_purpose::STANDARD.encode(data_bytes);
-                        
-                        // Create image using ollama_rs Image type
-                        let image = ollama_rs::generation::images::Image::from_base64(&base64_image);
-                        
-                        // Use GenerationRequest which supports images
-                        let mut request = GenerationRequest::new(model_name.clone(), prompt.to_string());
-                        request = request.images(vec![image]);
-                        
-                        match ollama.generate(request).await {
-                            Ok(response) => {
-                                let content = response.response;
-                                info!("Generated vision response: {}", content);
-                                Ok(content)
-                            }
-                            Err(e) => {
-                                error!("Failed to generate vision response: {}", e);
-                                Err(anyhow::anyhow!("Ollama vision processing failed: {}", e))
-                            }
-                        }
-                    } else {
-                        info!("Model {} is text-only, providing helpful response about image limitations", model_name);
-                        
-                        // Provide a helpful response indicating the model can't see images
-                        let vision_response = format!(
-                            "I can see that you've shared an image with me! However, I'm currently running on {}, which doesn't support vision processing.\n\nTo analyze images, I would need to be running on a vision-capable model like:\n- Gemma 3n (gemma3n:e4b)\n- LLaVA (llava:7b or llava:13b)\n- Moondream (moondream:latest)\n- Bakllava (bakllava:latest)\n\nWould you like me to help you in another way, or could you describe what's in the image so I can assist with text-based analysis?", 
-                            model_name
-                        );
-                        
-                        Ok(vision_response)
+                    Err(e) => {
+                        error!("Failed to generate multimodal response: {}", e);
+                        Err(anyhow::anyhow!("Ollama multimodal generation failed: {}", e))
                     }
-                }
-                Some("video") => {
-                    info!("Video input requested, but Ollama doesn't support video for Gemma 3n");
-                    
-                    // Video is not supported in Ollama for Gemma 3n (only available in HuggingFace/MLX)
-                    let video_response = format!(
-                        "I can see that you've shared a video with me! However, video processing for Gemma 3n is currently only available through platforms like HuggingFace or MLX, not through Ollama.\n\nOllama currently supports:\n- Text processing\n- Image analysis (with models like gemma3n:e4b, llava, bakllava)\n\nFor video analysis, you would need to:\n1. Extract frames from the video\n2. Process individual frames as images\n3. Or use the model on HuggingFace with video support\n\nWould you like me to help in another way?"
-                    );
-                    
-                    Ok(video_response)
-                }
-                _ => {
-                    // No media type or unsupported media type, use chat API for better text formatting
-                    self.generate(prompt, _config).await
+                },
+                Err(_) => {
+                    error!("Multimodal request timed out after 60 seconds");
+                    Err(anyhow::anyhow!("Multimodal request timed out - content may be too complex"))
                 }
             }
         } else {
-            // No media data, use chat API for better text formatting
-            self.generate(prompt, _config).await
+            // Text-only generation with Gemma 3N formatting
+            info!("Using ChatMessageRequest for text-only processing");
+            
+            // Format prompt with Gemma 3N-specific formatting for text
+            let formatted_prompt = self.multimodal_processor.format_for_gemma3n(&processed, Some("You are Tektra, a helpful AI assistant. Provide clear, conversational responses."));
+            
+            let request = ChatMessageRequest::new(
+                model_name.clone(),
+                vec![ChatMessage::user(formatted_prompt)],
+            );
+            
+            // Add timeout for text processing
+            match tokio::time::timeout(
+                tokio::time::Duration::from_secs(30), // Standard timeout for text
+                ollama.send_chat_messages(request)
+            ).await {
+                Ok(result) => match result {
+                    Ok(response) => {
+                        let content = response.message.content;
+                        info!("Generated text response: {} chars", content.len());
+                        Ok(content)
+                    }
+                    Err(e) => {
+                        error!("Failed to generate text response: {}", e);
+                        Err(anyhow::anyhow!("Ollama text generation failed: {}", e))
+                    }
+                },
+                Err(_) => {
+                    error!("Text request timed out after 30 seconds");
+                    Err(anyhow::anyhow!("Text request timed out - content may be too long"))
+                }
+            }
         }
     }
     

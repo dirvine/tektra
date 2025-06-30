@@ -579,51 +579,63 @@ async fn process_multimodal_input(
     let system_prompt = settings_guard.system_prompt.clone();
     drop(settings_guard);
 
-    // Process multimodal input
+    // Build conversation context from recent chat history
+    let recent_history = {
+        let history = chat_history.lock().await;
+        let context_messages = history.iter()
+            .rev()
+            .take(6) // Last 3 exchanges (6 messages)
+            .rev()
+            .map(|msg| format!("{}: {}", msg.role, msg.content))
+            .collect::<Vec<_>>()
+            .join("\n");
+        if context_messages.is_empty() { None } else { Some(context_messages) }
+    };
+
+    // Process comprehensive multimodal input
     let ai_manager = ai.lock().await;
-    
     let vision_manager = vision.lock().await;
+    
     let response = if ai_manager.is_loaded() {
-        if let Some(img_data) = image_data {
-            // Process image input
-            match ai_manager.generate_response_with_image_and_system_prompt(&message, &img_data, max_tokens, system_prompt).await {
-                Ok(resp) => resp,
-                Err(e) => {
-                    eprintln!("Error generating multimodal response: {}", e);
-                    format!("I can see your multimodal input ({} modalities), but I'm still learning to process all types. Error: {}", modality_count, e)
-                }
-            }
-        } else if vision_manager.is_capturing() {
-            // Process camera feed
+        // Handle camera capture separately to avoid lifetime issues
+        let camera_frame_data = if image_data.is_none() && vision_manager.is_capturing() {
+            // Capture current frame for live camera analysis
             match vision_manager.capture_frame().await {
-                Ok(frame) => {
-                    match ai_manager.generate_response_with_image_and_system_prompt("Describe what you see.", &frame.data, max_tokens, system_prompt).await {
-                        Ok(resp) => resp,
-                        Err(e) => {
-                            eprintln!("Error generating response with image: {}", e);
-                            format!("I apologize, but I encountered an error processing the image: {}. Please try again.", e)
-                        }
-                    }
-                }
+                Ok(frame) => Some(frame.data),
                 Err(e) => {
                     eprintln!("Failed to capture camera frame: {}", e);
-                    "I couldn't capture a frame from the camera.".to_string()
+                    None
                 }
             }
         } else {
-            // Fall back to text-only processing
-            match ai_manager.generate_response_with_system_prompt(&message, max_tokens, system_prompt).await {
-                Ok(resp) => {
-                    if modality_count > 0 {
-                        format!("{}\n\nNote: I received {} additional input modalities that I'm still learning to process fully.", resp, modality_count)
-                    } else {
-                        resp
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Error generating response: {}", e);
-                    format!("I apologize, but I encountered an error: {}. Please try again.", e)
-                }
+            None
+        };
+        
+        // Determine final image data to use
+        let final_image_data = if let Some(ref img_data) = image_data {
+            Some(img_data.as_slice())
+        } else if let Some(ref cam_data) = camera_frame_data {
+            Some(cam_data.as_slice())
+        } else {
+            None
+        };
+        
+        // Use comprehensive multimodal generation with context
+        match ai_manager.generate_multimodal_response(
+            &message,
+            final_image_data,
+            audio_data.as_deref(),
+            system_prompt,
+            recent_history.as_deref(),
+            max_tokens
+        ).await {
+            Ok(resp) => {
+                info!("Generated comprehensive multimodal response with {} modalities", modality_count);
+                resp
+            }
+            Err(e) => {
+                error!("Error generating comprehensive multimodal response: {}", e);
+                format!("I can see your multimodal input ({} modalities), but encountered an error: {}. Please try again.", modality_count, e)
             }
         }
     } else {

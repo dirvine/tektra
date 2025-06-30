@@ -557,46 +557,71 @@ ${textContent}
         setInputValue('');
         setAttachments([]); // Clear attachments after sending
 
-        // Send combined message to backend
+        // Send combined message to backend using comprehensive multimodal processing
         try {
           const { invoke } = await import('@tauri-apps/api/core');
           
-          // If we have attachments with images, use multimodal call
-          const hasImages = attachments?.some(file => 
-            file.type.startsWith('image/') || 
-            file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
-          );
+          // Prepare multimodal data for comprehensive processing
+          let imageData: number[] | null = null;
+          let audioData: number[] | null = null;
+          let videoData: number[] | null = null;
           
-          if (hasImages) {
-            // Handle image attachments with multimodal call
+          // Process all attachments for multimodal input
+          if (attachments && attachments.length > 0) {
             for (const file of attachments) {
-              if (file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)) {
-                const arrayBuffer = await file.arrayBuffer();
-                const imageData = Array.from(new Uint8Array(arrayBuffer));
-                
-                const response = await invoke<string>('process_image_input', {
-                  message: combinedMessageContent,
-                  imageData: imageData,
-                });
-                
+              try {
+                if (file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)) {
+                  // Process first image attachment
+                  if (!imageData) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    imageData = Array.from(new Uint8Array(arrayBuffer));
+                    console.log(`Prepared image data: ${file.name} (${imageData.length} bytes)`);
+                  }
+                } else if (file.type.startsWith('audio/') || file.name.match(/\.(mp3|wav|m4a|ogg|flac)$/i)) {
+                  // Process first audio attachment
+                  if (!audioData) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    audioData = Array.from(new Uint8Array(arrayBuffer));
+                    console.log(`Prepared audio data: ${file.name} (${audioData.length} bytes)`);
+                  }
+                } else if (file.type.startsWith('video/') || file.name.match(/\.(mp4|mov|avi|mkv|webm)$/i)) {
+                  // Process first video attachment
+                  if (!videoData) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    videoData = Array.from(new Uint8Array(arrayBuffer));
+                    console.log(`Prepared video data: ${file.name} (${videoData.length} bytes)`);
+                  }
+                }
+                // Text files are already combined into combinedMessageContent above
+              } catch (error) {
+                console.error(`Error processing attachment ${file.name}:`, error);
                 addMessage({
-                  role: 'assistant',
-                  content: response,
+                  role: 'system',
+                  content: `❌ Error processing ${file.name}: ${error}`,
                 });
-                break; // Process only first image for now
               }
             }
-          } else {
-            // Use regular text message call (already includes file content)
-            const response = await invoke<string>('send_message', {
-              message: combinedMessageContent,
-            });
-            
-            addMessage({
-              role: 'assistant',
-              content: response,
-            });
           }
+          
+          // Use comprehensive multimodal processing for all cases
+          console.log('Sending multimodal request:', {
+            message: combinedMessageContent.substring(0, 100) + '...',
+            hasImage: !!imageData,
+            hasAudio: !!audioData,
+            hasVideo: !!videoData
+          });
+          
+          const response = await invoke<string>('process_multimodal_input', {
+            message: combinedMessageContent,
+            imageData: imageData,
+            audioData: audioData,
+            videoData: videoData,
+          });
+          
+          addMessage({
+            role: 'assistant',
+            content: response,
+          });
         } catch (error) {
           console.error('Backend call error:', error);
           addMessage({
