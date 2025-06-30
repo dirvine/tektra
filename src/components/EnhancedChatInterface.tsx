@@ -514,50 +514,12 @@ const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({ className
           content: `📎 Processing ${attachments.length} file(s): ${attachments.map(f => f.name).join(', ')}`,
         });
 
-        // Process files via Tauri backend
-        const { invoke } = await import('@tauri-apps/api/core');
-        
-        let processedCount = 0;
-        
-        for (const file of attachments) {
-          try {
-            // Read file content
-            const arrayBuffer = await file.arrayBuffer();
-            const uint8Array = Array.from(new Uint8Array(arrayBuffer));
-            
-            addMessage({
-              role: 'system', 
-              content: `📄 Loading ${file.name} (${(file.size / 1024).toFixed(1)} KB)...`,
-            });
-            
-            // Process file through backend
-            const result = await invoke('process_file_content', {
-              fileName: file.name,
-              fileContent: uint8Array,
-              fileType: file.type,
-            });
-            
-            addMessage({
-              role: 'system',
-              content: `✅ ${result}`,
-            });
-            
-            processedCount++;
-          } catch (error) {
-            console.error(`Error processing ${file.name}:`, error);
-            addMessage({
-              role: 'system',
-              content: `❌ Failed to process ${file.name}: ${error}`,
-            });
-          }
-        }
-        
-        if (processedCount > 0) {
-          addMessage({
-            role: 'system',
-            content: `🎉 Successfully processed ${processedCount}/${attachments.length} file(s) and added to knowledge base`,
-          });
-        }
+        // Show file attachment status but don't process separately
+        // Files will be processed together with the user's message
+        addMessage({
+          role: 'system', 
+          content: `📎 ${attachments.length} file(s) attached and ready to analyze with your message`,
+        });
       }
 
       // Send the text message if any
@@ -595,16 +557,53 @@ ${textContent}
         setInputValue('');
         setAttachments([]); // Clear attachments after sending
 
-        // TODO: Integrate with backend for AI response
-        // For now, simulate typing indicator
-        setTimeout(() => {
+        // Send combined message to backend
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          
+          // If we have attachments with images, use multimodal call
+          const hasImages = attachments?.some(file => 
+            file.type.startsWith('image/') || 
+            file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
+          );
+          
+          if (hasImages) {
+            // Handle image attachments with multimodal call
+            for (const file of attachments) {
+              if (file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)) {
+                const arrayBuffer = await file.arrayBuffer();
+                const imageData = Array.from(new Uint8Array(arrayBuffer));
+                
+                const response = await invoke<string>('process_image_input', {
+                  message: combinedMessageContent,
+                  imageData: imageData,
+                });
+                
+                addMessage({
+                  role: 'assistant',
+                  content: response,
+                });
+                break; // Process only first image for now
+              }
+            }
+          } else {
+            // Use regular text message call (already includes file content)
+            const response = await invoke<string>('send_message', {
+              message: combinedMessageContent,
+            });
+            
+            addMessage({
+              role: 'assistant',
+              content: response,
+            });
+          }
+        } catch (error) {
+          console.error('Backend call error:', error);
           addMessage({
             role: 'assistant',
-            content: attachments?.length
-              ? `I've received your message and ${attachments.length} file(s). I can analyze the uploaded documents and provide insights based on their content.`
-              : 'I received your message and I\'m processing it...',
+            content: `I apologize, but I encountered an error processing your request: ${error}. Please try again.`,
           });
-        }, 1000);
+        }
       }
     } catch (error) {
       console.error('Message send error:', error);
