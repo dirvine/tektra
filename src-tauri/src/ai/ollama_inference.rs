@@ -706,72 +706,6 @@ impl OllamaInference {
         // Smaller model for better performance on most systems
         "gemma2:2b"
     }
-}
-
-#[async_trait::async_trait]
-impl InferenceBackend for OllamaInference {
-    async fn load_model(&mut self, model_path: &Path) -> Result<()> {
-        // For Ollama, we interpret model_path as model name
-        let model_name = model_path.to_string_lossy().to_string();
-        
-        info!("Loading Ollama model: {}", model_name);
-        
-        // Initialize Ollama if not already done (this handles finding/downloading Ollama)
-        if self.ollama_client.is_none() {
-            info!("Initializing Ollama backend...");
-            self.initialize().await?;
-        }
-        
-        // Check if model is available, pull if not
-        if let Some(ollama) = &self.ollama_client {
-            match ollama.show_model_info(model_name.clone()).await {
-                Ok(_) => {
-                    info!("Model {} is already available", model_name);
-                    self.emit_progress(60.0, &format!("📋 {} found in local cache", model_name), &model_name).await;
-                    
-                    // Simulate some loading steps for better UX
-                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-                    self.emit_progress(80.0, &format!("🔍 Verifying {} model integrity", model_name), &model_name).await;
-                    
-                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-                    self.emit_progress(95.0, &format!("✅ {} validation complete", model_name), &model_name).await;
-                }
-                Err(_) => {
-                    info!("Model {} not found, pulling from Ollama registry...", model_name);
-                    self.emit_progress(10.0, &format!("Downloading {} model - this may take several minutes...", model_name), &model_name).await;
-                    
-                    // Use streaming pull_model with progress tracking
-                    match tokio::time::timeout(
-                        tokio::time::Duration::from_secs(1200), // 20 minute timeout for model pull
-                        self.pull_model_with_progress(&model_name)
-                    ).await {
-                        Ok(Ok(_)) => {
-                            info!("Model {} pulled successfully", model_name);
-                            self.emit_progress(95.0, &format!("Model {} downloaded successfully", model_name), &model_name).await;
-                        }
-                        Ok(Err(e)) => {
-                            return Err(anyhow::anyhow!("Failed to pull model {}: {}", model_name, e));
-                        }
-                        Err(_) => {
-                            return Err(anyhow::anyhow!("Model {} pull timed out after 20 minutes", model_name));
-                        }
-                    }
-                }
-            }
-        }
-        
-        self.current_model = Some(model_name.clone());
-        self.model_loaded = true;
-        
-        // Always emit final completion progress
-        self.emit_progress(100.0, &format!("🎉 {} ready! Model loaded successfully", model_name), &model_name).await;
-        
-        Ok(())
-    }
-    
-    fn is_loaded(&self) -> bool {
-        self.model_loaded && self.current_model.is_some()
-    }
     
     /// Public method to restart Ollama when connection fails
     pub async fn restart_ollama_if_needed(&mut self) -> Result<()> {
@@ -779,7 +713,7 @@ impl InferenceBackend for OllamaInference {
     }
     
     /// Check if Ollama is responsive and restart if needed
-    async fn ensure_ollama_running(&mut self) -> Result<()> {
+    pub async fn ensure_ollama_running(&mut self) -> Result<()> {
         // First, try a simple health check
         if let Some(ollama) = &self.ollama_client {
             match tokio::time::timeout(
@@ -850,6 +784,72 @@ impl InferenceBackend for OllamaInference {
             self.emit_progress(0.0, error_msg, "system").await;
             Err(anyhow::anyhow!(error_msg))
         }
+    }
+}
+
+#[async_trait::async_trait]
+impl InferenceBackend for OllamaInference {
+    async fn load_model(&mut self, model_path: &Path) -> Result<()> {
+        // For Ollama, we interpret model_path as model name
+        let model_name = model_path.to_string_lossy().to_string();
+        
+        info!("Loading Ollama model: {}", model_name);
+        
+        // Initialize Ollama if not already done (this handles finding/downloading Ollama)
+        if self.ollama_client.is_none() {
+            info!("Initializing Ollama backend...");
+            self.initialize().await?;
+        }
+        
+        // Check if model is available, pull if not
+        if let Some(ollama) = &self.ollama_client {
+            match ollama.show_model_info(model_name.clone()).await {
+                Ok(_) => {
+                    info!("Model {} is already available", model_name);
+                    self.emit_progress(60.0, &format!("📋 {} found in local cache", model_name), &model_name).await;
+                    
+                    // Simulate some loading steps for better UX
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    self.emit_progress(80.0, &format!("🔍 Verifying {} model integrity", model_name), &model_name).await;
+                    
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    self.emit_progress(95.0, &format!("✅ {} validation complete", model_name), &model_name).await;
+                }
+                Err(_) => {
+                    info!("Model {} not found, pulling from Ollama registry...", model_name);
+                    self.emit_progress(10.0, &format!("Downloading {} model - this may take several minutes...", model_name), &model_name).await;
+                    
+                    // Use streaming pull_model with progress tracking
+                    match tokio::time::timeout(
+                        tokio::time::Duration::from_secs(1200), // 20 minute timeout for model pull
+                        self.pull_model_with_progress(&model_name)
+                    ).await {
+                        Ok(Ok(_)) => {
+                            info!("Model {} pulled successfully", model_name);
+                            self.emit_progress(95.0, &format!("Model {} downloaded successfully", model_name), &model_name).await;
+                        }
+                        Ok(Err(e)) => {
+                            return Err(anyhow::anyhow!("Failed to pull model {}: {}", model_name, e));
+                        }
+                        Err(_) => {
+                            return Err(anyhow::anyhow!("Model {} pull timed out after 20 minutes", model_name));
+                        }
+                    }
+                }
+            }
+        }
+        
+        self.current_model = Some(model_name.clone());
+        self.model_loaded = true;
+        
+        // Always emit final completion progress
+        self.emit_progress(100.0, &format!("🎉 {} ready! Model loaded successfully", model_name), &model_name).await;
+        
+        Ok(())
+    }
+    
+    fn is_loaded(&self) -> bool {
+        self.model_loaded && self.current_model.is_some()
     }
     
     async fn generate(&self, prompt: &str, _config: &InferenceConfig) -> Result<String> {
