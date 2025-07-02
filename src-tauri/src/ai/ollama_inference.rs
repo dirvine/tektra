@@ -321,14 +321,36 @@ impl OllamaInference {
         let ollama_url = format!("http://localhost:{}", self.ollama_port);
         self.ollama_client = Some(Ollama::new(ollama_url, self.ollama_port));
         
-        // Test connection with timeout
-        match tokio::time::timeout(
-            tokio::time::Duration::from_secs(30),
-            self.test_connection()
-        ).await {
-            Ok(Ok(_)) => info!("Ollama inference backend initialized successfully"),
-            Ok(Err(e)) => return Err(anyhow::anyhow!("Ollama connection test failed: {}", e)),
-            Err(_) => return Err(anyhow::anyhow!("Ollama connection test timed out")),
+        // Test connection with timeout and retries
+        let mut retry_count = 0;
+        let max_retries = 3;
+        
+        loop {
+            match tokio::time::timeout(
+                tokio::time::Duration::from_secs(10),
+                self.test_connection()
+            ).await {
+                Ok(Ok(_)) => {
+                    info!("Ollama inference backend initialized successfully");
+                    break;
+                }
+                Ok(Err(e)) => {
+                    retry_count += 1;
+                    if retry_count >= max_retries {
+                        return Err(anyhow::anyhow!("Ollama connection test failed after {} retries: {}", max_retries, e));
+                    }
+                    warn!("Ollama connection test failed (attempt {}/{}): {}", retry_count, max_retries, e);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                }
+                Err(_) => {
+                    retry_count += 1;
+                    if retry_count >= max_retries {
+                        return Err(anyhow::anyhow!("Ollama connection test timed out after {} retries", max_retries));
+                    }
+                    warn!("Ollama connection test timed out (attempt {}/{})", retry_count, max_retries);
+                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                }
+            }
         }
         
         Ok(())
@@ -380,15 +402,34 @@ impl OllamaInference {
         }
         
         // Start the server in background
-        let child = cmd.spawn()
+        let mut child = cmd.spawn()
             .map_err(|e| anyhow::anyhow!("Failed to start Ollama server: {}", e))?;
         
         info!("Ollama server started with PID: {} at {:?}", child.id(), ollama_path);
         
-        // Wait a moment for server to start
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        // Wait a moment for server to start and check if it's still running
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
         
-        Ok(())
+        // Check if the process is still running
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                // Process has exited
+                error!("Ollama server exited immediately with status: {:?}", status);
+                return Err(anyhow::anyhow!("Ollama server failed to start - exited with status: {:?}", status));
+            }
+            Ok(None) => {
+                // Process is still running
+                info!("Ollama server is running successfully");
+                
+                // Wait a bit more to ensure it's fully started
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                Ok(())
+            }
+            Err(e) => {
+                error!("Failed to check Ollama server status: {}", e);
+                Err(anyhow::anyhow!("Failed to check Ollama server status: {}", e))
+            }
+        }
     }
 
     /// Test connection to Ollama server
