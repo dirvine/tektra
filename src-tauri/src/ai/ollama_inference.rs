@@ -757,7 +757,19 @@ impl InferenceBackend for OllamaInference {
         ).await {
             Ok(result) => match result {
                 Ok(response) => {
-                    let content = response.message.content;
+                    let mut content = response.message.content;
+                    
+                    // Strip Gemma special tokens from response
+                    content = content.replace("<start_of_turn>", "");
+                    content = content.replace("<end_of_turn>", "");
+                    content = content.replace("<start_of_turn>user", "");
+                    content = content.replace("<start_of_turn>model", "");
+                    content = content.replace("<end_of_turn>model", "");
+                    content = content.replace("<end_of_turn>user", "");
+                    
+                    // Trim any leading/trailing whitespace
+                    content = content.trim().to_string();
+                    
                     info!("Generated response: {}", content);
                     Ok(content)
                 }
@@ -853,7 +865,19 @@ impl InferenceBackend for OllamaInference {
             ).await {
                 Ok(result) => match result {
                     Ok(response) => {
-                        let content = response.response;
+                        let mut content = response.response;
+                        
+                        // Strip Gemma special tokens from response
+                        content = content.replace("<start_of_turn>", "");
+                        content = content.replace("<end_of_turn>", "");
+                        content = content.replace("<start_of_turn>user", "");
+                        content = content.replace("<start_of_turn>model", "");
+                        content = content.replace("<end_of_turn>model", "");
+                        content = content.replace("<end_of_turn>user", "");
+                        
+                        // Trim any leading/trailing whitespace
+                        content = content.trim().to_string();
+                        
                         info!("Generated multimodal response: {} chars", content.len());
                         Ok(content)
                     }
@@ -886,7 +910,19 @@ impl InferenceBackend for OllamaInference {
             ).await {
                 Ok(result) => match result {
                     Ok(response) => {
-                        let content = response.message.content;
+                        let mut content = response.message.content;
+                        
+                        // Strip Gemma special tokens from response
+                        content = content.replace("<start_of_turn>", "");
+                        content = content.replace("<end_of_turn>", "");
+                        content = content.replace("<start_of_turn>user", "");
+                        content = content.replace("<start_of_turn>model", "");
+                        content = content.replace("<end_of_turn>model", "");
+                        content = content.replace("<end_of_turn>user", "");
+                        
+                        // Trim any leading/trailing whitespace
+                        content = content.trim().to_string();
+                        
                         info!("Generated text response: {} chars", content.len());
                         Ok(content)
                     }

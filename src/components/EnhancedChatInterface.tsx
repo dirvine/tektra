@@ -555,7 +555,8 @@ ${textContent}
 
         addMessage(userMessage);
         setInputValue('');
-        setAttachments([]); // Clear attachments after sending
+        // @ts-ignore - setAttachments is defined in EnhancedInputArea
+        // setAttachments([]); // Clear attachments after sending
 
         // Send combined message to backend using comprehensive multimodal processing
         try {
