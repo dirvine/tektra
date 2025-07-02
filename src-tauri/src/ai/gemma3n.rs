@@ -36,6 +36,17 @@ impl Default for MultimodalChatTemplate {
     }
 }
 
+/// AI Manager for Gemma-3n multimodal model
+/// 
+/// This struct manages the lifecycle and operations of the Gemma-3n E4B model,
+/// providing text generation and multimodal capabilities through the Ollama backend.
+/// 
+/// # Features
+/// - Automatic model loading and management
+/// - Multimodal support (text, images, audio, video)
+/// - Real-time progress tracking during model operations
+/// - Streaming response generation
+/// - System prompt support for context-aware responses
 pub struct AIManager {
     app_handle: AppHandle,
     model_loaded: bool,
@@ -47,6 +58,18 @@ pub struct AIManager {
 }
 
 impl AIManager {
+    /// Create a new AI Manager instance with default Ollama backend
+    /// 
+    /// # Arguments
+    /// * `app_handle` - Tauri application handle for event emission
+    /// 
+    /// # Returns
+    /// * `Result<Self>` - AI Manager instance or error
+    /// 
+    /// # Example
+    /// ```rust
+    /// let ai_manager = AIManager::new(app_handle)?;
+    /// ```
     pub fn new(app_handle: AppHandle) -> Result<Self> {
         // Always use Ollama backend (only option)
         let backend_type = BackendType::Ollama;
@@ -63,6 +86,19 @@ impl AIManager {
         })
     }
     
+    /// Create a new AI Manager instance with specified backend
+    /// 
+    /// # Arguments
+    /// * `app_handle` - Tauri application handle for event emission
+    /// * `backend_type` - Backend type to use (currently only Ollama supported)
+    /// 
+    /// # Returns
+    /// * `Result<Self>` - AI Manager instance or error
+    /// 
+    /// # Example
+    /// ```rust
+    /// let ai_manager = AIManager::with_backend(app_handle, BackendType::Ollama)?;
+    /// ```
     pub fn with_backend(app_handle: AppHandle, backend_type: BackendType) -> Result<Self> {
         let inference_manager = InferenceManager::with_app_handle(backend_type, app_handle.clone())?;
         
@@ -77,6 +113,21 @@ impl AIManager {
         })
     }
 
+    /// Load the Gemma-3n E4B model
+    /// 
+    /// This method handles the complete model loading process including:
+    /// - Checking for existing Ollama installation (system or bundled)
+    /// - Downloading the model if not present
+    /// - Initializing the model for inference
+    /// - Emitting progress events throughout the process
+    /// 
+    /// # Returns
+    /// * `Result<()>` - Success or error with detailed message
+    /// 
+    /// # Errors
+    /// - Model download failures
+    /// - Ollama connection issues
+    /// - Insufficient disk space
     pub async fn load_model(&mut self) -> Result<()> {
         self.emit_progress(0, "Starting Gemma3n E4B multimodal model initialization...", &self.selected_model).await;
         self.load_ollama_model().await
@@ -113,18 +164,69 @@ impl AIManager {
         }
     }
 
+    /// Generate a text response from the model
+    /// 
+    /// # Arguments
+    /// * `prompt` - User input text
+    /// * `max_tokens` - Maximum number of tokens to generate
+    /// 
+    /// # Returns
+    /// * `Result<String>` - Generated response or error
+    /// 
+    /// # Example
+    /// ```rust
+    /// let response = ai_manager.generate_response("What is machine learning?", 200).await?;
+    /// ```
     pub async fn generate_response(&self, prompt: &str, max_tokens: usize) -> Result<String> {
         self.generate_response_with_system_prompt(prompt, max_tokens, None).await
     }
     
+    /// Generate a response with image context
+    /// 
+    /// # Arguments
+    /// * `prompt` - Text prompt describing the query
+    /// * `image_data` - Raw image bytes (PNG, JPEG, etc.)
+    /// * `max_tokens` - Maximum tokens to generate
+    /// 
+    /// # Returns
+    /// * `Result<String>` - Generated response or error
+    /// 
+    /// # Example
+    /// ```rust
+    /// let image_bytes = std::fs::read("photo.jpg")?;
+    /// let response = ai_manager.generate_response_with_image(
+    ///     "What's in this image?",
+    ///     &image_bytes,
+    ///     200
+    /// ).await?;
+    /// ```
     pub async fn generate_response_with_image(&self, prompt: &str, image_data: &[u8], max_tokens: usize) -> Result<String> {
         self.generate_response_with_image_and_system_prompt(prompt, image_data, max_tokens, None).await
     }
 
+    /// Generate a response with audio context
+    /// 
+    /// # Arguments
+    /// * `prompt` - Text prompt describing the query
+    /// * `audio_data` - Raw audio bytes (WAV, MP3, etc.)
+    /// * `max_tokens` - Maximum tokens to generate
+    /// 
+    /// # Returns
+    /// * `Result<String>` - Generated response or error
     pub async fn generate_response_with_audio(&self, prompt: &str, audio_data: &[u8], max_tokens: usize) -> Result<String> {
         self.generate_response_with_audio_and_system_prompt(prompt, audio_data, max_tokens, None).await
     }
     
+    /// Generate a response with audio context and custom system prompt
+    /// 
+    /// # Arguments
+    /// * `prompt` - Text prompt describing the query
+    /// * `audio_data` - Raw audio bytes
+    /// * `max_tokens` - Maximum tokens to generate
+    /// * `system_prompt` - Optional custom system prompt
+    /// 
+    /// # Returns
+    /// * `Result<String>` - Generated response or error
     pub async fn generate_response_with_audio_and_system_prompt(&self, prompt: &str, audio_data: &[u8], max_tokens: usize, system_prompt: Option<String>) -> Result<String> {
         if !self.model_loaded {
             return Err(anyhow::anyhow!("Model not loaded"));
@@ -199,6 +301,24 @@ impl AIManager {
         }
     }
     
+    /// Generate a response with custom system prompt
+    /// 
+    /// # Arguments
+    /// * `prompt` - User input text
+    /// * `max_tokens` - Maximum tokens to generate
+    /// * `system_prompt` - Optional system prompt for context
+    /// 
+    /// # Returns
+    /// * `Result<String>` - Generated response or error
+    /// 
+    /// # Example
+    /// ```rust
+    /// let response = ai_manager.generate_response_with_system_prompt(
+    ///     "Explain quantum computing",
+    ///     200,
+    ///     Some("You are a physics professor".to_string())
+    /// ).await?;
+    /// ```
     pub async fn generate_response_with_system_prompt(&self, prompt: &str, max_tokens: usize, system_prompt: Option<String>) -> Result<String> {
         if !self.model_loaded {
             return Err(anyhow::anyhow!("Model not loaded"));

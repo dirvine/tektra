@@ -3,6 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::path::Path;
 use tauri::{Manager, State};
 use tokio::sync::Mutex;
 use tracing::{info, error, warn};
@@ -20,40 +21,11 @@ mod config;
 use config::AppConfig;
 mod vector_db;
 use vector_db::VectorDB;
+mod database;
+use database::{Database, Document};
+mod types;
+use types::{ChatMessage, AppSettings};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct ChatMessage {
-    role: String,
-    content: String,
-    timestamp: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct AppSettings {
-    model_name: String,
-    max_tokens: usize,
-    temperature: f32,
-    voice_enabled: bool,
-    auto_speech: bool,
-    system_prompt: Option<String>,
-    user_prefix: Option<String>,
-    assistant_prefix: Option<String>,
-}
-
-impl Default for AppSettings {
-    fn default() -> Self {
-        Self {
-            model_name: "gemma3n:e4b".to_string(),
-            max_tokens: 512,
-            temperature: 0.7,
-            voice_enabled: false,
-            auto_speech: false,
-            system_prompt: Some("You are Tektra, a helpful AI assistant. Provide clear, conversational responses. Use natural formatting with line breaks and structure your responses naturally. Be helpful and friendly in your interactions.".to_string()),
-            user_prefix: Some("User: ".to_string()),
-            assistant_prefix: Some("Assistant: ".to_string()),
-        }
-    }
-}
 
 type ChatHistory = Arc<Mutex<Vec<ChatMessage>>>;
 type Settings = Arc<Mutex<AppSettings>>;
@@ -62,6 +34,7 @@ type AudioRec = Arc<Mutex<AudioRecorder>>;
 type Vision = Arc<Mutex<VisionManager>>;
 type Avatar = Arc<Mutex<AvatarManager>>;
 type VectorStore = Arc<Mutex<VectorDB>>;
+type DB = Arc<Database>;
 
 #[tauri::command]
 async fn start_audio_recording(audio: State<'_, AudioRec>) -> Result<bool, String> {
@@ -300,20 +273,114 @@ async fn check_model_status(ai: State<'_, AI>) -> Result<bool, String> {
 #[tauri::command]
 async fn get_available_models() -> Result<Vec<String>, String> {
     Ok(vec![
-        "gemma3:4b".to_string(),
+        // Text-only models
+        "gemma3n:e4b".to_string(),  // Gemma 3N (text-only in Ollama currently)
         "gemma2:2b".to_string(),
         "qwen2.5:7b".to_string(),
+        "llama3.2:3b".to_string(),
+        "phi3:mini".to_string(),
+        
+        // Vision-capable models
+        "llama3.2-vision:11b".to_string(),  // Latest vision model
+        "llava:7b".to_string(),              // Popular vision model
+        "moondream:latest".to_string(),      // Lightweight vision model
+        "bakllava:latest".to_string(),       // Alternative vision model
     ])
+}
+
+#[tauri::command]
+async fn get_model_capabilities(model_name: String) -> Result<serde_json::Value, String> {
+    use serde_json::json;
+    
+    // Check if this is a vision-capable model in Ollama
+    let supports_vision = model_name.contains("llava") || 
+                         model_name.contains("bakllava") || 
+                         model_name.contains("moondream") ||
+                         model_name.contains("llama3.2-vision") ||
+                         model_name.contains("llama3.2:11b-vision") ||
+                         model_name.contains("llama3.2:90b-vision");
+    
+    // Special note for Gemma 3N
+    let note = if model_name.contains("gemma3n") {
+        Some("Gemma 3N is designed as a multimodal model with vision, audio, and video capabilities. However, Ollama's current implementation only supports text input. Full multimodal support is expected in a future update.")
+    } else {
+        None
+    };
+    
+    Ok(json!({
+        "model": model_name,
+        "supports_text": true,
+        "supports_vision": supports_vision,
+        "supports_audio": false,  // No Ollama models currently support direct audio input
+        "supports_video": false,  // No Ollama models currently support video
+        "note": note,
+        "recommended_for": if supports_vision {
+            vec!["image analysis", "visual question answering", "OCR", "image description"]
+        } else if model_name.contains("gemma3n") {
+            vec!["general conversation", "code generation", "reasoning", "creative writing"]
+        } else {
+            vec!["text generation", "conversation", "question answering"]
+        }
+    }))
+}
+
+// Conversation commands
+#[tauri::command]
+async fn start_always_listening(audio: State<'_, AudioRec>) -> Result<(), String> {
+    let audio_recorder = audio.lock().await;
+    match audio_recorder.start_always_listening().await {
+        Ok(_) => {
+            info!("Always-listening mode started");
+            Ok(())
+        }
+        Err(e) => Err(format!("Failed to start always-listening: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn get_conversation_mode(audio: State<'_, AudioRec>) -> Result<String, String> {
+    let audio_recorder = audio.lock().await;
+    let conversation_manager = audio_recorder.get_conversation_manager();
+    let mode = conversation_manager.get_mode().await;
+    Ok(format!("{:?}", mode))
+}
+
+#[tauri::command]
+async fn end_conversation(audio: State<'_, AudioRec>) -> Result<(), String> {
+    let audio_recorder = audio.lock().await;
+    let conversation_manager = audio_recorder.get_conversation_manager();
+    match conversation_manager.end_conversation().await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to end conversation: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn speak_text(text: String, audio: State<'_, AudioRec>) -> Result<(), String> {
+    let audio_recorder = audio.lock().await;
+    let tts_manager = audio_recorder.get_tts_manager();
+    match tts_manager.speak(&text).await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to speak text: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn stop_speaking(audio: State<'_, AudioRec>) -> Result<(), String> {
+    let audio_recorder = audio.lock().await;
+    let tts_manager = audio_recorder.get_tts_manager();
+    match tts_manager.stop_speaking().await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(format!("Failed to stop speaking: {}", e)),
+    }
 }
 
 // Camera commands
 #[tauri::command]
-async fn initialize_camera(vision: State<'_, Vision>) -> Result<bool, String> {
-    let vision_manager = vision.lock().await;
-    match vision_manager.initialize_camera().await {
-        Ok(_) => Ok(true),
-        Err(e) => Err(format!("Failed to initialize camera: {}", e)),
-    }
+async fn initialize_camera(_vision: State<'_, Vision>) -> Result<bool, String> {
+    // For now, return a message about vision limitations
+    warn!("Camera initialization requested but vision features are limited in current Ollama implementation");
+    Err("Vision features are currently limited. Gemma 3N's multimodal capabilities are not yet available in Ollama. Please use llava or llama3.2-vision models for image analysis.".to_string())
 }
 
 #[tauri::command]
@@ -347,7 +414,7 @@ async fn get_camera_frame(vision: State<'_, Vision>) -> Result<String, String> {
 #[tauri::command]
 async fn process_image_input(
     message: String,
-    imageData: Vec<u8>,
+    image_data: Vec<u8>,
     chat_history: State<'_, ChatHistory>,
     ai: State<'_, AI>,
     settings: State<'_, Settings>,
@@ -374,7 +441,7 @@ async fn process_image_input(
     let ai_manager = ai.lock().await;
     
     let response = if ai_manager.is_loaded() {
-        match ai_manager.generate_response_with_image_and_system_prompt(&message, &imageData, max_tokens, system_prompt).await {
+        match ai_manager.generate_response_with_image_and_system_prompt(&message, &image_data, max_tokens, system_prompt).await {
             Ok(resp) => resp,
             Err(e) => {
                 eprintln!("Error generating response with image: {}", e);
@@ -479,9 +546,20 @@ async fn process_audio_input(
     audio_data: Vec<u8>,
     chat_history: State<'_, ChatHistory>,
     ai: State<'_, AI>,
+    audio: State<'_, AudioRec>,
     settings: State<'_, Settings>,
 ) -> Result<String, String> {
     info!("Processing audio input: {} bytes of audio data", audio_data.len());
+    
+    // Get conversation manager
+    let audio_recorder = audio.lock().await;
+    let conversation_manager = audio_recorder.get_conversation_manager();
+    let tts_manager = audio_recorder.get_tts_manager();
+    
+    // Notify conversation manager that AI is processing
+    if let Err(e) = conversation_manager.start_ai_response("Processing...").await {
+        error!("Failed to update conversation state: {}", e);
+    }
     
     // Add user message to history
     let user_msg = ChatMessage {
@@ -518,6 +596,26 @@ async fn process_audio_input(
     };
     
     drop(ai_manager);
+    
+    // Clone response for use in multiple places
+    let response_for_tts = response.clone();
+    
+    // Update conversation manager with AI response
+    if let Err(e) = conversation_manager.start_ai_response(&response).await {
+        error!("Failed to update conversation with AI response: {}", e);
+    }
+    
+    // Speak the response using TTS
+    tokio::spawn(async move {
+        if let Err(e) = tts_manager.speak(&response_for_tts).await {
+            error!("Failed to speak response: {}", e);
+        }
+        
+        // Notify conversation manager that AI finished responding
+        if let Err(e) = conversation_manager.end_ai_response().await {
+            error!("Failed to mark end of AI response: {}", e);
+        }
+    });
     
     // Add assistant response to history
     let assistant_msg = ChatMessage {
@@ -720,55 +818,52 @@ async fn benchmark_backends(
 
 // Project management commands
 #[tauri::command]
-async fn create_project(name: String, description: Option<String>) -> Result<serde_json::Value, String> {
-    use std::collections::HashMap;
+async fn create_project(name: String, description: Option<String>, db: State<'_, DB>) -> Result<serde_json::Value, String> {
+    info!("Creating project: {}", name);
     
-    let project_id = uuid::Uuid::new_v4().to_string();
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+    let project = db.create_project(name, description).await
+        .map_err(|e| format!("Failed to create project: {}", e))?;
     
-    let mut project = HashMap::new();
-    project.insert("id".to_string(), serde_json::Value::String(project_id));
-    project.insert("name".to_string(), serde_json::Value::String(name));
-    project.insert("description".to_string(), serde_json::Value::String(description.unwrap_or_default()));
-    project.insert("createdAt".to_string(), serde_json::Value::String(now.to_string()));
-    project.insert("updatedAt".to_string(), serde_json::Value::String(now.to_string()));
-    project.insert("documentCount".to_string(), serde_json::Value::Number(0.into()));
-    project.insert("tags".to_string(), serde_json::Value::Array(vec![]));
-    project.insert("isStarred".to_string(), serde_json::Value::Bool(false));
-    
-    // TODO: Save to actual database
-    Ok(serde_json::Value::Object(project.into_iter().collect()))
+    // Convert to JSON value
+    serde_json::to_value(&project)
+        .map_err(|e| format!("Failed to serialize project: {}", e))
 }
 
 #[tauri::command]
-async fn get_projects() -> Result<Vec<serde_json::Value>, String> {
-    // TODO: Load from actual database
-    // For now, return empty array
-    Ok(vec![])
+async fn get_projects(db: State<'_, DB>) -> Result<Vec<serde_json::Value>, String> {
+    let projects = db.get_projects().await
+        .map_err(|e| format!("Failed to get projects: {}", e))?;
+    
+    // Convert to JSON values
+    projects.into_iter()
+        .map(|p| serde_json::to_value(&p).map_err(|e| format!("Failed to serialize project: {}", e)))
+        .collect()
 }
 
 #[tauri::command]
-async fn delete_project(project_id: String) -> Result<(), String> {
+async fn delete_project(project_id: String, db: State<'_, DB>) -> Result<(), String> {
     info!("Deleting project: {}", project_id);
-    // TODO: Implement actual deletion
-    Ok(())
+    db.delete_project(project_id).await
+        .map_err(|e| format!("Failed to delete project: {}", e))
 }
 
 #[tauri::command]
-async fn toggle_project_star(project_id: String) -> Result<(), String> {
+async fn toggle_project_star(project_id: String, db: State<'_, DB>) -> Result<(), String> {
     info!("Toggling star for project: {}", project_id);
-    // TODO: Implement actual star toggle
-    Ok(())
+    db.toggle_project_star(project_id).await
+        .map_err(|e| format!("Failed to toggle project star: {}", e))
 }
 
 #[tauri::command]
-async fn get_project_documents(project_id: String) -> Result<Vec<serde_json::Value>, String> {
+async fn get_project_documents(project_id: String, db: State<'_, DB>) -> Result<Vec<serde_json::Value>, String> {
     info!("Getting documents for project: {}", project_id);
-    // TODO: Load from actual database
-    Ok(vec![])
+    let documents = db.get_project_documents(project_id).await
+        .map_err(|e| format!("Failed to get project documents: {}", e))?;
+    
+    // Convert to JSON values
+    documents.into_iter()
+        .map(|d| serde_json::to_value(&d).map_err(|e| format!("Failed to serialize document: {}", e)))
+        .collect()
 }
 
 #[tauri::command]
@@ -776,9 +871,9 @@ async fn upload_file_to_project(
     project_id: String,
     file_path: String,
     file_name: String,
+    db: State<'_, DB>,
+    ai: State<'_, AI>,
 ) -> Result<serde_json::Value, String> {
-    use std::collections::HashMap;
-    
     info!("Uploading file {} to project {}", file_name, project_id);
     
     // Read file metadata
@@ -791,7 +886,7 @@ async fn upload_file_to_project(
     let document_id = uuid::Uuid::new_v4().to_string();
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
+        .map_err(|e| format!("Failed to get timestamp: {}", e))?
         .as_secs();
     
     // Determine file type based on extension
@@ -813,18 +908,70 @@ async fn upload_file_to_project(
         "other"
     };
     
-    let mut document = HashMap::new();
-    document.insert("id".to_string(), serde_json::Value::String(document_id));
-    document.insert("projectId".to_string(), serde_json::Value::String(project_id));
-    document.insert("name".to_string(), serde_json::Value::String(file_name));
-    document.insert("type".to_string(), serde_json::Value::String(file_type.to_string()));
-    document.insert("size".to_string(), serde_json::Value::Number(file_size.into()));
-    document.insert("path".to_string(), serde_json::Value::String(file_path));
-    document.insert("uploadedAt".to_string(), serde_json::Value::String(now.to_string()));
-    document.insert("tags".to_string(), serde_json::Value::Array(vec![]));
+    // Process file content if it's a text document
+    let (content, embeddings) = if file_type == "text" {
+        match process_text_file(&file_path, &file_name, &ai).await {
+            Ok((content, embeddings)) => (Some(content), Some(embeddings)),
+            Err(e) => {
+                warn!("Failed to process text file: {}", e);
+                (None, None)
+            }
+        }
+    } else {
+        (None, None)
+    };
     
-    // TODO: Save to actual database and process file content
-    Ok(serde_json::Value::Object(document.into_iter().collect()))
+    // Create document
+    let document = Document {
+        id: document_id,
+        project_id: project_id.clone(),
+        name: file_name,
+        doc_type: file_type.to_string(),
+        size: file_size,
+        path: file_path,
+        uploaded_at: now,
+        tags: vec![],
+        content,
+        embeddings,
+    };
+    
+    // Add to database
+    let document = db.add_document(project_id, document).await
+        .map_err(|e| format!("Failed to add document: {}", e))?;
+    
+    // Convert to JSON value
+    serde_json::to_value(&document)
+        .map_err(|e| format!("Failed to serialize document: {}", e))
+}
+
+/// Helper function to process text files and extract content + embeddings
+async fn process_text_file(
+    file_path: &str,
+    _file_name: &str,
+    ai: &State<'_, AI>,
+) -> anyhow::Result<(String, Vec<f32>)> {
+    use crate::ai::document_processor::UnifiedDocumentProcessor;
+    
+    // Create document processor
+    let processor = UnifiedDocumentProcessor::new();
+    
+    // Process the document
+    let processed = processor.process_file(Path::new(file_path)).await?;
+    
+    // Extract text content from the processed document
+    let content = processed.raw_text.clone();
+    
+    // Generate embeddings using the AI model
+    let ai_manager = ai.lock().await;
+    let embeddings = if ai_manager.is_loaded() {
+        // For now, return dummy embeddings until we implement proper embedding generation
+        vec![0.0; 768] // Standard embedding size
+    } else {
+        vec![]
+    };
+    drop(ai_manager);
+    
+    Ok((content, embeddings))
 }
 
 #[tauri::command]
@@ -917,34 +1064,34 @@ async fn get_vector_db_stats(
 
 #[tauri::command]
 async fn process_file_content(
-    fileName: String,
-    fileContent: Vec<u8>,
-    fileType: String,
+    file_name: String,
+    file_content: Vec<u8>,
+    file_type: String,
     chat_history: State<'_, ChatHistory>,
     ai: State<'_, AI>,
     settings: State<'_, Settings>,
 ) -> Result<String, String> {
-    info!("Processing file content: {} ({} bytes)", fileName, fileContent.len());
+    info!("Processing file content: {} ({} bytes)", file_name, file_content.len());
     
     // Convert content to string for text files
-    let text_content = if fileType.starts_with("text/") || 
-                          fileName.ends_with(".txt") || 
-                          fileName.ends_with(".md") ||
-                          fileName.ends_with(".json") {
-        match String::from_utf8(fileContent.clone()) {
+    let text_content = if file_type.starts_with("text/") || 
+                          file_name.ends_with(".txt") || 
+                          file_name.ends_with(".md") ||
+                          file_name.ends_with(".json") {
+        match String::from_utf8(file_content.clone()) {
             Ok(text) => text,
             Err(_) => return Err("Failed to parse file as UTF-8 text".to_string()),
         }
     } else {
         return Err(format!("File type '{}' is not supported. Please upload text files (.txt, .md, .json) only.", 
-                          if fileName.contains('.') { 
-                              fileName.split('.').last().unwrap_or("unknown") 
+                          if file_name.contains('.') { 
+                              file_name.split('.').last().unwrap_or("unknown") 
                           } else { 
                               "unknown" 
                           }));
     };
     
-    info!("Processing file content: {} ({} characters)", fileName, text_content.len());
+    info!("Processing file content: {} ({} characters)", file_name, text_content.len());
     
     // Limit file content size to prevent model hanging
     let content_to_send = if text_content.len() > 3000 {
@@ -958,14 +1105,14 @@ async fn process_file_content(
     // Create a clear message that includes the file content
     let file_analysis_message = format!(
         "I've uploaded a text file called '{}' with the following content:\n\n--- File Content ---\n{}\n--- End of File ---\n\nPlease analyze and describe this file for me.",
-        fileName,
+        file_name,
         content_to_send
     );
     
     // Add user message to chat history
     let user_msg = ChatMessage {
         role: "user".to_string(),
-        content: format!("Uploaded file: {}", fileName),
+        content: format!("Uploaded file: {}", file_name),
         timestamp: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -1008,8 +1155,8 @@ async fn process_file_content(
     };
     chat_history.lock().await.push(assistant_msg);
     
-    info!("Successfully processed file '{}' - content sent directly to model", fileName);
-    Ok(format!("File '{}' has been uploaded and analyzed by the AI model. Check the chat for the analysis.", fileName))
+    info!("Successfully processed file '{}' - content sent directly to model", file_name);
+    Ok(format!("File '{}' has been uploaded and analyzed by the AI model. Check the chat for the analysis.", file_name))
 }
 
 #[tauri::command]
@@ -1183,6 +1330,8 @@ fn main() {
             let avatar_manager = AvatarManager::new(app_handle.clone());
             let vision_manager = VisionManager::new(app_handle.clone()).unwrap();
             let vector_db = VectorDB::new();
+            let database = Database::new(&app_handle)
+                .map_err(|e| format!("Failed to initialize database: {}", e))?;
             
             app.manage(ChatHistory::new(Mutex::new(Vec::new())));
             app.manage(Settings::new(Mutex::new(AppSettings::default())));
@@ -1191,6 +1340,7 @@ fn main() {
             app.manage(Vision::new(Mutex::new(vision_manager)));
             app.manage(Avatar::new(Mutex::new(avatar_manager)));
             app.manage(VectorStore::new(Mutex::new(vector_db)));
+            app.manage(DB::new(database));
             
             // Store config for later use
             app.manage(Arc::new(Mutex::new(app_config)));
@@ -1208,11 +1358,17 @@ fn main() {
             update_settings,
             check_model_status,
             get_available_models,
+            get_model_capabilities,
             start_audio_recording,
             stop_audio_recording,
             is_recording,
             process_audio_stream,
             initialize_whisper,
+            start_always_listening,
+            get_conversation_mode,
+            end_conversation,
+            speak_text,
+            stop_speaking,
             initialize_camera,
             start_camera_capture,
             stop_camera_capture,

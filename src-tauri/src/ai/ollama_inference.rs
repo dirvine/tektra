@@ -15,6 +15,18 @@ pub enum OllamaExe {
     Embedded(PathBuf),
 }
 
+/// Ollama inference backend for LLM model execution
+/// 
+/// Handles the complete lifecycle of Ollama-based inference including:
+/// - Automatic Ollama installation (system or bundled)
+/// - Model downloading and management
+/// - Text and multimodal inference
+/// - Progress tracking and event emission
+/// 
+/// # Architecture
+/// - Uses ollama-rs for API communication
+/// - Supports embedded Ollama via ollama_td crate
+/// - Integrates with Gemma3NProcessor for multimodal support
 pub struct OllamaInference {
     ollama_exe: Option<OllamaExe>,
     ollama_client: Option<Ollama>,
@@ -26,6 +38,10 @@ pub struct OllamaInference {
 }
 
 impl OllamaInference {
+    /// Create a new Ollama inference instance
+    /// 
+    /// # Returns
+    /// * `Self` - Initialized OllamaInference instance
     pub fn new() -> Self {
         Self {
             ollama_exe: None,
@@ -38,6 +54,13 @@ impl OllamaInference {
         }
     }
     
+    /// Create a new instance with Tauri app handle for progress events
+    /// 
+    /// # Arguments
+    /// * `app_handle` - Tauri application handle
+    /// 
+    /// # Returns
+    /// * `Self` - Initialized OllamaInference instance
     pub fn with_app_handle(app_handle: AppHandle) -> Self {
         Self {
             ollama_exe: None,
@@ -50,6 +73,10 @@ impl OllamaInference {
         }
     }
     
+    /// Set the Tauri app handle for progress event emission
+    /// 
+    /// # Arguments
+    /// * `app_handle` - Tauri application handle
     pub fn set_app_handle(&mut self, app_handle: AppHandle) {
         self.app_handle = Some(app_handle);
     }
@@ -775,18 +802,26 @@ impl InferenceBackend for OllamaInference {
         info!("Processed multimodal input: {} tokens, {} images", 
               processed.token_count, processed.images.len());
         
-        // Check if this is a multimodal-capable model
-        let is_multimodal_model = model_name.contains("gemma3n") || 
-                                 model_name.contains("llava") || 
+        // Check if this is a multimodal-capable model in Ollama
+        // NOTE: While Gemma 3N is designed as multimodal, Ollama's implementation currently only supports text
+        let is_multimodal_model = model_name.contains("llava") || 
                                  model_name.contains("bakllava") || 
-                                 model_name.contains("moondream");
+                                 model_name.contains("moondream") ||
+                                 model_name.contains("llama3.2-vision") ||
+                                 model_name.contains("llama3.2:11b-vision") ||
+                                 model_name.contains("llama3.2:90b-vision");
         
         if !processed.images.is_empty() && !is_multimodal_model {
             // Handle non-multimodal models gracefully
             info!("Model {} is text-only, providing helpful response about image limitations", model_name);
             let vision_response = format!(
-                "I can see that you've shared an image with me! However, I'm currently running on {}, which doesn't support vision processing.\n\nTo analyze images, I would need to be running on a vision-capable model like:\n- Gemma 3n (gemma3n:e4b)\n- LLaVA (llava:7b or llava:13b)\n- Moondream (moondream:latest)\n- Bakllava (bakllava:latest)\n\nWould you like me to help you in another way, or could you describe what's in the image so I can assist with text-based analysis?", 
-                model_name
+                "I can see that you've shared an image with me! However, I'm currently running on {}, which doesn't support vision processing in Ollama.\n\n{}\n\nTo analyze images with Ollama, I would need to be running on a vision-capable model like:\n- LLaMA 3.2 Vision (llama3.2-vision:11b or llama3.2-vision:90b) - Latest and most capable\n- LLaVA (llava:7b, llava:13b, or llava:34b) - Good general vision model\n- Moondream (moondream:latest) - Lightweight vision model\n- BakLLaVA (bakllava:latest) - Alternative vision model\n\nWould you like me to help you in another way, or could you describe what's in the image so I can assist with text-based analysis?",
+                model_name,
+                if model_name.contains("gemma3n") {
+                    "Note: While Gemma 3N is designed as a multimodal model with vision capabilities, Ollama's current implementation only supports text input. The multimodal features are expected in a future update."
+                } else {
+                    ""
+                }
             );
             return Ok(vision_response);
         }

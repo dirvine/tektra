@@ -338,12 +338,14 @@ mod tests {
         let (w, h) = processor.choose_optimal_resolution(800, 800);
         assert!(w == h); // Should remain square
         
-        // Test landscape image
+        // Test landscape image - all supported sizes are square, so it will choose a square
         let (w, h) = processor.choose_optimal_resolution(1920, 1080);
-        assert!(w > h); // Should maintain aspect ratio preference
+        assert!(w == h); // Will be square since all supported sizes are square
+        assert!(self::Gemma3NProcessor::default().supported_image_sizes.contains(&(w, h)));
         
-        // Test portrait image
+        // Test portrait image - all supported sizes are square, so it will choose a square
         let (w, h) = processor.choose_optimal_resolution(600, 900);
-        assert!(h > w); // Should maintain aspect ratio preference
+        assert!(w == h); // Will be square since all supported sizes are square
+        assert!(self::Gemma3NProcessor::default().supported_image_sizes.contains(&(w, h)));
     }
 }

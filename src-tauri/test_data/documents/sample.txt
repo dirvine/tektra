@@ -1,0 +1,33 @@
+Introduction to Machine Learning
+
+Machine learning is a subset of artificial intelligence that focuses on the development of algorithms and statistical models that enable computer systems to improve their performance on a specific task through experience. Unlike traditional programming where explicit instructions are provided, machine learning systems learn patterns from data.
+
+Types of Machine Learning:
+
+1. Supervised Learning
+   - Classification: Predicting discrete labels
+   - Regression: Predicting continuous values
+   - Examples: spam detection, price prediction
+
+2. Unsupervised Learning
+   - Clustering: Grouping similar data points
+   - Dimensionality reduction: Reducing data complexity
+   - Examples: customer segmentation, anomaly detection
+
+3. Reinforcement Learning
+   - Learning through interaction with environment
+   - Reward-based optimization
+   - Examples: game playing, robotics
+
+Key Concepts:
+- Training data: Data used to train the model
+- Features: Input variables used for prediction
+- Labels: Output variables in supervised learning
+- Model: Mathematical representation of patterns
+- Overfitting: Model performs well on training data but poorly on new data
+- Underfitting: Model is too simple to capture patterns
+
+Applications:
+Machine learning has revolutionized many industries including healthcare, finance, transportation, and entertainment. From medical diagnosis to autonomous vehicles, ML systems are becoming increasingly sophisticated and capable of handling complex real-world problems.
+
+The future of machine learning looks promising with advances in deep learning, neural networks, and quantum computing opening new possibilities for artificial intelligence.

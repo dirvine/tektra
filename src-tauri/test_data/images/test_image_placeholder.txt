@@ -1,0 +1,6 @@
+This is a placeholder for test_image.png
+In actual tests, this would be a real image file containing:
+- A red rectangle
+- A blue circle  
+- A green triangle
+- Text saying "Test Image for Multimodal AI"

@@ -1,7 +1,14 @@
 mod real_audio;
+mod conversation_manager;
+mod tts;
+
+pub use conversation_manager::{ConversationManager, ConversationMode, ConversationConfig};
+pub use tts::{TTSManager, TTSConfig};
 
 use anyhow::Result;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex as StdMutex;
+use tokio::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 use tracing::{info, error};
 use real_audio::RealAudioRecorder;
@@ -9,12 +16,14 @@ use crate::ai::{SpeechProcessor, SileroVAD, WhisperSTT};
 
 pub struct AudioRecorder {
     app_handle: AppHandle,
-    is_recording: Arc<Mutex<bool>>,
+    is_recording: Arc<StdMutex<bool>>,
     real_recorder: Option<RealAudioRecorder>,
     sample_rate: u32,
-    speech_processor: Arc<Mutex<SpeechProcessor>>,
+    speech_processor: Arc<StdMutex<SpeechProcessor>>,
     vad: Option<SileroVAD>,
     whisper: Option<Arc<WhisperSTT>>,
+    conversation_manager: Arc<ConversationManager>,
+    tts_manager: Arc<TTSManager>,
 }
 
 impl AudioRecorder {
@@ -46,14 +55,20 @@ impl AudioRecorder {
         let mut speech_processor = SpeechProcessor::new();
         speech_processor.set_sample_rate(16000);
         
+        // Initialize conversation and TTS managers
+        let conversation_manager = Arc::new(ConversationManager::new(app_handle.clone()));
+        let tts_manager = Arc::new(TTSManager::new(app_handle.clone()));
+        
         Self {
             app_handle,
-            is_recording: Arc::new(Mutex::new(false)),
+            is_recording: Arc::new(StdMutex::new(false)),
             real_recorder,
             sample_rate: 16000,
-            speech_processor: Arc::new(Mutex::new(speech_processor)),
+            speech_processor: Arc::new(StdMutex::new(speech_processor)),
             vad,
             whisper: None,
+            conversation_manager,
+            tts_manager,
         }
     }
 
@@ -190,7 +205,7 @@ impl AudioRecorder {
                 let duration = audio_buffer.len() as f32 / self.sample_rate as f32;
                 
                 // Use Whisper to transcribe the audio
-                let transcribed_text = if let Some(ref whisper) = self.whisper {
+                let (transcribed_text, should_process) = if let Some(ref whisper) = self.whisper {
                     info!("Transcribing {:.1}s of audio with Whisper...", duration);
                     match whisper.transcribe(&audio_buffer, self.sample_rate).await {
                         Ok(text) => {
@@ -200,19 +215,11 @@ impl AudioRecorder {
                                 return Ok(());
                             }
                             info!("Whisper transcription: '{}'", cleaned_text);
-                            cleaned_text.to_string()
+                            (cleaned_text.to_string(), true)
                         }
                         Err(e) => {
                             error!("Whisper transcription failed: {}", e);
-                            info!("Falling back to duration-based mapping due to transcription failure");
-                            // Fallback to simple mapping only if Whisper fails
-                            if duration < 3.0 {
-                                "Hello".to_string()
-                            } else if duration < 8.0 {
-                                "What is the capital of France?".to_string()
-                            } else {
-                                "Tell me about artificial intelligence".to_string()
-                            }
+                            return Ok(());
                         }
                     }
                 } else {
@@ -242,7 +249,7 @@ impl AudioRecorder {
                                         return Ok(());
                                     }
                                     info!("Whisper transcription (on-demand): '{}'", cleaned_text);
-                                    cleaned_text.to_string()
+                                    (cleaned_text.to_string(), true)
                                 }
                                 Err(e) => {
                                     error!("Whisper transcription failed even after initialization: {}", e);
@@ -257,24 +264,35 @@ impl AudioRecorder {
                     }
                 };
                 
-                // Convert audio to bytes for multimodal processing
-                let mut audio_bytes = Vec::with_capacity(audio_buffer.len() * 2);
-                for sample in &audio_buffer {
-                    let sample_i16 = (*sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
-                    audio_bytes.extend_from_slice(&sample_i16.to_le_bytes());
-                }
-                
-                // Call the process_audio_input command directly
-                let app_handle = self.app_handle.clone();
-                let transcribed_text_clone = transcribed_text.clone();
-                tokio::spawn(async move {
-                    if let Err(e) = app_handle.emit_to(tauri::EventTarget::Any, "process_audio_input", serde_json::json!({
-                        "message": transcribed_text_clone,
-                        "audio_data": audio_bytes,
-                    })) {
-                        error!("Failed to emit process_audio_input event: {}", e);
+                if should_process {
+                    // Convert audio to bytes for multimodal processing
+                    let mut audio_bytes = Vec::with_capacity(audio_buffer.len() * 2);
+                    for sample in &audio_buffer {
+                        let sample_i16 = (*sample * 32767.0).clamp(-32768.0, 32767.0) as i16;
+                        audio_bytes.extend_from_slice(&sample_i16.to_le_bytes());
                     }
-                });
+                    
+                    // Process through conversation manager first
+                    if let Err(e) = self.conversation_manager.process_transcription(&transcribed_text, Some(audio_bytes.clone())).await {
+                        error!("Failed to process transcription in conversation manager: {}", e);
+                    }
+                    
+                    // Only emit for processing if in active conversation or wake word detected
+                    let conversation_mode = self.conversation_manager.get_mode().await;
+                    if !matches!(conversation_mode, ConversationMode::Idle) {
+                        // Call the process_audio_input command directly
+                        let app_handle = self.app_handle.clone();
+                        let transcribed_text_clone = transcribed_text.clone();
+                        tokio::spawn(async move {
+                            if let Err(e) = app_handle.emit_to(tauri::EventTarget::Any, "process_audio_input", serde_json::json!({
+                                "message": transcribed_text_clone,
+                                "audio_data": audio_bytes,
+                            })) {
+                                error!("Failed to emit process_audio_input event: {}", e);
+                            }
+                        });
+                    }
+                }
             }
         }
         
@@ -290,7 +308,7 @@ impl AudioRecorder {
     }
     
     // Get speech processor for external use
-    pub fn get_speech_processor(&self) -> Arc<Mutex<SpeechProcessor>> {
+    pub fn get_speech_processor(&self) -> Arc<StdMutex<SpeechProcessor>> {
         Arc::clone(&self.speech_processor)
     }
     
@@ -310,5 +328,65 @@ impl AudioRecorder {
         
         info!("Whisper initialized successfully");
         Ok(())
+    }
+    
+    // Get conversation manager
+    pub fn get_conversation_manager(&self) -> Arc<ConversationManager> {
+        Arc::clone(&self.conversation_manager)
+    }
+    
+    // Get TTS manager
+    pub fn get_tts_manager(&self) -> Arc<TTSManager> {
+        Arc::clone(&self.tts_manager)
+    }
+    
+    // Start always-listening mode
+    pub async fn start_always_listening(&self) -> Result<()> {
+        info!("Starting always-listening mode for wake word detection");
+        
+        // Start recording if not already
+        if !self.is_recording() {
+            self.start_recording().await?;
+        }
+        
+        // Start continuous processing loop
+        let audio_recorder = Arc::new(Mutex::new(self.clone()));
+        let audio_recorder_clone = audio_recorder.clone();
+        tokio::spawn(async move {
+            loop {
+                let mut recorder = audio_recorder_clone.lock().await;
+                if !recorder.is_recording() {
+                    break;
+                }
+                
+                // Process audio stream continuously
+                if let Err(e) = recorder.process_audio_stream().await {
+                    error!("Error in always-listening loop: {}", e);
+                }
+                drop(recorder);
+                
+                // Small delay to prevent CPU overuse
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            }
+        });
+        
+        Ok(())
+    }
+}
+
+// Clone implementation for AudioRecorder to use in spawned tasks
+impl Clone for AudioRecorder {
+    fn clone(&self) -> Self {
+        Self {
+            app_handle: self.app_handle.clone(),
+            is_recording: Arc::clone(&self.is_recording),
+            real_recorder: None, // Don't clone the actual recorder
+            sample_rate: self.sample_rate,
+            speech_processor: Arc::clone(&self.speech_processor),
+            vad: None, // VAD is not Clone
+            whisper: self.whisper.clone(),
+            conversation_manager: Arc::clone(&self.conversation_manager),
+            tts_manager: Arc::clone(&self.tts_manager),
+        }
     }
 }
