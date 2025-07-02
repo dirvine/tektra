@@ -15,18 +15,6 @@ pub enum OllamaExe {
     Embedded(PathBuf),
 }
 
-/// Ollama inference backend for LLM model execution
-/// 
-/// Handles the complete lifecycle of Ollama-based inference including:
-/// - Automatic Ollama installation (system or bundled)
-/// - Model downloading and management
-/// - Text and multimodal inference
-/// - Progress tracking and event emission
-/// 
-/// # Architecture
-/// - Uses ollama-rs for API communication
-/// - Supports embedded Ollama via ollama_td crate
-/// - Integrates with Gemma3NProcessor for multimodal support
 pub struct OllamaInference {
     ollama_exe: Option<OllamaExe>,
     ollama_client: Option<Ollama>,
@@ -38,10 +26,6 @@ pub struct OllamaInference {
 }
 
 impl OllamaInference {
-    /// Create a new Ollama inference instance
-    /// 
-    /// # Returns
-    /// * `Self` - Initialized OllamaInference instance
     pub fn new() -> Self {
         Self {
             ollama_exe: None,
@@ -54,13 +38,6 @@ impl OllamaInference {
         }
     }
     
-    /// Create a new instance with Tauri app handle for progress events
-    /// 
-    /// # Arguments
-    /// * `app_handle` - Tauri application handle
-    /// 
-    /// # Returns
-    /// * `Self` - Initialized OllamaInference instance
     pub fn with_app_handle(app_handle: AppHandle) -> Self {
         Self {
             ollama_exe: None,
@@ -73,10 +50,6 @@ impl OllamaInference {
         }
     }
     
-    /// Set the Tauri app handle for progress event emission
-    /// 
-    /// # Arguments
-    /// * `app_handle` - Tauri application handle
     pub fn set_app_handle(&mut self, app_handle: AppHandle) {
         self.app_handle = Some(app_handle);
     }
@@ -321,36 +294,14 @@ impl OllamaInference {
         let ollama_url = format!("http://localhost:{}", self.ollama_port);
         self.ollama_client = Some(Ollama::new(ollama_url, self.ollama_port));
         
-        // Test connection with timeout and retries
-        let mut retry_count = 0;
-        let max_retries = 3;
-        
-        loop {
-            match tokio::time::timeout(
-                tokio::time::Duration::from_secs(10),
-                self.test_connection()
-            ).await {
-                Ok(Ok(_)) => {
-                    info!("Ollama inference backend initialized successfully");
-                    break;
-                }
-                Ok(Err(e)) => {
-                    retry_count += 1;
-                    if retry_count >= max_retries {
-                        return Err(anyhow::anyhow!("Ollama connection test failed after {} retries: {}", max_retries, e));
-                    }
-                    warn!("Ollama connection test failed (attempt {}/{}): {}", retry_count, max_retries, e);
-                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                }
-                Err(_) => {
-                    retry_count += 1;
-                    if retry_count >= max_retries {
-                        return Err(anyhow::anyhow!("Ollama connection test timed out after {} retries", max_retries));
-                    }
-                    warn!("Ollama connection test timed out (attempt {}/{})", retry_count, max_retries);
-                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                }
-            }
+        // Test connection with timeout
+        match tokio::time::timeout(
+            tokio::time::Duration::from_secs(30),
+            self.test_connection()
+        ).await {
+            Ok(Ok(_)) => info!("Ollama inference backend initialized successfully"),
+            Ok(Err(e)) => return Err(anyhow::anyhow!("Ollama connection test failed: {}", e)),
+            Err(_) => return Err(anyhow::anyhow!("Ollama connection test timed out")),
         }
         
         Ok(())
@@ -402,34 +353,15 @@ impl OllamaInference {
         }
         
         // Start the server in background
-        let mut child = cmd.spawn()
+        let child = cmd.spawn()
             .map_err(|e| anyhow::anyhow!("Failed to start Ollama server: {}", e))?;
         
         info!("Ollama server started with PID: {} at {:?}", child.id(), ollama_path);
         
-        // Wait a moment for server to start and check if it's still running
-        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+        // Wait a moment for server to start
+        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         
-        // Check if the process is still running
-        match child.try_wait() {
-            Ok(Some(status)) => {
-                // Process has exited
-                error!("Ollama server exited immediately with status: {:?}", status);
-                return Err(anyhow::anyhow!("Ollama server failed to start - exited with status: {:?}", status));
-            }
-            Ok(None) => {
-                // Process is still running
-                info!("Ollama server is running successfully");
-                
-                // Wait a bit more to ensure it's fully started
-                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                Ok(())
-            }
-            Err(e) => {
-                error!("Failed to check Ollama server status: {}", e);
-                Err(anyhow::anyhow!("Failed to check Ollama server status: {}", e))
-            }
-        }
+        Ok(())
     }
 
     /// Test connection to Ollama server
@@ -707,83 +639,22 @@ impl OllamaInference {
         "gemma2:2b"
     }
     
-    /// Public method to restart Ollama when connection fails
+    /// Restart Ollama if needed (public method for Tauri commands)
     pub async fn restart_ollama_if_needed(&mut self) -> Result<()> {
-        self.ensure_ollama_running().await
+        warn!("Restarting Ollama due to connection issues...");
+        
+        // Re-initialize Ollama
+        self.initialize().await
     }
     
-    /// Check if Ollama is responsive and restart if needed
+    /// Ensure Ollama is running and restart if needed
     pub async fn ensure_ollama_running(&mut self) -> Result<()> {
-        // First, try a simple health check
-        if let Some(ollama) = &self.ollama_client {
-            match tokio::time::timeout(
-                tokio::time::Duration::from_secs(2),
-                ollama.list_local_models()
-            ).await {
-                Ok(Ok(_)) => return Ok(()), // Ollama is responsive
-                Ok(Err(e)) => {
-                    warn!("Ollama health check failed: {}", e);
-                }
-                Err(_) => {
-                    warn!("Ollama health check timed out");
-                }
-            }
+        // Try to test connection first
+        if let Err(_) = self.test_connection().await {
+            warn!("Ollama connection failed, attempting to restart...");
+            self.restart_ollama_if_needed().await?;
         }
-        
-        // If we have an embedded Ollama, try to restart it
-        if let Some(OllamaExe::Embedded(path)) = &self.ollama_exe {
-            info!("Attempting to restart embedded Ollama...");
-            
-            // Emit user-friendly status
-            self.emit_progress(
-                0.0,
-                "⚠️ Ollama server not responding. Attempting to restart...",
-                "system"
-            ).await;
-            
-            // Try to restart the server
-            match self.start_ollama_server(path).await {
-                Ok(()) => {
-                    info!("Ollama server restarted successfully");
-                    
-                    // Give it a moment to fully start
-                    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-                    
-                    // Test the connection
-                    match self.test_connection().await {
-                        Ok(()) => {
-                            self.emit_progress(
-                                100.0,
-                                "✅ Ollama server restarted successfully!",
-                                "system"
-                            ).await;
-                            Ok(())
-                        }
-                        Err(e) => {
-                            let error_msg = format!(
-                                "❌ Ollama server restarted but connection failed: {}. Please try restarting the app.",
-                                e
-                            );
-                            self.emit_progress(0.0, &error_msg, "system").await;
-                            Err(anyhow::anyhow!(error_msg))
-                        }
-                    }
-                }
-                Err(e) => {
-                    let error_msg = format!(
-                        "❌ Failed to restart Ollama server: {}. Please ensure port 11434 is free and try restarting the app.",
-                        e
-                    );
-                    self.emit_progress(0.0, &error_msg, "system").await;
-                    Err(anyhow::anyhow!(error_msg))
-                }
-            }
-        } else {
-            // System Ollama
-            let error_msg = "❌ System Ollama is not responding. Please start Ollama manually with: ollama serve";
-            self.emit_progress(0.0, error_msg, "system").await;
-            Err(anyhow::anyhow!(error_msg))
-        }
+        Ok(())
     }
 }
 
@@ -884,31 +755,18 @@ impl InferenceBackend for OllamaInference {
                     content = content.replace("<end_of_turn>", "");
                     content = content.replace("<start_of_turn>user", "");
                     content = content.replace("<start_of_turn>model", "");
-                    content = content.replace("<end_of_turn>model", "");
-                    content = content.replace("<end_of_turn>user", "");
-                    
-                    // Trim any leading/trailing whitespace
-                    content = content.trim().to_string();
                     
                     info!("Generated response: {}", content);
                     Ok(content)
                 }
                 Err(e) => {
                     error!("Failed to generate response: {}", e);
-                    let error_str = e.to_string().to_lowercase();
-                    
-                    // Check if this is a connection error that might benefit from restart
-                    if error_str.contains("reqwest") || error_str.contains("connection") || 
-                       error_str.contains("refused") || error_str.contains("broken pipe") {
-                        Err(anyhow::anyhow!("Ollama connection failed: {}. Restart may be needed.", e))
-                    } else {
-                        Err(anyhow::anyhow!("Ollama chat failed: {}", e))
-                    }
+                    Err(anyhow::anyhow!("Ollama chat failed: {}", e))
                 }
             },
             Err(_) => {
                 error!("Ollama request timed out after 30 seconds");
-                Err(anyhow::anyhow!("Ollama connection timeout - server may need restart"))
+                Err(anyhow::anyhow!("Request timed out after 30 seconds - the context may be too long or the model is overloaded"))
             }
         }
     }
@@ -920,166 +778,111 @@ impl InferenceBackend for OllamaInference {
         let model_name = self.current_model.as_ref()
             .ok_or_else(|| anyhow::anyhow!("No model loaded"))?;
         
-        info!("Generating multimodal response with Gemma 3N processor for model: {}", model_name);
+        info!("Generating multimodal response with model: {}", model_name);
         
-        // Create multimodal input for the Gemma3NProcessor
-        let multimodal_input = MultimodalInput {
-            text: Some(prompt.to_string()),
-            image_data: if media_type == Some("image") { media_data.map(|d| d.to_vec()) } else { None },
-            audio_data: if media_type == Some("audio") { media_data.map(|d| d.to_vec()) } else { None },
-            video_data: if media_type == Some("video") { media_data.map(|d| d.to_vec()) } else { None },
-        };
-        
-        // Process the multimodal input using Gemma3NProcessor for optimal performance
-        let processed = match self.multimodal_processor.process_multimodal(multimodal_input).await {
-            Ok(processed_data) => processed_data,
-            Err(e) => {
-                error!("Gemma3NProcessor failed: {}", e);
-                return Err(anyhow::anyhow!("Multimodal processing failed: {}", e));
-            }
-        };
-        
-        info!("Processed multimodal input: {} tokens, {} images", 
-              processed.token_count, processed.images.len());
-        
-        // Check if this is a multimodal-capable model in Ollama
-        // NOTE: While Gemma 3N is designed as multimodal, Ollama's implementation currently only supports text
-        let is_multimodal_model = model_name.contains("llava") || 
-                                 model_name.contains("bakllava") || 
-                                 model_name.contains("moondream") ||
-                                 model_name.contains("llama3.2-vision") ||
-                                 model_name.contains("llama3.2:11b-vision") ||
-                                 model_name.contains("llama3.2:90b-vision");
-        
-        if !processed.images.is_empty() && !is_multimodal_model {
-            // Handle non-multimodal models gracefully
-            info!("Model {} is text-only, providing helpful response about image limitations", model_name);
-            let vision_response = format!(
-                "I can see that you've shared an image with me! However, I'm currently running on {}, which doesn't support vision processing in Ollama.\n\n{}\n\nTo analyze images with Ollama, I would need to be running on a vision-capable model like:\n- LLaMA 3.2 Vision (llama3.2-vision:11b or llama3.2-vision:90b) - Latest and most capable\n- LLaVA (llava:7b, llava:13b, or llava:34b) - Good general vision model\n- Moondream (moondream:latest) - Lightweight vision model\n- BakLLaVA (bakllava:latest) - Alternative vision model\n\nWould you like me to help you in another way, or could you describe what's in the image so I can assist with text-based analysis?",
-                model_name,
-                if model_name.contains("gemma3n") {
-                    "Note: While Gemma 3N is designed as a multimodal model with vision capabilities, Ollama's current implementation only supports text input. The multimodal features are expected in a future update."
-                } else {
-                    ""
-                }
-            );
-            return Ok(vision_response);
-        }
-        
-        // Generate the response using appropriate API
-        if !processed.images.is_empty() && is_multimodal_model {
-            // Use GenerationRequest for multimodal input (images)
-            info!("Using GenerationRequest for multimodal model with {} images", processed.images.len());
-            
-            // Format prompt with Gemma 3N-specific formatting
-            let formatted_prompt = self.multimodal_processor.format_for_gemma3n(&processed, Some("You are Tektra, a helpful AI assistant with vision capabilities. Analyze any images provided and respond naturally."));
-            
-            let mut request = GenerationRequest::new(model_name.clone(), formatted_prompt);
-            
-            // Add processed images
-            let ollama_images: Vec<ollama_rs::generation::images::Image> = processed.images
-                .iter()
-                .map(|base64_data| ollama_rs::generation::images::Image::from_base64(base64_data))
-                .collect();
-            
-            if !ollama_images.is_empty() {
-                request = request.images(ollama_images);
-            }
-            
-            // Add timeout for multimodal processing
-            match tokio::time::timeout(
-                tokio::time::Duration::from_secs(60), // Longer timeout for multimodal
-                ollama.generate(request)
-            ).await {
-                Ok(result) => match result {
-                    Ok(response) => {
-                        let mut content = response.response;
-                        
-                        // Strip Gemma special tokens from response
-                        content = content.replace("<start_of_turn>", "");
-                        content = content.replace("<end_of_turn>", "");
-                        content = content.replace("<start_of_turn>user", "");
-                        content = content.replace("<start_of_turn>model", "");
-                        content = content.replace("<end_of_turn>model", "");
-                        content = content.replace("<end_of_turn>user", "");
-                        
-                        // Trim any leading/trailing whitespace
-                        content = content.trim().to_string();
-                        
-                        info!("Generated multimodal response: {} chars", content.len());
-                        Ok(content)
-                    }
-                    Err(e) => {
-                        error!("Failed to generate multimodal response: {}", e);
-                        let error_str = e.to_string().to_lowercase();
-                        
-                        // Check if this is a connection error that might benefit from restart
-                        if error_str.contains("reqwest") || error_str.contains("connection") || 
-                           error_str.contains("refused") || error_str.contains("broken pipe") {
-                            Err(anyhow::anyhow!("Ollama connection failed: {}. Restart may be needed.", e))
-                        } else {
-                            Err(anyhow::anyhow!("Ollama multimodal generation failed: {}", e))
+        if let Some(data_bytes) = media_data {
+            match media_type {
+                Some("audio") => {
+                    info!("Processing audio input - using transcribed text with model: {}", model_name);
+                    
+                    // Audio should be transcribed to text first by Whisper, then sent as text to the model
+                    // This is the proper approach since Gemma 3n doesn't support raw audio input in Ollama
+                    // The audio transcription happens in the frontend/Whisper layer
+                    
+                    let duration = data_bytes.len() as f32 / (16000.0 * 2.0);
+                    info!("Received {:.1} seconds of audio data - should be transcribed first", duration);
+                    
+                    // Send the transcribed text directly to the model
+                    let request = ChatMessageRequest::new(
+                        model_name.clone(),
+                        vec![ChatMessage::user(prompt.to_string())],
+                    );
+                    
+                    match ollama.send_chat_messages(request).await {
+                        Ok(response) => {
+                            let mut content = response.message.content;
+                            
+                            // Strip Gemma special tokens from response
+                            content = content.replace("<start_of_turn>", "");
+                            content = content.replace("<end_of_turn>", "");
+                            content = content.replace("<start_of_turn>user", "");
+                            content = content.replace("<start_of_turn>model", "");
+                            
+                            info!("Generated response for transcribed audio: {}", content);
+                            Ok(content)
+                        }
+                        Err(e) => {
+                            error!("Failed to generate audio response: {}", e);
+                            Err(anyhow::anyhow!("Ollama audio processing failed: {}", e))
                         }
                     }
-                },
-                Err(_) => {
-                    error!("Multimodal request timed out after 60 seconds");
-                    Err(anyhow::anyhow!("Multimodal request timed out - content may be too complex"))
+                }
+                Some("image") => {
+                    info!("Multimodal request with image data ({} bytes) using model: {}", data_bytes.len(), model_name);
+                    
+                    // Gemma 3n supports multimodal vision inputs according to the model card
+                    if model_name.contains("gemma3n") || model_name.contains("llava") || model_name.contains("bakllava") || model_name.contains("moondream") {
+                        info!("Using multimodal-capable model {} for vision processing", model_name);
+                        
+                        // Use proper Ollama generation API with base64 image encoding as per documentation
+                        use base64::{Engine as _, engine::general_purpose};
+                        let base64_image = general_purpose::STANDARD.encode(data_bytes);
+                        
+                        // Create image using ollama_rs Image type
+                        let image = ollama_rs::generation::images::Image::from_base64(&base64_image);
+                        
+                        // Use GenerationRequest which supports images
+                        let mut request = GenerationRequest::new(model_name.clone(), prompt.to_string());
+                        request = request.images(vec![image]);
+                        
+                        match ollama.generate(request).await {
+                            Ok(response) => {
+                                let mut content = response.response;
+                                
+                                // Strip Gemma special tokens from response
+                                content = content.replace("<start_of_turn>", "");
+                                content = content.replace("<end_of_turn>", "");
+                                content = content.replace("<start_of_turn>user", "");
+                                content = content.replace("<start_of_turn>model", "");
+                                
+                                info!("Generated vision response: {}", content);
+                                Ok(content)
+                            }
+                            Err(e) => {
+                                error!("Failed to generate vision response: {}", e);
+                                Err(anyhow::anyhow!("Ollama vision processing failed: {}", e))
+                            }
+                        }
+                    } else {
+                        info!("Model {} is text-only, providing helpful response about image limitations", model_name);
+                        
+                        // Provide a helpful response indicating the model can't see images
+                        let vision_response = format!(
+                            "I can see that you've shared an image with me! However, I'm currently running on {}, which doesn't support vision processing.\n\nTo analyze images, I would need to be running on a vision-capable model like:\n- Gemma 3n (gemma3n:e4b)\n- LLaVA (llava:7b or llava:13b)\n- Moondream (moondream:latest)\n- Bakllava (bakllava:latest)\n\nWould you like me to help you in another way, or could you describe what's in the image so I can assist with text-based analysis?", 
+                            model_name
+                        );
+                        
+                        Ok(vision_response)
+                    }
+                }
+                Some("video") => {
+                    info!("Video input requested, but Ollama doesn't support video for Gemma 3n");
+                    
+                    // Video is not supported in Ollama for Gemma 3n (only available in HuggingFace/MLX)
+                    let video_response = format!(
+                        "I can see that you've shared a video with me! However, video processing for Gemma 3n is currently only available through platforms like HuggingFace or MLX, not through Ollama.\n\nOllama currently supports:\n- Text processing\n- Image analysis (with models like gemma3n:e4b, llava, bakllava)\n\nFor video analysis, you would need to:\n1. Extract frames from the video\n2. Process individual frames as images\n3. Or use the model on HuggingFace with video support\n\nWould you like me to help in another way?"
+                    );
+                    
+                    Ok(video_response)
+                }
+                _ => {
+                    // No media type or unsupported media type, use chat API for better text formatting
+                    self.generate(prompt, _config).await
                 }
             }
         } else {
-            // Text-only generation with Gemma 3N formatting
-            info!("Using ChatMessageRequest for text-only processing");
-            
-            // Format prompt with Gemma 3N-specific formatting for text
-            let formatted_prompt = self.multimodal_processor.format_for_gemma3n(&processed, Some("You are Tektra, a helpful AI assistant. Provide clear, conversational responses."));
-            
-            let request = ChatMessageRequest::new(
-                model_name.clone(),
-                vec![ChatMessage::user(formatted_prompt)],
-            );
-            
-            // Add timeout for text processing
-            match tokio::time::timeout(
-                tokio::time::Duration::from_secs(30), // Standard timeout for text
-                ollama.send_chat_messages(request)
-            ).await {
-                Ok(result) => match result {
-                    Ok(response) => {
-                        let mut content = response.message.content;
-                        
-                        // Strip Gemma special tokens from response
-                        content = content.replace("<start_of_turn>", "");
-                        content = content.replace("<end_of_turn>", "");
-                        content = content.replace("<start_of_turn>user", "");
-                        content = content.replace("<start_of_turn>model", "");
-                        content = content.replace("<end_of_turn>model", "");
-                        content = content.replace("<end_of_turn>user", "");
-                        
-                        // Trim any leading/trailing whitespace
-                        content = content.trim().to_string();
-                        
-                        info!("Generated text response: {} chars", content.len());
-                        Ok(content)
-                    }
-                    Err(e) => {
-                        error!("Failed to generate text response: {}", e);
-                        let error_str = e.to_string().to_lowercase();
-                        
-                        // Check if this is a connection error that might benefit from restart
-                        if error_str.contains("reqwest") || error_str.contains("connection") || 
-                           error_str.contains("refused") || error_str.contains("broken pipe") {
-                            Err(anyhow::anyhow!("Ollama connection failed: {}. Restart may be needed.", e))
-                        } else {
-                            Err(anyhow::anyhow!("Ollama text generation failed: {}", e))
-                        }
-                    }
-                },
-                Err(_) => {
-                    error!("Text request timed out after 30 seconds");
-                    Err(anyhow::anyhow!("Text request timed out - content may be too long"))
-                }
-            }
+            // No media data, use chat API for better text formatting
+            self.generate(prompt, _config).await
         }
     }
     
