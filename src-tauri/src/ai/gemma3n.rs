@@ -325,7 +325,7 @@ impl AIManager {
         }
         
         let system = system_prompt.unwrap_or_else(|| 
-            "You are Tektra, a helpful AI assistant. Provide clear, conversational responses. Use natural formatting with line breaks and structure your responses naturally. Be helpful and friendly in your interactions.".to_string()
+            "You are Tektra, a helpful AI assistant. Format your responses using Markdown syntax for better readability:\n- Use **bold** for emphasis\n- Use *italics* for subtle emphasis\n- Use bullet points (- or *) for lists\n- Use numbered lists (1. 2. 3.) when order matters\n- Use ### for section headers\n- Use `code` for inline code\n- Use ``` for code blocks\nProvide clear, well-structured responses that are easy to read.".to_string()
         );
         
         // Format prompt using Gemma-3n official chat template
@@ -398,7 +398,7 @@ impl AIManager {
         }
         
         let system = system_prompt.unwrap_or_else(|| 
-            "You are Tektra, a helpful AI assistant powered by Gemma-3n. You can see and analyze images, understand visual content, and answer questions about what you see in images.".to_string()
+            "You are Tektra, a helpful AI assistant powered by Gemma-3n. You can see and analyze images, understand visual content, and answer questions about what you see in images. Format your responses using Markdown syntax for better readability:\n- Use **bold** for emphasis\n- Use *italics* for subtle emphasis\n- Use bullet points (- or *) for lists\n- Use numbered lists (1. 2. 3.) when order matters\n- Use ### for section headers\n- Use `code` for inline code\n- Use ``` for code blocks\nProvide clear, well-structured responses that are easy to read.".to_string()
         );
         
         info!("Processing multimodal prompt with image ({} bytes): {}", image_data.len(), prompt);

@@ -1,6 +1,6 @@
 use anyhow::Result;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Child};
 use tokio::fs;
 use tracing::{info, error, warn};
 use ollama_rs::{Ollama, generation::completion::request::GenerationRequest, generation::chat::{ChatMessage, request::ChatMessageRequest}};
@@ -8,6 +8,7 @@ use super::inference_backend::{InferenceBackend, InferenceConfig};
 use super::multimodal_processor::{Gemma3NProcessor, MultimodalInput};
 use tauri::{AppHandle, Emitter};
 use serde_json::json;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub enum OllamaExe {
@@ -23,6 +24,23 @@ pub struct OllamaInference {
     ollama_port: u16,
     app_handle: Option<AppHandle>,
     multimodal_processor: Gemma3NProcessor,
+    server_started: bool,
+    server_process: Option<Arc<Mutex<Child>>>,
+}
+
+impl Drop for OllamaInference {
+    fn drop(&mut self) {
+        // Clean up Ollama server process when the instance is dropped
+        if let Some(process_arc) = self.server_process.take() {
+            if let Ok(mut process) = process_arc.lock() {
+                info!("Shutting down embedded Ollama server...");
+                match process.kill() {
+                    Ok(()) => info!("Ollama server process terminated successfully"),
+                    Err(e) => warn!("Failed to kill Ollama server process: {}", e),
+                }
+            }
+        }
+    }
 }
 
 impl OllamaInference {
@@ -35,6 +53,8 @@ impl OllamaInference {
             ollama_port: 11434, // Default Ollama port
             app_handle: None,
             multimodal_processor: Gemma3NProcessor::new(),
+            server_started: false,
+            server_process: None,
         }
     }
     
@@ -47,11 +67,29 @@ impl OllamaInference {
             ollama_port: 11434, // Default Ollama port
             app_handle: Some(app_handle),
             multimodal_processor: Gemma3NProcessor::new(),
+            server_started: false,
+            server_process: None,
         }
     }
     
     pub fn set_app_handle(&mut self, app_handle: AppHandle) {
         self.app_handle = Some(app_handle);
+    }
+    
+    /// Stop the embedded Ollama server if running
+    pub fn stop_server(&mut self) {
+        if let Some(process_arc) = self.server_process.take() {
+            if let Ok(mut process) = process_arc.lock() {
+                info!("Stopping embedded Ollama server...");
+                match process.kill() {
+                    Ok(()) => {
+                        info!("Ollama server stopped successfully");
+                        self.server_started = false;
+                    }
+                    Err(e) => warn!("Failed to stop Ollama server: {}", e),
+                }
+            }
+        }
     }
     
     async fn emit_progress(&self, progress: f64, status: &str, model_name: &str) {
@@ -281,7 +319,8 @@ impl OllamaInference {
         match &ollama_exe {
             OllamaExe::Embedded(path) => {
                 info!("Starting embedded Ollama server...");
-                if let Err(e) = self.start_ollama_server(path).await {
+                let path_clone = path.clone();
+                if let Err(e) = self.start_ollama_server(&path_clone).await {
                     return Err(anyhow::anyhow!("Failed to start Ollama server: {}", e));
                 }
             }
@@ -308,7 +347,13 @@ impl OllamaInference {
     }
 
     /// Start Ollama server (for embedded version)
-    async fn start_ollama_server(&self, ollama_path: &Path) -> Result<()> {
+    async fn start_ollama_server(&mut self, ollama_path: &Path) -> Result<()> {
+        // Check if server is already started
+        if self.server_started {
+            info!("Ollama server is already running, skipping start");
+            return Ok(());
+        }
+        
         info!("Starting Ollama server at: {:?}", ollama_path);
         
         let mut cmd = Command::new(ollama_path);
@@ -353,38 +398,69 @@ impl OllamaInference {
         }
         
         // Start the server in background
-        let child = cmd.spawn()
-            .map_err(|e| anyhow::anyhow!("Failed to start Ollama server: {}", e))?;
+        let mut child = match cmd.spawn() {
+            Ok(child) => child,
+            Err(e) => {
+                let error_msg = e.to_string();
+                if error_msg.contains("address already in use") || error_msg.contains("bind") {
+                    // Port is already in use, assume Ollama is already running
+                    info!("Port {} appears to be in use, assuming Ollama is already running", self.ollama_port);
+                    self.server_started = true;
+                    return Ok(());
+                }
+                return Err(anyhow::anyhow!("Failed to start Ollama server: {}", e));
+            }
+        };
         
-        info!("Ollama server started with PID: {} at {:?}", child.id(), ollama_path);
+        let pid = child.id();
+        info!("Ollama server started with PID: {} at {:?}", pid, ollama_path);
+        
+        // Store the child process so we can clean it up later
+        self.server_process = Some(Arc::new(Mutex::new(child)));
         
         // Wait a moment for server to start
         tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         
+        // Mark server as started
+        self.server_started = true;
+        
         Ok(())
     }
 
-    /// Test connection to Ollama server
+    /// Test connection to Ollama server with retries
     async fn test_connection(&self) -> Result<()> {
         let ollama = self.ollama_client.as_ref()
             .ok_or_else(|| anyhow::anyhow!("Ollama client not initialized"))?;
         
         info!("Testing Ollama connection...");
         
-        // Try to list models to test connection
-        match ollama.list_local_models().await {
-            Ok(models) => {
-                info!("Ollama connection successful. Found {} local models", models.len());
-                for model in &models {
-                    info!("Available model: {}", model.name);
+        // Try multiple times with backoff
+        let mut retry_count = 0;
+        let max_retries = 5;
+        
+        while retry_count < max_retries {
+            match ollama.list_local_models().await {
+                Ok(models) => {
+                    info!("Ollama connection successful. Found {} local models", models.len());
+                    for model in &models {
+                        info!("Available model: {}", model.name);
+                    }
+                    return Ok(());
                 }
-                Ok(())
-            }
-            Err(e) => {
-                error!("Failed to connect to Ollama: {}", e);
-                Err(anyhow::anyhow!("Ollama connection failed: {}", e))
+                Err(e) => {
+                    retry_count += 1;
+                    if retry_count < max_retries {
+                        warn!("Failed to connect to Ollama (attempt {}/{}): {}. Retrying...", retry_count, max_retries, e);
+                        tokio::time::sleep(tokio::time::Duration::from_secs(2 * retry_count as u64)).await;
+                    } else {
+                        error!("Failed to connect to Ollama after {} attempts: {}", max_retries, e);
+                        return Err(anyhow::anyhow!("Ollama connection failed after {} attempts: {}", max_retries, e));
+                    }
+                }
             }
         }
+        
+        Err(anyhow::anyhow!("Failed to connect to Ollama"))
     }
 
     /// Pull a model from Ollama registry
@@ -832,6 +908,7 @@ impl InferenceBackend for OllamaInference {
                         let image = ollama_rs::generation::images::Image::from_base64(&base64_image);
                         
                         // Use GenerationRequest which supports images
+                        // Note: The prompt already includes the system prompt from gemma3n.rs
                         let mut request = GenerationRequest::new(model_name.clone(), prompt.to_string());
                         request = request.images(vec![image]);
                         

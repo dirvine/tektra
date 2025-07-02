@@ -6,6 +6,9 @@ import SimpleHeaderBar from './components/SimpleHeaderBar';
 import LeftSidebar from './components/LeftSidebar';
 import Avatar3D from './components/Avatar3D';
 import { useTektraStore } from './store';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import ErrorBoundary from './components/ErrorBoundary';
 import { 
   Send, 
   Mic, 
@@ -30,6 +33,7 @@ import {
   Image
 } from 'lucide-react';
 import './App.css';
+import './styles/react-markdown.css';
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -561,7 +565,43 @@ const EnhancedChatInterface: React.FC = () => {
                     : 'bg-surface border border-border-primary text-text-primary'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                {message.role === 'assistant' ? (
+                  <ErrorBoundary fallback={<p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}>
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      className="text-sm"
+                      components={{
+                        p: ({children}) => <p className="mb-2">{children}</p>,
+                        strong: ({children}) => <strong className="font-bold">{children}</strong>,
+                        em: ({children}) => <em className="italic">{children}</em>,
+                        ul: ({children}) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                        ol: ({children}) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                        li: ({children}) => <li className="mb-1">{children}</li>,
+                        code: ({node, inline, className, children, ...props}) => {
+                          const match = /language-(\w+)/.exec(className || '');
+                          return !inline && match ? (
+                            <pre className="bg-black/20 p-2 rounded overflow-x-auto mb-2">
+                              <code className="text-sm" {...props}>
+                                {String(children).replace(/\n$/, '')}
+                              </code>
+                            </pre>
+                          ) : (
+                            <code className="bg-black/20 px-1 py-0.5 rounded text-sm" {...props}>
+                              {children}
+                            </code>
+                          )
+                        },
+                        h1: ({children}) => <h1 className="text-lg font-bold mb-1">{children}</h1>,
+                        h2: ({children}) => <h2 className="text-base font-bold mb-1">{children}</h2>,
+                        h3: ({children}) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+                      }}
+                    >
+                      {message.content || ''}
+                    </ReactMarkdown>
+                  </ErrorBoundary>
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                )}
                 <p className="text-xs opacity-70 mt-1">
                   {message.timestamp.toLocaleTimeString()}
                 </p>

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { saveChatHistory, loadChatHistory } from '../utils/chatPersistence';
 
 // Types
 export interface ModelStatus {
@@ -163,7 +164,7 @@ export const useTektraStore = create<TektraStore>()(
     (set, get) => ({
       // Initial state
       modelStatus: defaultModelStatus,
-      messages: [],
+      messages: loadChatHistory(), // Load persisted messages
       avatarState: defaultAvatarState,
       uiState: defaultUIState,
       sessionState: defaultSessionState,
@@ -176,16 +177,19 @@ export const useTektraStore = create<TektraStore>()(
         })),
 
       addMessage: (message) =>
-        set((state) => ({
-          messages: [
+        set((state) => {
+          const newMessages = [
             ...state.messages,
             {
               ...message,
               id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
               timestamp: new Date(),
             },
-          ],
-        })),
+          ];
+          // Save to localStorage
+          saveChatHistory(newMessages);
+          return { messages: newMessages };
+        }),
 
       updateLastMessage: (content) =>
         set((state) => {
@@ -199,7 +203,10 @@ export const useTektraStore = create<TektraStore>()(
           return { messages };
         }),
 
-      clearMessages: () => set({ messages: [] }),
+      clearMessages: () => {
+        saveChatHistory([]); // Clear localStorage too
+        return set({ messages: [] });
+      },
 
       setAvatarState: (state) =>
         set((current) => ({

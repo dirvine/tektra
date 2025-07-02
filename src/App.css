@@ -3,7 +3,7 @@
 @import 'tailwindcss/utilities';
 
 /* Inter font import */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap');
 
 /* Global styles */
@@ -284,6 +284,12 @@ button:focus-visible {
   color: #A1A1AA;
   margin-bottom: 1em;
   line-height: 1.6;
+}
+
+.prose strong,
+.prose b {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
 }
 
 .prose code {

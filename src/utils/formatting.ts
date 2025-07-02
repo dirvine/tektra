@@ -31,7 +31,7 @@ export const formatResponse = (text: string): string => {
   // This way our HTML tags won't be escaped
   
   // Handle bold text **text**
-  formatted = formatted.replace(/\*\*([^*]+)\*\*/g, (match, content) => {
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, (match, content) => {
     return `<strong>${escapeHtml(content)}</strong>`;
   });
   

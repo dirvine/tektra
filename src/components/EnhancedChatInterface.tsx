@@ -23,8 +23,11 @@ import {
   File,
 } from 'lucide-react';
 import { useTektraStore } from '../store';
-import { formatResponse } from '../utils/formatting';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { analyzeError, attemptOllamaRestart } from '../utils/errorHandling';
+import { formatResponse } from '../utils/formatting';
+import '../styles/react-markdown.css';
 
 interface MessageProps {
   message: any;
@@ -154,16 +157,43 @@ const Message: React.FC<MessageProps> = ({ message, isLatest }) => {
           ${isCollapsed ? 'max-h-20 overflow-hidden' : ''}
         `}>
           {message.role === 'assistant' ? (
-            <div 
-              dangerouslySetInnerHTML={{ 
-                __html: formatResponse(
-                  isCollapsed && isLongMessage 
-                    ? message.content.substring(0, 200) + '...' 
-                    : message.content
-                ) 
-              }} 
-              className="prose prose-invert prose-sm max-w-none"
-            />
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              className="prose prose-sm max-w-none"
+              components={{
+                p: ({children}) => <p className="mb-2 text-text-secondary">{children}</p>,
+                strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
+                em: ({children}) => <em className="text-text-secondary italic">{children}</em>,
+                ul: ({children}) => <ul className="list-disc list-inside mb-2 text-text-secondary">{children}</ul>,
+                ol: ({children}) => <ol className="list-decimal list-inside mb-2 text-text-secondary">{children}</ol>,
+                li: ({children}) => <li className="mb-1">{children}</li>,
+                code: ({inline, className, children}) => {
+                  return inline ? (
+                    <code className="bg-surface px-1 py-0.5 rounded text-accent-light text-sm">{children}</code>
+                  ) : (
+                    <code className="block bg-surface p-3 rounded-md text-sm overflow-x-auto">{children}</code>
+                  );
+                },
+                pre: ({children}) => <pre className="bg-surface p-3 rounded-md overflow-x-auto mb-2">{children}</pre>,
+                blockquote: ({children}) => (
+                  <blockquote className="border-l-4 border-accent pl-4 my-2 text-text-secondary italic">
+                    {children}
+                  </blockquote>
+                ),
+                a: ({href, children}) => (
+                  <a href={href} className="text-accent hover:text-accent-light underline" target="_blank" rel="noopener noreferrer">
+                    {children}
+                  </a>
+                ),
+                h1: ({children}) => <h1 className="text-xl font-bold text-white mb-2">{children}</h1>,
+                h2: ({children}) => <h2 className="text-lg font-bold text-white mb-2">{children}</h2>,
+                h3: ({children}) => <h3 className="text-base font-bold text-white mb-2">{children}</h3>,
+              }}
+            >
+              {isCollapsed && isLongMessage 
+                ? message.content.substring(0, 200) + '...' 
+                : message.content}
+            </ReactMarkdown>
           ) : (
             <div className="whitespace-pre-wrap">
               {isCollapsed && isLongMessage 
@@ -515,10 +545,41 @@ const EnhancedInputArea: React.FC<{
       {showPreview && value && (
         <div className="mt-3 p-3 bg-surface border border-border-primary rounded-card">
           <div className="text-xs text-text-secondary mb-2">Preview:</div>
-          <div 
-            className="prose prose-invert prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: formatResponse(value) }}
-          />
+          <ReactMarkdown 
+            remarkPlugins={[remarkGfm]}
+            className="prose prose-sm max-w-none"
+            components={{
+              p: ({children}) => <p className="mb-2 text-text-secondary">{children}</p>,
+              strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
+              em: ({children}) => <em className="text-text-secondary italic">{children}</em>,
+              ul: ({children}) => <ul className="list-disc list-inside mb-2 text-text-secondary">{children}</ul>,
+              ol: ({children}) => <ol className="list-decimal list-inside mb-2 text-text-secondary">{children}</ol>,
+              li: ({children}) => <li className="mb-1">{children}</li>,
+              code: ({inline, className, children}) => {
+                return inline ? (
+                  <code className="bg-surface px-1 py-0.5 rounded text-accent-light text-sm">{children}</code>
+                ) : (
+                  <code className="block bg-surface p-3 rounded-md text-sm overflow-x-auto">{children}</code>
+                );
+              },
+              pre: ({children}) => <pre className="bg-surface p-3 rounded-md overflow-x-auto mb-2">{children}</pre>,
+              blockquote: ({children}) => (
+                <blockquote className="border-l-4 border-accent pl-4 my-2 text-text-secondary italic">
+                  {children}
+                </blockquote>
+              ),
+              a: ({href, children}) => (
+                <a href={href} className="text-accent hover:text-accent-light underline" target="_blank" rel="noopener noreferrer">
+                  {children}
+                </a>
+              ),
+              h1: ({children}) => <h1 className="text-xl font-bold text-white mb-2">{children}</h1>,
+              h2: ({children}) => <h2 className="text-lg font-bold text-white mb-2">{children}</h2>,
+              h3: ({children}) => <h3 className="text-base font-bold text-white mb-2">{children}</h3>,
+            }}
+          >
+            {value}
+          </ReactMarkdown>
         </div>
       )}
 

@@ -91,9 +91,67 @@ export default {
         'light': 'backdrop-blur-md bg-white/10 border border-white/20',
         'dark': 'backdrop-blur-md bg-black/10 border border-white/10',
       },
+      typography: (theme) => ({
+        DEFAULT: {
+          css: {
+            color: theme('colors.text-primary'),
+            h1: { color: theme('colors.text-primary') },
+            h2: { color: theme('colors.text-primary') },
+            h3: { color: theme('colors.text-primary') },
+            h4: { color: theme('colors.text-primary') },
+            h5: { color: theme('colors.text-primary') },
+            h6: { color: theme('colors.text-primary') },
+            strong: { color: theme('colors.text-primary') },
+            a: { 
+              color: theme('colors.accent'),
+              '&:hover': { color: theme('colors.accent-light') }
+            },
+            code: { 
+              color: theme('colors.accent-light'),
+              backgroundColor: theme('colors.surface'),
+              padding: '0.125rem 0.25rem',
+              borderRadius: '0.25rem',
+              fontWeight: '400'
+            },
+            'code::before': { content: '""' },
+            'code::after': { content: '""' },
+            pre: {
+              backgroundColor: theme('colors.surface'),
+              color: theme('colors.text-primary'),
+              padding: '1rem',
+              borderRadius: theme('borderRadius.card'),
+              border: '1px solid ' + theme('colors.border-primary')
+            },
+            blockquote: {
+              borderLeftColor: theme('colors.accent'),
+              color: theme('colors.text-secondary'),
+              fontStyle: 'italic'
+            },
+            'ul > li': {
+              '&::before': { 
+                backgroundColor: theme('colors.accent')
+              }
+            },
+            'ol > li': {
+              '&::before': { 
+                color: theme('colors.text-secondary')
+              }
+            },
+            hr: {
+              borderColor: theme('colors.border-primary')
+            }
+          }
+        },
+        invert: {
+          css: {
+            color: theme('colors.text-primary'),
+          }
+        }
+      }),
     },
   },
   plugins: [
+    require('@tailwindcss/typography'),
     function({ addUtilities }) {
       const newUtilities = {
         '.glass-light': {
