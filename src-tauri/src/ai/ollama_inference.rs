@@ -773,6 +773,85 @@ impl InferenceBackend for OllamaInference {
         self.model_loaded && self.current_model.is_some()
     }
     
+    /// Public method to restart Ollama when connection fails
+    pub async fn restart_ollama_if_needed(&mut self) -> Result<()> {
+        self.ensure_ollama_running().await
+    }
+    
+    /// Check if Ollama is responsive and restart if needed
+    async fn ensure_ollama_running(&mut self) -> Result<()> {
+        // First, try a simple health check
+        if let Some(ollama) = &self.ollama_client {
+            match tokio::time::timeout(
+                tokio::time::Duration::from_secs(2),
+                ollama.list_local_models()
+            ).await {
+                Ok(Ok(_)) => return Ok(()), // Ollama is responsive
+                Ok(Err(e)) => {
+                    warn!("Ollama health check failed: {}", e);
+                }
+                Err(_) => {
+                    warn!("Ollama health check timed out");
+                }
+            }
+        }
+        
+        // If we have an embedded Ollama, try to restart it
+        if let Some(OllamaExe::Embedded(path)) = &self.ollama_exe {
+            info!("Attempting to restart embedded Ollama...");
+            
+            // Emit user-friendly status
+            self.emit_progress(
+                0.0,
+                "⚠️ Ollama server not responding. Attempting to restart...",
+                "system"
+            ).await;
+            
+            // Try to restart the server
+            match self.start_ollama_server(path).await {
+                Ok(()) => {
+                    info!("Ollama server restarted successfully");
+                    
+                    // Give it a moment to fully start
+                    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                    
+                    // Test the connection
+                    match self.test_connection().await {
+                        Ok(()) => {
+                            self.emit_progress(
+                                100.0,
+                                "✅ Ollama server restarted successfully!",
+                                "system"
+                            ).await;
+                            Ok(())
+                        }
+                        Err(e) => {
+                            let error_msg = format!(
+                                "❌ Ollama server restarted but connection failed: {}. Please try restarting the app.",
+                                e
+                            );
+                            self.emit_progress(0.0, &error_msg, "system").await;
+                            Err(anyhow::anyhow!(error_msg))
+                        }
+                    }
+                }
+                Err(e) => {
+                    let error_msg = format!(
+                        "❌ Failed to restart Ollama server: {}. Please ensure port 11434 is free and try restarting the app.",
+                        e
+                    );
+                    self.emit_progress(0.0, &error_msg, "system").await;
+                    Err(anyhow::anyhow!(error_msg))
+                }
+            }
+        } else {
+            // System Ollama
+            let error_msg = "❌ System Ollama is not responding. Please start Ollama manually with: ollama serve";
+            self.emit_progress(0.0, error_msg, "system").await;
+            Err(anyhow::anyhow!(error_msg))
+        }
+    }
+    
     async fn generate(&self, prompt: &str, _config: &InferenceConfig) -> Result<String> {
         let ollama = self.ollama_client.as_ref()
             .ok_or_else(|| anyhow::anyhow!("Ollama client not initialized"))?;
@@ -816,12 +895,20 @@ impl InferenceBackend for OllamaInference {
                 }
                 Err(e) => {
                     error!("Failed to generate response: {}", e);
-                    Err(anyhow::anyhow!("Ollama chat failed: {}", e))
+                    let error_str = e.to_string().to_lowercase();
+                    
+                    // Check if this is a connection error that might benefit from restart
+                    if error_str.contains("reqwest") || error_str.contains("connection") || 
+                       error_str.contains("refused") || error_str.contains("broken pipe") {
+                        Err(anyhow::anyhow!("Ollama connection failed: {}. Restart may be needed.", e))
+                    } else {
+                        Err(anyhow::anyhow!("Ollama chat failed: {}", e))
+                    }
                 }
             },
             Err(_) => {
                 error!("Ollama request timed out after 30 seconds");
-                Err(anyhow::anyhow!("Request timed out after 30 seconds - the context may be too long or the model is overloaded"))
+                Err(anyhow::anyhow!("Ollama connection timeout - server may need restart"))
             }
         }
     }
@@ -924,7 +1011,15 @@ impl InferenceBackend for OllamaInference {
                     }
                     Err(e) => {
                         error!("Failed to generate multimodal response: {}", e);
-                        Err(anyhow::anyhow!("Ollama multimodal generation failed: {}", e))
+                        let error_str = e.to_string().to_lowercase();
+                        
+                        // Check if this is a connection error that might benefit from restart
+                        if error_str.contains("reqwest") || error_str.contains("connection") || 
+                           error_str.contains("refused") || error_str.contains("broken pipe") {
+                            Err(anyhow::anyhow!("Ollama connection failed: {}. Restart may be needed.", e))
+                        } else {
+                            Err(anyhow::anyhow!("Ollama multimodal generation failed: {}", e))
+                        }
                     }
                 },
                 Err(_) => {
@@ -969,7 +1064,15 @@ impl InferenceBackend for OllamaInference {
                     }
                     Err(e) => {
                         error!("Failed to generate text response: {}", e);
-                        Err(anyhow::anyhow!("Ollama text generation failed: {}", e))
+                        let error_str = e.to_string().to_lowercase();
+                        
+                        // Check if this is a connection error that might benefit from restart
+                        if error_str.contains("reqwest") || error_str.contains("connection") || 
+                           error_str.contains("refused") || error_str.contains("broken pipe") {
+                            Err(anyhow::anyhow!("Ollama connection failed: {}. Restart may be needed.", e))
+                        } else {
+                            Err(anyhow::anyhow!("Ollama text generation failed: {}", e))
+                        }
                     }
                 },
                 Err(_) => {

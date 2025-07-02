@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useTektraStore } from '../store';
 import { formatResponse } from '../utils/formatting';
+import { analyzeError, attemptOllamaRestart } from '../utils/errorHandling';
 
 interface MessageProps {
   message: any;
@@ -33,10 +34,24 @@ interface MessageProps {
 const Message: React.FC<MessageProps> = ({ message, isLatest }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false);
+  const { addMessage } = useTektraStore();
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     // Could add toast notification here
+  };
+  
+  const handleRestartOllama = async () => {
+    setIsRestarting(true);
+    const result = await attemptOllamaRestart();
+    
+    addMessage({
+      role: 'system',
+      content: result.message,
+    });
+    
+    setIsRestarting(false);
   };
 
   const isLongMessage = message.content.length > 500;
@@ -185,6 +200,43 @@ const Message: React.FC<MessageProps> = ({ message, isLatest }) => {
         {message.metadata?.processingTime && (
           <div className="mt-2 text-xs text-text-tertiary">
             Processed in {message.metadata.processingTime}ms
+          </div>
+        )}
+        
+        {/* Restart button for Ollama errors */}
+        {message.metadata?.canRestart && (
+          <div className="mt-4">
+            <button
+              onClick={handleRestartOllama}
+              disabled={isRestarting}
+              className={`
+                px-4 py-2 rounded-button transition-colors
+                flex items-center space-x-2
+                ${isRestarting 
+                  ? 'bg-surface text-text-tertiary cursor-not-allowed' 
+                  : 'bg-accent text-white hover:bg-accent-hover'
+                }
+              `}
+            >
+              {isRestarting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Restarting...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Restart AI Server</span>
+                </>
+              )}
+            </button>
+            
+            <p className="mt-2 text-xs text-text-tertiary">
+              Or manually restart Tektra if the issue persists
+            </p>
           </div>
         )}
       </div>
@@ -625,10 +677,28 @@ ${textContent}
           });
         } catch (error) {
           console.error('Backend call error:', error);
-          addMessage({
-            role: 'assistant',
-            content: `I apologize, but I encountered an error processing your request: ${error}. Please try again.`,
-          });
+          
+          // Analyze the error
+          const errorInfo = analyzeError(error);
+          
+          if (errorInfo.needsRestart) {
+            // Add a system message with restart option
+            addMessage({
+              role: 'system',
+              content: errorInfo.userMessage,
+              metadata: {
+                isError: true,
+                canRestart: true,
+                errorType: 'ollama_connection'
+              }
+            });
+          } else {
+            // Regular error message
+            addMessage({
+              role: 'assistant',
+              content: errorInfo.userMessage,
+            });
+          }
         }
       }
     } catch (error) {

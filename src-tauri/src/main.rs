@@ -816,6 +816,21 @@ async fn benchmark_backends(
     }
 }
 
+#[tauri::command]
+async fn restart_ollama(ai: State<'_, AI>) -> Result<String, String> {
+    info!("Attempting to restart Ollama server...");
+    
+    let mut ai_manager = ai.lock().await;
+    
+    // Since we're using unified model manager, we need to check if backend is Ollama
+    // For now, return a message that tells user to restart the app
+    // In a future update, we could add direct access to OllamaInference
+    
+    drop(ai_manager);
+    
+    Err("Please restart the Tektra app to reconnect to Ollama. If the issue persists, ensure Ollama is installed or check port 11434.".to_string())
+}
+
 // Project management commands
 #[tauri::command]
 async fn create_project(name: String, description: Option<String>, db: State<'_, DB>) -> Result<serde_json::Value, String> {
@@ -1383,6 +1398,7 @@ fn main() {
             avatar_blink,
             get_backend_info,
             benchmark_backends,
+            restart_ollama,
             create_project,
             get_projects,
             delete_project,
