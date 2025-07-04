@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, debug, warn};
+use tracing::info;
 
 /// MCP (Model Context Protocol) Server Implementation
 /// Provides a standardized interface for AI systems to interact with data sources

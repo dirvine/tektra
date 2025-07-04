@@ -6,8 +6,7 @@ use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-// Use backend implementations
-use crate::ai::backends::EnhancedOllamaBackend;
+// Legacy backends removed - now using mistral.rs via inference module
 
 // Core types for multimodal inputs
 #[derive(Debug, Clone)]
@@ -117,14 +116,12 @@ pub struct BackendRegistry {
 
 impl BackendRegistry {
     pub fn new() -> Self {
-        let mut registry = Self {
+        let registry = Self {
             backends: HashMap::new(),
         };
         
-        // Register default backends
-        registry.register("enhanced_ollama", Box::new(|| {
-            Ok(Box::new(EnhancedOllamaBackend::new()?))
-        }));
+        // Legacy Ollama backends removed
+        // Will register mistral.rs backends when available
         
         registry
     }

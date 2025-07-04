@@ -6,9 +6,7 @@ pub use gemma3n::AIManager;
 mod inference_backend;
 pub use inference_backend::{InferenceMetrics, BackendType, InferenceBackend, InferenceConfig};
 
-// Ollama inference backend for reliable model management
-mod ollama_inference;
-pub use ollama_inference::OllamaInference;
+// Legacy Ollama inference backend removed - now using mistral.rs via inference module
 
 // Unified inference manager
 mod inference_manager;
@@ -63,7 +61,7 @@ pub use document_processor::{
 pub mod embeddings;
 pub use embeddings::{
     EmbeddingGenerator, EmbeddingManager, SimpleEmbeddingGenerator, 
-    OllamaEmbeddingGenerator, EmbeddingConfig,
+    EmbeddingConfig,
 };
 
 // Input pipeline for combining documents with queries

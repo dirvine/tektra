@@ -29,6 +29,7 @@ uuid = { version = "1.0", features = ["v4"] }
 # ML Dependencies for TinyLlama
 hf-hub = { version = "0.3", features = ["tokio"] }
 anyhow = "1.0"
+thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 reqwest = { version = "0.11", features = ["json", "stream", "blocking"] }
@@ -44,11 +45,7 @@ hound = "3.5"
 whisper-rs = "0.11"  # For Whisper STT
 # ort = "2.0"  # ONNX Runtime for Silero VAD when ready
 
-# Legacy dependencies removed - using Ollama for model management
-
-# Ollama integration for reliable model management
-ollama-rs = { version = "0.3.2", features = ["stream", "tokio"] }
-ollama_td = "0.4.0"
+# Legacy Ollama dependencies removed - now using mistral.rs backend
 async-trait = "0.1"
 toml = "0.8"
 num_cpus = "1.16"
@@ -76,10 +73,37 @@ half = "2.4"
 image = { version = "0.25.2", features = ["jpeg", "png", "gif", "webp", "tiff"] }
 symphonia = { version = "0.5.4", features = ["mp3", "aac", "flac", "wav"] }
 
-# Multimodal inference backends
-# Note: candle, mistral.rs and llama.cpp have dependency/API issues
-# Using enhanced Ollama backend for now which provides good multimodal support
-# Future: Add more backends as they become stable
+# Primary inference backend: mistral.rs for production multimodal AI
+# Temporarily disabled due to tokenizer compatibility issues - will re-enable after resolving
+# mistralrs = { git = "https://github.com/EricLBuehler/mistral.rs.git", rev = "68c078f7630b61469d4c8e391dc05da334c60291", default-features = false, features = ["metal"] }
+# Pin tokenizer version to match mistral.rs compatibility
+# tokenizers = "=0.20.4"
+# candle dependencies managed by mistral.rs
+# candle-core = { version = "0.8", features = ["metal"] }
+# candle-nn = { version = "0.8", features = ["metal"] }
+# candle-transformers = { version = "0.8", features = ["metal"] }
+# tokenizers managed by mistral.rs
+tokio-stream = "0.1.15"
+parking_lot = "0.12"
+accelerate-src = "0.3"
+safetensors = "0.4"
+async-stream = "0.3"
+
+# Candle dependencies are included from mistral.rs
+# Note: Using mistral.rs's forked candle version for compatibility
+
+# Enhanced MCP support
+# mcp-rust = { version = "0.1", optional = true }  # To be added when available
+jsonrpc = "0.18"
+
+# Voice integration with Unmute
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+futures-util = "0.3"
+url = "2.5"
+opus = "0.3"
+
+# Image processing for vision features
+imageproc = "0.25"
 
 # Video processing (conditionally compiled for platforms that support it)
 [target.'cfg(not(target_os = "windows"))'.dependencies]
@@ -110,13 +134,13 @@ indicatif = { version = "0.17", optional = true }
 
 # Feature flags for optional components
 [features]
-default = ["video-processing"]
+default = ["metal", "video-processing"]
+metal = []
+cuda = []
 video-processing = ["ffmpeg-next"]
+mcp-server = []  # Will include mcp-rust when available
 e2e-testing = ["clap", "colored", "dialoguer", "indicatif"]
-# mistral-backend = ["mistralrs"]
-# llama-backend = ["llama_cpp"]
-# debug-tools = ["rerun"] # Disabled due to wasm-bindgen conflicts
-# full-multimodal = ["video-processing", "debug-tools"] # Disabled due to wasm-bindgen conflicts
+full-multimodal = ["metal", "video-processing", "mcp-server"]
 
 [[bin]]
 name = "tektra"
@@ -142,18 +166,9 @@ path = "src/bin/tektra_e2e_test.rs"
 required-features = ["e2e-testing"]
 
 [[bin]]
-name = "test-bundled-ollama"
-path = "src/bin/test_bundled_ollama.rs"
-required-features = ["e2e-testing"]
-
-[[bin]]
 name = "demo-inference"
 path = "src/bin/demo_inference.rs"
 required-features = ["e2e-testing"]
-
-[[bin]]
-name = "check-ollama"
-path = "src/bin/check_ollama.rs"
 
 [[bin]]
 name = "multimodal-test-runner"
@@ -164,6 +179,11 @@ required-features = ["e2e-testing"]
 name = "comprehensive-multimodal-test"
 path = "src/bin/comprehensive_multimodal_test.rs"
 required-features = ["e2e-testing"]
+
+[[bin]]
+name = "test-qwen-omni"
+path = "src/bin/test_qwen_omni.rs"
+required-features = ["e2e-testing"] # Temporarily disabled due to mistral.rs dependency
 
 [profile.release]
 opt-level = 3

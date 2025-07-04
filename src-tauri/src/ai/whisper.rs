@@ -246,7 +246,7 @@ impl WhisperSTT {
         };
         
         // Create a state for running the model
-        let mut state = context.create_state()
+        let state = context.create_state()
             .map_err(|e| anyhow::anyhow!("Failed to create Whisper state: {}", e))?;
         
         // Create parameters for Whisper

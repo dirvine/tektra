@@ -4,12 +4,20 @@
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::path::Path;
-use tauri::{Manager, State};
+use tauri::{Manager, State, Emitter};
 use tokio::sync::Mutex;
 use tracing::{info, error, warn};
 
 mod ai;
-use ai::AIManager;
+// New modular architecture imports
+mod inference;
+mod multimodal;
+mod conversation;
+mod voice;
+
+use inference::{ModelRegistry as InferenceModelRegistry, /* QwenOmniModel, */ MultimodalInput, ModelResponse};
+use conversation::ConversationManager;
+use voice::{VoicePipeline, VoiceCharacterConfig, VoicePipelineConfig, VoicePipelineEvent, UnmuteServiceManager, UnmuteConfig, ServiceEvent};
 mod audio;
 use audio::AudioRecorder;
 mod vision;
@@ -29,12 +37,15 @@ use types::{ChatMessage, AppSettings};
 
 type ChatHistory = Arc<Mutex<Vec<ChatMessage>>>;
 type Settings = Arc<Mutex<AppSettings>>;
-type AI = Arc<Mutex<AIManager>>;
+type ModelRegistry = Arc<Mutex<InferenceModelRegistry>>;
+type ConversationMgr = Arc<Mutex<ConversationManager>>;
 type AudioRec = Arc<Mutex<AudioRecorder>>;
 type Vision = Arc<Mutex<VisionManager>>;
 type Avatar = Arc<Mutex<AvatarManager>>;
 type VectorStore = Arc<Mutex<VectorDB>>;
 type DB = Arc<Database>;
+type VoicePipelineMgr = Arc<Mutex<Option<VoicePipeline>>>;
+type UnmuteServiceMgr = Arc<Mutex<Option<UnmuteServiceManager>>>;
 
 #[tauri::command]
 async fn start_audio_recording(audio: State<'_, AudioRec>) -> Result<bool, String> {
@@ -79,14 +90,18 @@ async fn initialize_whisper(audio: State<'_, AudioRec>) -> Result<bool, String> 
 }
 
 #[tauri::command]
-async fn initialize_model(ai: State<'_, AI>) -> Result<bool, String> {
-    let mut ai_manager = ai.lock().await;
+async fn initialize_model(model_registry: State<'_, ModelRegistry>) -> Result<bool, String> {
+    let registry = model_registry.lock().await;
     
-    match ai_manager.load_model().await {
-        Ok(_) => Ok(true),
+    // Initialize the registry and load available models
+    match registry.initialize().await {
+        Ok(_) => {
+            info!("Successfully initialized model registry with available models");
+            Ok(true)
+        }
         Err(e) => {
-            eprintln!("Failed to load model: {}", e);
-            Err(format!("Failed to load model: {}", e))
+            error!("Failed to initialize model registry: {}", e);
+            Err(format!("Failed to initialize models: {}", e))
         }
     }
 }
@@ -95,7 +110,8 @@ async fn initialize_model(ai: State<'_, AI>) -> Result<bool, String> {
 async fn send_message(
     message: String,
     chat_history: State<'_, ChatHistory>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
+    conversation_mgr: State<'_, ConversationMgr>,
     settings: State<'_, Settings>,
     vector_store: State<'_, VectorStore>,
 ) -> Result<String, String> {
@@ -117,15 +133,15 @@ async fn send_message(
     let system_prompt = settings_guard.system_prompt.clone();
     drop(settings_guard);
 
-    // Send message directly to AI model without vector database processing
-    let enhanced_message = message.clone();
+    // Create multimodal input
+    let input = MultimodalInput::Text(message.clone());
 
-    // Generate response using AI
-    let ai_manager = ai.lock().await;
+    // Generate response using new model registry
+    let registry = model_registry.lock().await;
     
-    let response = if ai_manager.is_loaded() {
-        match ai_manager.generate_response_with_system_prompt(&enhanced_message, max_tokens, system_prompt).await {
-            Ok(resp) => resp,
+    let response = if registry.get_active_model_id().await.is_some() {
+        match registry.generate(input).await {
+            Ok(model_response) => model_response.text,
             Err(e) => {
                 eprintln!("Error generating response: {}", e);
                 format!("I apologize, but I encountered an error: {}. Please try again.", e)
@@ -135,7 +151,7 @@ async fn send_message(
         "The AI model is still loading. Please wait a moment and try again.".to_string()
     };
     
-    drop(ai_manager);
+    drop(registry);
     
     // Add assistant response to history
     let assistant_msg = ChatMessage {
@@ -156,7 +172,8 @@ async fn send_message(
 async fn send_message_with_camera(
     message: String,
     chat_history: State<'_, ChatHistory>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
+    conversation_mgr: State<'_, ConversationMgr>,
     vision: State<'_, Vision>,
     settings: State<'_, Settings>,
     vector_store: State<'_, VectorStore>,
@@ -196,14 +213,23 @@ async fn send_message_with_camera(
         None
     };
 
-    // Generate response using AI
-    let ai_manager = ai.lock().await;
+    // Generate response using new model registry
+    let registry = model_registry.lock().await;
     
-    let response = if ai_manager.is_loaded() {
+    let response = if registry.get_active_model_id().await.is_some() {
         if let Some(image_data) = frame_data {
             // Use vision-enabled response generation
-            match ai_manager.generate_response_with_image_and_system_prompt(&message, &image_data, max_tokens, system_prompt).await {
-                Ok(resp) => resp,
+            let input = MultimodalInput::TextWithImage {
+                text: message.clone(),
+                image: crate::inference::ImageData {
+                    data: image_data,
+                    format: crate::inference::ImageFormat::Jpeg,
+                    width: Some(640),
+                    height: Some(480),
+                }
+            };
+            match registry.generate(input).await {
+                Ok(model_response) => model_response.text,
                 Err(e) => {
                     eprintln!("Error generating response with image: {}", e);
                     format!("I apologize, but I encountered an error processing the image: {}. Please try again.", e)
@@ -211,8 +237,9 @@ async fn send_message_with_camera(
             }
         } else {
             // Fall back to text-only response if no camera
-            match ai_manager.generate_response_with_system_prompt(&message, max_tokens, system_prompt).await {
-                Ok(resp) => resp,
+            let input = MultimodalInput::Text(message.clone());
+            match registry.generate(input).await {
+                Ok(model_response) => model_response.text,
                 Err(e) => {
                     eprintln!("Error generating response: {}", e);
                     format!("I apologize, but I encountered an error: {}. Please try again.", e)
@@ -223,7 +250,7 @@ async fn send_message_with_camera(
         "The AI model is still loading. Please wait a moment and try again.".to_string()
     };
     
-    drop(ai_manager);
+    drop(registry);
     
     // Add assistant response to history
     let assistant_msg = ChatMessage {
@@ -266,62 +293,166 @@ async fn update_settings(
 }
 
 #[tauri::command]
-async fn check_model_status(ai: State<'_, AI>) -> Result<bool, String> {
-    Ok(ai.lock().await.is_loaded())
+async fn check_model_status(model_registry: State<'_, ModelRegistry>) -> Result<bool, String> {
+    let registry = model_registry.lock().await;
+    Ok(registry.get_active_model_id().await.is_some())
 }
 
 #[tauri::command]
-async fn get_available_models() -> Result<Vec<String>, String> {
-    Ok(vec![
-        // Text-only models
-        "gemma3n:e4b".to_string(),  // Gemma 3N (text-only in Ollama currently)
-        "gemma2:2b".to_string(),
-        "qwen2.5:7b".to_string(),
-        "llama3.2:3b".to_string(),
-        "phi3:mini".to_string(),
-        
-        // Vision-capable models
-        "llama3.2-vision:11b".to_string(),  // Latest vision model
-        "llava:7b".to_string(),              // Popular vision model
-        "moondream:latest".to_string(),      // Lightweight vision model
-        "bakllava:latest".to_string(),       // Alternative vision model
-    ])
-}
-
-#[tauri::command]
-async fn get_model_capabilities(model_name: String) -> Result<serde_json::Value, String> {
+async fn get_available_models(model_registry: State<'_, ModelRegistry>) -> Result<Vec<serde_json::Value>, String> {
     use serde_json::json;
     
-    // Check if this is a vision-capable model in Ollama
-    let supports_vision = model_name.contains("llava") || 
-                         model_name.contains("bakllava") || 
-                         model_name.contains("moondream") ||
-                         model_name.contains("llama3.2-vision") ||
-                         model_name.contains("llama3.2:11b-vision") ||
-                         model_name.contains("llama3.2:90b-vision");
+    let registry = model_registry.lock().await;
+    let models = registry.list_models().await;
     
-    // Special note for Gemma 3N
-    let note = if model_name.contains("gemma3n") {
-        Some("Gemma 3N is designed as a multimodal model with vision, audio, and video capabilities. However, Ollama's current implementation only supports text input. Full multimodal support is expected in a future update.")
-    } else {
-        None
-    };
+    // Convert to detailed model information
+    let model_info: Vec<serde_json::Value> = models.into_iter()
+        .map(|model| json!({
+            "id": model.id,
+            "name": model.name,
+            "description": model.description,
+            "supports_vision": model.supports_vision,
+            "supports_audio": model.supports_audio,
+            "supports_documents": model.supports_documents,
+            "context_window": model.context_window,
+            "quantization": model.quantization,
+            "model_id": model.model_id,
+            "default": model.default,
+            "recommended_for": model.recommended_for
+        }))
+        .collect();
     
-    Ok(json!({
-        "model": model_name,
-        "supports_text": true,
-        "supports_vision": supports_vision,
-        "supports_audio": false,  // No Ollama models currently support direct audio input
-        "supports_video": false,  // No Ollama models currently support video
-        "note": note,
-        "recommended_for": if supports_vision {
-            vec!["image analysis", "visual question answering", "OCR", "image description"]
-        } else if model_name.contains("gemma3n") {
-            vec!["general conversation", "code generation", "reasoning", "creative writing"]
+    Ok(model_info)
+}
+
+#[tauri::command]
+async fn get_model_capabilities(model_name: String, model_registry: State<'_, ModelRegistry>) -> Result<serde_json::Value, String> {
+    use serde_json::json;
+    
+    let registry = model_registry.lock().await;
+    let models = registry.list_models().await;
+    
+    // Find the specific model
+    if let Some(model) = models.iter().find(|m| m.id == model_name || m.name == model_name) {
+        let recommended_for = if model.supports_audio && model.supports_vision {
+            vec!["multimodal conversation", "real-time interaction", "voice + vision", "comprehensive AI assistance"]
+        } else if model.supports_vision {
+            vec!["image analysis", "visual question answering", "OCR", "document analysis"]
+        } else if model.supports_audio {
+            vec!["voice interaction", "speech processing", "audio analysis"]
         } else {
-            vec!["text generation", "conversation", "question answering"]
+            vec!["text generation", "conversation", "question answering", "code generation"]
+        };
+        
+        Ok(json!({
+            "model": model.name,
+            "model_id": model.model_id,
+            "supports_text": true,
+            "supports_vision": model.supports_vision,
+            "supports_audio": model.supports_audio,
+            "supports_video": false, // Not in DefaultModelConfig yet
+            "supports_documents": model.supports_documents,
+            "supports_real_time": model.id.contains("omni"), // Omni models support real-time
+            "thinker_talker_architecture": model.id.contains("omni"),
+            "context_window": model.context_window,
+            "quantization": model.quantization,
+            "description": model.description,
+            "recommended_for": recommended_for
+        }))
+    } else {
+        Err(format!("Model '{}' not found", model_name))
+    }
+}
+
+#[tauri::command]
+async fn load_model(model_id: String, model_registry: State<'_, ModelRegistry>, app: tauri::AppHandle) -> Result<String, String> {
+    info!("Loading model: {}", model_id);
+    
+    // Emit progress start
+    let _ = app.emit("model-loading-progress", serde_json::json!({
+        "model_id": model_id,
+        "progress": 0,
+        "status": "Starting model load...",
+        "stage": "initializing"
+    }));
+    
+    let registry = model_registry.lock().await;
+    
+    // Emit progress for model discovery
+    let _ = app.emit("model-loading-progress", serde_json::json!({
+        "model_id": model_id,
+        "progress": 10,
+        "status": "Checking model availability...",
+        "stage": "checking"
+    }));
+    
+    // Actually attempt to load the model through the registry
+    match registry.load_model(&model_id).await {
+        Ok(_) => {
+            // Emit progress for activation
+            let _ = app.emit("model-loading-progress", serde_json::json!({
+                "model_id": model_id,
+                "progress": 80,
+                "status": "Activating model...",
+                "stage": "activating"
+            }));
+            
+            // Set as active model
+            match registry.set_active_model(&model_id).await {
+                Ok(_) => {
+                    // Emit completion
+                    let _ = app.emit("model-loading-progress", serde_json::json!({
+                        "model_id": model_id,
+                        "progress": 100,
+                        "status": "Model loaded successfully",
+                        "stage": "complete"
+                    }));
+                    
+                    info!("Successfully loaded and activated model: {}", model_id);
+                    Ok(format!("Model '{}' loaded successfully", model_id))
+                }
+                Err(e) => {
+                    // Emit error
+                    let _ = app.emit("model-loading-progress", serde_json::json!({
+                        "model_id": model_id,
+                        "progress": 0,
+                        "status": format!("Failed to activate: {}", e),
+                        "stage": "error"
+                    }));
+                    
+                    error!("Failed to set active model {}: {}", model_id, e);
+                    Err(format!("Failed to activate model '{}': {}", model_id, e))
+                }
+            }
         }
-    }))
+        Err(e) => {
+            // Emit error
+            let _ = app.emit("model-loading-progress", serde_json::json!({
+                "model_id": model_id,
+                "progress": 0,
+                "status": format!("Failed to load: {}", e),
+                "stage": "error"
+            }));
+            
+            error!("Failed to load model {}: {}", model_id, e);
+            Err(format!("Failed to load model '{}': {}", model_id, e))
+        }
+    }
+}
+
+#[tauri::command]
+async fn get_current_model(model_registry: State<'_, ModelRegistry>) -> Result<Option<String>, String> {
+    let registry = model_registry.lock().await;
+    
+    if let Some(active_id) = registry.get_active_model_id().await {
+        // Get the available models to find the display name
+        let models = registry.list_models().await;
+        let current_model = models.iter().find(|m| m.id == active_id);
+        
+        Ok(Some(current_model.map(|m| m.name.clone()).unwrap_or(active_id)))
+    } else {
+        Ok(None)
+    }
 }
 
 // Conversation commands
@@ -378,9 +509,9 @@ async fn stop_speaking(audio: State<'_, AudioRec>) -> Result<(), String> {
 // Camera commands
 #[tauri::command]
 async fn initialize_camera(_vision: State<'_, Vision>) -> Result<bool, String> {
-    // For now, return a message about vision limitations
-    warn!("Camera initialization requested but vision features are limited in current Ollama implementation");
-    Err("Vision features are currently limited. Gemma 3N's multimodal capabilities are not yet available in Ollama. Please use llava or llama3.2-vision models for image analysis.".to_string())
+    // Vision features are being developed with mistral.rs backend
+    warn!("Camera initialization requested but vision features are still in development");
+    Err("Vision features are currently in development. Please wait for future updates with full multimodal support.".to_string())
 }
 
 #[tauri::command]
@@ -416,7 +547,8 @@ async fn process_image_input(
     message: String,
     image_data: Vec<u8>,
     chat_history: State<'_, ChatHistory>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
+    conversation_mgr: State<'_, ConversationMgr>,
     settings: State<'_, Settings>,
 ) -> Result<String, String> {
     // Add user message to history with image indicator
@@ -437,12 +569,21 @@ async fn process_image_input(
     let system_prompt = settings_guard.system_prompt.clone();
     drop(settings_guard);
 
-    // Generate response using AI with image
-    let ai_manager = ai.lock().await;
+    // Generate response using new model registry with image
+    let registry = model_registry.lock().await;
     
-    let response = if ai_manager.is_loaded() {
-        match ai_manager.generate_response_with_image_and_system_prompt(&message, &image_data, max_tokens, system_prompt).await {
-            Ok(resp) => resp,
+    let response = if registry.get_active_model_id().await.is_some() {
+        let input = MultimodalInput::TextWithImage {
+            text: message.clone(),
+            image: crate::inference::ImageData {
+                data: image_data,
+                format: crate::inference::ImageFormat::Jpeg,
+                width: None,
+                height: None,
+            }
+        };
+        match registry.generate(input).await {
+            Ok(model_response) => model_response.text,
             Err(e) => {
                 eprintln!("Error generating response with image: {}", e);
                 format!("I can see the image you've shared, but I'm still learning to process visual information. Error: {}", e)
@@ -452,7 +593,7 @@ async fn process_image_input(
         "The AI model is still loading. Please wait a moment and try again.".to_string()
     };
     
-    drop(ai_manager);
+    drop(registry);
     
     // Add assistant response to history
     let assistant_msg = ChatMessage {
@@ -472,7 +613,8 @@ async fn process_image_input(
 #[tauri::command]
 async fn process_camera_feed(
     vision: State<'_, Vision>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
+    conversation_mgr: State<'_, ConversationMgr>,
     settings: State<'_, Settings>,
     chat_history: State<'_, ChatHistory>,
 ) -> Result<(), String> {
@@ -495,14 +637,24 @@ async fn process_camera_feed(
             Ok(frame) => {
                 match vision_processor.process_camera_frame(&frame) {
                     Ok(_) => {
-                        let ai_manager = ai.lock().await;
+                        let registry = model_registry.lock().await;
                         let settings_guard = settings.lock().await;
                         let max_tokens = settings_guard.max_tokens;
                         let system_prompt = settings_guard.system_prompt.clone();
+                        drop(settings_guard);
                         
-                        let response = if ai_manager.is_loaded() {
-                            match ai_manager.generate_response_with_image_and_system_prompt("Describe what you see.", &frame.data, max_tokens, system_prompt).await {
-                                Ok(resp) => resp,
+                        let response = if registry.get_active_model_id().await.is_some() {
+                            let input = MultimodalInput::TextWithImage {
+                                text: "Describe what you see.".to_string(),
+                                image: crate::inference::ImageData {
+                                    data: frame.data.clone(),
+                                    format: crate::inference::ImageFormat::Jpeg,
+                                    width: Some(640),
+                                    height: Some(480),
+                                }
+                            };
+                            match registry.generate(input).await {
+                                Ok(model_response) => model_response.text,
                                 Err(e) => {
                                     eprintln!("Error generating response with image: {}", e);
                                     format!("I apologize, but I encountered an error processing the image: {}. Please try again.", e)
@@ -512,7 +664,7 @@ async fn process_camera_feed(
                             "The AI model is still loading. Please wait a moment and try again.".to_string()
                         };
                         
-                        drop(ai_manager);
+                        drop(registry);
                         
                         let assistant_msg = ChatMessage {
                             role: "assistant".to_string(),
@@ -545,7 +697,8 @@ async fn process_audio_input(
     message: String,
     audio_data: Vec<u8>,
     chat_history: State<'_, ChatHistory>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
+    _conversation_mgr: State<'_, ConversationMgr>,
     audio: State<'_, AudioRec>,
     settings: State<'_, Settings>,
 ) -> Result<String, String> {
@@ -575,17 +728,27 @@ async fn process_audio_input(
 
     // Get settings
     let settings_guard = settings.lock().await;
-    let max_tokens = settings_guard.max_tokens;
+    let _max_tokens = settings_guard.max_tokens;
     let _system_prompt = settings_guard.system_prompt.clone();
     drop(settings_guard);
 
-    // Generate response using AI with audio data
-    let ai_manager = ai.lock().await;
+    // Generate response using new model registry with audio data
+    let registry = model_registry.lock().await;
     
-    let response = if ai_manager.is_loaded() {
+    let response = if registry.get_active_model_id().await.is_some() {
         // Use multimodal generation with audio data
-        match ai_manager.generate_response_with_audio(&message, &audio_data, max_tokens).await {
-            Ok(resp) => resp,
+        let input = MultimodalInput::TextWithAudio {
+            text: message.clone(),
+            audio: crate::inference::AudioData {
+                data: audio_data,
+                format: crate::inference::AudioFormat::Wav,
+                sample_rate: Some(16000),
+                channels: Some(1),
+                duration: None,
+            }
+        };
+        match registry.generate(input).await {
+            Ok(model_response) => model_response.text,
             Err(e) => {
                 error!("Error generating response with audio: {}", e);
                 format!("I heard your audio input but encountered an error processing it: {}. Please try again.", e)
@@ -595,7 +758,7 @@ async fn process_audio_input(
         "The AI model is still loading. Please wait a moment and try again.".to_string()
     };
     
-    drop(ai_manager);
+    drop(registry);
     
     // Clone response for use in multiple places
     let response_for_tts = response.clone();
@@ -639,7 +802,8 @@ async fn process_multimodal_input(
     audio_data: Option<Vec<u8>>,
     video_data: Option<Vec<u8>>,
     chat_history: State<'_, ChatHistory>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
+    conversation_mgr: State<'_, ConversationMgr>,
     vision: State<'_, Vision>,
     settings: State<'_, Settings>,
 ) -> Result<String, String> {
@@ -691,10 +855,10 @@ async fn process_multimodal_input(
     };
 
     // Process comprehensive multimodal input
-    let ai_manager = ai.lock().await;
+    let registry = model_registry.lock().await;
     let vision_manager = vision.lock().await;
     
-    let response = if ai_manager.is_loaded() {
+    let response = if registry.get_active_model_id().await.is_some() {
         // Handle camera capture separately to avoid lifetime issues
         let camera_frame_data = if image_data.is_none() && vision_manager.is_capturing() {
             // Capture current frame for live camera analysis
@@ -709,27 +873,52 @@ async fn process_multimodal_input(
             None
         };
         
+        drop(vision_manager);
+        
         // Determine final image data to use
         let final_image_data = if let Some(ref img_data) = image_data {
-            Some(img_data.as_slice())
+            Some(img_data.clone())
         } else if let Some(ref cam_data) = camera_frame_data {
-            Some(cam_data.as_slice())
+            Some(cam_data.clone())
         } else {
             None
         };
         
-        // Use comprehensive multimodal generation with context
-        match ai_manager.generate_multimodal_response(
-            &message,
-            final_image_data,
-            audio_data.as_deref(),
-            system_prompt,
-            recent_history.as_deref(),
-            max_tokens
-        ).await {
-            Ok(resp) => {
+        // Create comprehensive multimodal input
+        let input = MultimodalInput::MultimodalConversation {
+            text: Some(message.clone()),
+            images: final_image_data.map(|data| vec![crate::inference::ImageData {
+                data,
+                format: crate::inference::ImageFormat::Jpeg,
+                width: None,
+                height: None,
+            }]).unwrap_or_default(),
+            audio: audio_data.map(|data| crate::inference::AudioData {
+                data,
+                format: crate::inference::AudioFormat::Wav,
+                sample_rate: Some(16000),
+                channels: Some(1),
+                duration: None,
+            }),
+            video: video_data.map(|data| crate::inference::VideoData {
+                data,
+                format: crate::inference::VideoFormat::Mp4,
+                width: None,
+                height: None,
+                fps: None,
+                duration: None,
+                frames: None,
+            }),
+            documents: vec![],
+            real_time: false,
+            conversation_context: None,
+        };
+        
+        // Use comprehensive multimodal generation
+        match registry.generate(input).await {
+            Ok(model_response) => {
                 info!("Generated comprehensive multimodal response with {} modalities", modality_count);
-                resp
+                model_response.text
             }
             Err(e) => {
                 error!("Error generating comprehensive multimodal response: {}", e);
@@ -740,7 +929,7 @@ async fn process_multimodal_input(
         "The AI model is still loading. Please wait a moment and try again.".to_string()
     };
     
-    drop(ai_manager);
+    drop(registry);
     
     // Add assistant response to history
     let assistant_msg = ChatMessage {
@@ -795,40 +984,64 @@ async fn avatar_blink(avatar: State<'_, Avatar>) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn get_backend_info(ai: State<'_, AI>) -> Result<String, String> {
-    let ai_manager = ai.lock().await;
-    Ok(ai_manager.get_backend_info().await)
-}
-
-#[tauri::command]
-async fn benchmark_backends(
-    ai: State<'_, AI>,
-    prompt: Option<String>,
-    max_tokens: Option<usize>,
-) -> Result<Vec<(String, crate::ai::InferenceMetrics)>, String> {
-    let ai_manager = ai.lock().await;
-    let test_prompt = prompt.unwrap_or_else(|| "What is the capital of France?".to_string());
-    let tokens = max_tokens.unwrap_or(100);
-    
-    match ai_manager.benchmark_backends(&test_prompt, tokens).await {
-        Ok(results) => Ok(results),
-        Err(e) => Err(format!("Failed to benchmark backends: {}", e)),
+async fn get_backend_info(model_registry: State<'_, ModelRegistry>) -> Result<String, String> {
+    let registry = model_registry.lock().await;
+    if let Some(model_id) = registry.get_active_model_id().await {
+        Ok(format!("Active model: {} (Qwen2.5-Omni via mistral.rs backend)", model_id))
+    } else {
+        Ok("No active model (mistral.rs backend ready)".to_string())
     }
 }
 
 #[tauri::command]
-async fn restart_ollama(ai: State<'_, AI>) -> Result<String, String> {
-    info!("Attempting to restart Ollama server...");
+async fn benchmark_backends(
+    model_registry: State<'_, ModelRegistry>,
+    prompt: Option<String>,
+    max_tokens: Option<usize>,
+) -> Result<Vec<(String, f64)>, String> {
+    let registry = model_registry.lock().await;
+    let test_prompt = prompt.unwrap_or_else(|| "What is the capital of France?".to_string());
+    let _tokens = max_tokens.unwrap_or(100);
     
-    let mut ai_manager = ai.lock().await;
+    // Simple benchmark of current model
+    if let Some(model_id) = registry.get_active_model_id().await {
+        let start = std::time::Instant::now();
+        let input = MultimodalInput::Text(test_prompt);
+        match registry.generate(input).await {
+            Ok(_) => {
+                let elapsed = start.elapsed().as_secs_f64();
+                Ok(vec![(model_id, elapsed)])
+            }
+            Err(e) => Err(format!("Failed to benchmark model: {}", e)),
+        }
+    } else {
+        Err("No active model to benchmark".to_string())
+    }
+}
+
+#[tauri::command]
+async fn restart_backend(model_registry: State<'_, ModelRegistry>) -> Result<String, String> {
+    info!("Attempting to restart mistral.rs backend...");
     
-    // Since we're using unified model manager, we need to check if backend is Ollama
-    // For now, return a message that tells user to restart the app
-    // In a future update, we could add direct access to OllamaInference
+    let registry = model_registry.lock().await;
     
-    drop(ai_manager);
-    
-    Err("Please restart the Tektra app to reconnect to Ollama. If the issue persists, ensure Ollama is installed or check port 11434.".to_string())
+    // Reset the model registry - unload current models
+    if let Some(model_id) = registry.get_active_model_id().await {
+        info!("Unloading active model: {}", model_id);
+        match registry.unload_model(&model_id).await {
+            Ok(_) => {
+                drop(registry);
+                Ok(format!("Backend restarted successfully. Model '{}' unloaded.", model_id))
+            }
+            Err(e) => {
+                drop(registry);
+                Err(format!("Failed to restart backend: {}", e))
+            }
+        }
+    } else {
+        drop(registry);
+        Ok("Backend restarted successfully. No models were loaded.".to_string())
+    }
 }
 
 // Project management commands
@@ -887,7 +1100,7 @@ async fn upload_file_to_project(
     file_path: String,
     file_name: String,
     db: State<'_, DB>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
 ) -> Result<serde_json::Value, String> {
     info!("Uploading file {} to project {}", file_name, project_id);
     
@@ -925,7 +1138,7 @@ async fn upload_file_to_project(
     
     // Process file content if it's a text document
     let (content, embeddings) = if file_type == "text" {
-        match process_text_file(&file_path, &file_name, &ai).await {
+        match process_text_file(&file_path, &file_name, &model_registry).await {
             Ok((content, embeddings)) => (Some(content), Some(embeddings)),
             Err(e) => {
                 warn!("Failed to process text file: {}", e);
@@ -963,28 +1176,21 @@ async fn upload_file_to_project(
 async fn process_text_file(
     file_path: &str,
     _file_name: &str,
-    ai: &State<'_, AI>,
+    model_registry: &State<'_, ModelRegistry>,
 ) -> anyhow::Result<(String, Vec<f32>)> {
-    use crate::ai::document_processor::UnifiedDocumentProcessor;
+    // Read file content directly for now
+    let content = std::fs::read_to_string(file_path)
+        .map_err(|e| anyhow::anyhow!("Failed to read file: {}", e))?;
     
-    // Create document processor
-    let processor = UnifiedDocumentProcessor::new();
-    
-    // Process the document
-    let processed = processor.process_file(Path::new(file_path)).await?;
-    
-    // Extract text content from the processed document
-    let content = processed.raw_text.clone();
-    
-    // Generate embeddings using the AI model
-    let ai_manager = ai.lock().await;
-    let embeddings = if ai_manager.is_loaded() {
+    // Generate embeddings using the model registry
+    let registry = model_registry.lock().await;
+    let embeddings = if registry.get_active_model_id().await.is_some() {
         // For now, return dummy embeddings until we implement proper embedding generation
         vec![0.0; 768] // Standard embedding size
     } else {
         vec![]
     };
-    drop(ai_manager);
+    drop(registry);
     
     Ok((content, embeddings))
 }
@@ -995,7 +1201,7 @@ async fn semantic_search(
     project_id: Option<String>,
     limit: Option<usize>,
     vector_store: State<'_, VectorStore>,
-    _ai: State<'_, AI>,
+    _model_registry: State<'_, ModelRegistry>,
 ) -> Result<Vec<serde_json::Value>, String> {
     info!("Performing semantic search for: '{}'", query);
     
@@ -1083,7 +1289,8 @@ async fn process_file_content(
     file_content: Vec<u8>,
     file_type: String,
     chat_history: State<'_, ChatHistory>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
+    _conversation_mgr: State<'_, ConversationMgr>,
     settings: State<'_, Settings>,
 ) -> Result<String, String> {
     info!("Processing file content: {} ({} bytes)", file_name, file_content.len());
@@ -1141,13 +1348,14 @@ async fn process_file_content(
     let system_prompt = settings_guard.system_prompt.clone();
     drop(settings_guard);
 
-    // Send directly to AI model without any vector database processing
-    let ai_manager = ai.lock().await;
-    let response = if ai_manager.is_loaded() {
-        match ai_manager.generate_response_with_system_prompt(&file_analysis_message, max_tokens, system_prompt).await {
-            Ok(resp) => {
-                info!("Successfully generated response for file: {} characters", resp.len());
-                resp
+    // Send directly to model registry without any vector database processing
+    let registry = model_registry.lock().await;
+    let response = if registry.get_active_model_id().await.is_some() {
+        let input = MultimodalInput::Text(file_analysis_message);
+        match registry.generate(input).await {
+            Ok(model_response) => {
+                info!("Successfully generated response for file: {} characters", model_response.text.len());
+                model_response.text
             },
             Err(e) => {
                 error!("Error generating response for file: {}", e);
@@ -1157,7 +1365,7 @@ async fn process_file_content(
     } else {
         "The AI model is still loading. Please wait a moment and try again.".to_string()
     };
-    drop(ai_manager);
+    drop(registry);
     
     // Add assistant response to chat history
     let assistant_msg = ChatMessage {
@@ -1179,9 +1387,10 @@ async fn process_uploaded_files(
     files: Vec<String>, // File paths
     _project_id: Option<String>,
     chat_history: State<'_, ChatHistory>,
-    ai: State<'_, AI>,
+    model_registry: State<'_, ModelRegistry>,
+    _conversation_mgr: State<'_, ConversationMgr>,
     settings: State<'_, Settings>,
-    vector_store: State<'_, VectorStore>,
+    _vector_store: State<'_, VectorStore>,
 ) -> Result<String, String> {
     info!("Processing {} uploaded files", files.len());
     
@@ -1211,7 +1420,8 @@ async fn process_uploaded_files(
             format!("I've uploaded an image: {}", file_name),
             file_content,
             chat_history,
-            ai,
+            model_registry,
+            _conversation_mgr,
             settings,
         ).await;
     } else if file_name.ends_with(".txt") || file_name.ends_with(".md") {
@@ -1252,15 +1462,16 @@ async fn process_uploaded_files(
 
         // Get settings for AI generation
         let settings_guard = settings.lock().await;
-        let max_tokens = settings_guard.max_tokens;
-        let system_prompt = settings_guard.system_prompt.clone();
+        let _max_tokens = settings_guard.max_tokens;
+        let _system_prompt = settings_guard.system_prompt.clone();
         drop(settings_guard);
 
-        // Send directly to AI model without any vector database processing
-        let ai_manager = ai.lock().await;
-        let response = if ai_manager.is_loaded() {
-            match ai_manager.generate_response_with_system_prompt(&file_analysis_message, max_tokens, system_prompt).await {
-                Ok(resp) => resp,
+        // Send directly to model registry without any vector database processing
+        let registry = model_registry.lock().await;
+        let response = if registry.get_active_model_id().await.is_some() {
+            let input = MultimodalInput::Text(file_analysis_message);
+            match registry.generate(input).await {
+                Ok(model_response) => model_response.text,
                 Err(e) => {
                     error!("Error generating response for file: {}", e);
                     format!("I apologize, but I encountered an error analyzing the file: {}. Please try again.", e)
@@ -1269,7 +1480,7 @@ async fn process_uploaded_files(
         } else {
             "The AI model is still loading. Please wait a moment and try again.".to_string()
         };
-        drop(ai_manager);
+        drop(registry);
 
         // Add assistant response to history
         let assistant_msg = ChatMessage {
@@ -1285,6 +1496,334 @@ async fn process_uploaded_files(
         return Ok(response);
     } else {
         return Err(format!("Unsupported file type: {}", file_name));
+    }
+}
+
+// Voice pipeline commands
+#[tauri::command]
+async fn start_voice_session(
+    voice_pipeline: State<'_, VoicePipelineMgr>,
+    model_registry: State<'_, ModelRegistry>,
+    app: tauri::AppHandle,
+) -> Result<String, String> {
+    info!("Starting voice conversation session");
+    
+    let mut pipeline_guard = voice_pipeline.lock().await;
+    
+    // Create voice pipeline if not already initialized
+    if pipeline_guard.is_none() {
+        let registry_arc = model_registry.inner().clone();
+        
+        let config = VoicePipelineConfig {
+            unmute_backend_url: "ws://localhost:8000".to_string(),
+            voice_character: VoiceCharacterConfig {
+                voice: "default".to_string(),
+                instructions: Some("You are Tektra, a helpful multimodal AI assistant. Respond naturally and conversationally in a friendly, concise manner.".to_string()),
+                allow_recording: true,
+            },
+            ..Default::default()
+        };
+        
+        match VoicePipeline::new(registry_arc, config).await {
+            Ok(mut pipeline) => {
+                // Set up event channel for UI communication
+                let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+                pipeline.set_event_channel(tx);
+                
+                // Spawn task to handle voice events and emit them to frontend
+                let app_handle = app.clone();
+                tokio::spawn(async move {
+                    while let Some(event) = rx.recv().await {
+                        let _ = app_handle.emit("voice-pipeline-event", serde_json::to_value(&event).unwrap_or_default());
+                    }
+                });
+                
+                *pipeline_guard = Some(pipeline);
+            }
+            Err(e) => {
+                error!("Failed to create voice pipeline: {}", e);
+                return Err(format!("Failed to initialize voice pipeline: {}", e));
+            }
+        }
+    }
+    
+    // Start the session
+    if let Some(ref mut pipeline) = pipeline_guard.as_mut() {
+        match pipeline.start_session().await {
+            Ok(_) => Ok("Voice session started successfully".to_string()),
+            Err(e) => {
+                error!("Failed to start voice session: {}", e);
+                Err(format!("Failed to start voice session: {}", e))
+            }
+        }
+    } else {
+        Err("Voice pipeline not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+async fn stop_voice_session(voice_pipeline: State<'_, VoicePipelineMgr>) -> Result<String, String> {
+    info!("Stopping voice conversation session");
+    
+    let mut pipeline_guard = voice_pipeline.lock().await;
+    
+    if let Some(ref mut pipeline) = pipeline_guard.as_mut() {
+        match pipeline.stop_session().await {
+            Ok(_) => Ok("Voice session stopped successfully".to_string()),
+            Err(e) => {
+                error!("Failed to stop voice session: {}", e);
+                Err(format!("Failed to stop voice session: {}", e))
+            }
+        }
+    } else {
+        Err("Voice pipeline not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+async fn get_voice_session_status(voice_pipeline: State<'_, VoicePipelineMgr>) -> Result<serde_json::Value, String> {
+    let pipeline_guard = voice_pipeline.lock().await;
+    
+    if let Some(ref pipeline) = pipeline_guard.as_ref() {
+        let is_active = pipeline.is_session_active().await;
+        let conversation_state = pipeline.get_conversation_state().await;
+        
+        Ok(serde_json::json!({
+            "is_active": is_active,
+            "conversation_state": conversation_state,
+            "pipeline_initialized": true
+        }))
+    } else {
+        Ok(serde_json::json!({
+            "is_active": false,
+            "conversation_state": null,
+            "pipeline_initialized": false
+        }))
+    }
+}
+
+#[tauri::command]
+async fn update_voice_config(
+    voice_pipeline: State<'_, VoicePipelineMgr>,
+    config: VoicePipelineConfig,
+) -> Result<String, String> {
+    info!("Updating voice pipeline configuration");
+    
+    let mut pipeline_guard = voice_pipeline.lock().await;
+    
+    if let Some(ref mut pipeline) = pipeline_guard.as_mut() {
+        match pipeline.update_config(config).await {
+            Ok(_) => Ok("Voice configuration updated successfully".to_string()),
+            Err(e) => {
+                error!("Failed to update voice config: {}", e);
+                Err(format!("Failed to update voice configuration: {}", e))
+            }
+        }
+    } else {
+        Err("Voice pipeline not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+async fn get_voice_devices() -> Result<serde_json::Value, String> {
+    use voice::RealtimeAudioManager;
+    use voice::AudioSettings;
+    
+    // Create temporary audio manager to list devices
+    let settings = AudioSettings {
+        sample_rate: 24000,
+        buffer_size: 1024,
+        audio_format: "opus".to_string(),
+        noise_reduction: true,
+        auto_gain: true,
+    };
+    
+    match RealtimeAudioManager::new(settings).await {
+        Ok(audio_manager) => {
+            let input_devices = audio_manager.list_input_devices().unwrap_or_default();
+            let output_devices = audio_manager.list_output_devices().unwrap_or_default();
+            
+            Ok(serde_json::json!({
+                "input_devices": input_devices,
+                "output_devices": output_devices
+            }))
+        }
+        Err(e) => {
+            error!("Failed to create audio manager: {}", e);
+            Err(format!("Failed to list audio devices: {}", e))
+        }
+    }
+}
+
+// Unmute service management commands
+#[tauri::command]
+async fn start_unmute_services(
+    unmute_manager: State<'_, UnmuteServiceMgr>,
+    model_registry: State<'_, ModelRegistry>,
+    app: tauri::AppHandle,
+) -> Result<String, String> {
+    info!("Starting Unmute services");
+    
+    let mut manager_guard = unmute_manager.lock().await;
+    
+    // Initialize service manager if not already done
+    if manager_guard.is_none() {
+        let app_data_dir = app.path().app_data_dir()
+            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+        
+        let unmute_dir = app_data_dir.join("unmute");
+        
+        // Get model registry for Rust backend
+        let registry_arc = model_registry.inner().clone();
+        
+        match UnmuteServiceManager::new_with_model_registry(unmute_dir, None, registry_arc).await {
+            Ok(mut manager) => {
+                // Set up event channel for service events
+                let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+                manager.set_event_channel(tx);
+                
+                // Spawn task to handle service events and emit them to frontend
+                let app_handle = app.clone();
+                tokio::spawn(async move {
+                    while let Some(event) = rx.recv().await {
+                        let _ = app_handle.emit("unmute-service-event", serde_json::to_value(&event).unwrap_or_default());
+                    }
+                });
+                
+                *manager_guard = Some(manager);
+            }
+            Err(e) => {
+                error!("Failed to create Unmute service manager: {}", e);
+                return Err(format!("Failed to initialize Unmute service manager: {}", e));
+            }
+        }
+    }
+    
+    // Start the services
+    if let Some(ref mut manager) = manager_guard.as_mut() {
+        match manager.start_services().await {
+            Ok(_) => Ok("Unmute services started successfully".to_string()),
+            Err(e) => {
+                error!("Failed to start Unmute services: {}", e);
+                Err(format!("Failed to start Unmute services: {}", e))
+            }
+        }
+    } else {
+        Err("Unmute service manager not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+async fn stop_unmute_services(unmute_manager: State<'_, UnmuteServiceMgr>) -> Result<String, String> {
+    info!("Stopping Unmute services");
+    
+    let mut manager_guard = unmute_manager.lock().await;
+    
+    if let Some(ref mut manager) = manager_guard.as_mut() {
+        match manager.stop_services().await {
+            Ok(_) => Ok("Unmute services stopped successfully".to_string()),
+            Err(e) => {
+                error!("Failed to stop Unmute services: {}", e);
+                Err(format!("Failed to stop Unmute services: {}", e))
+            }
+        }
+    } else {
+        Err("Unmute service manager not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+async fn get_unmute_services_status(unmute_manager: State<'_, UnmuteServiceMgr>) -> Result<serde_json::Value, String> {
+    let manager_guard = unmute_manager.lock().await;
+    
+    if let Some(ref manager) = manager_guard.as_ref() {
+        let is_running = manager.is_running().await;
+        let service_status = manager.get_service_status().await;
+        
+        Ok(serde_json::json!({
+            "is_running": is_running,
+            "services": service_status,
+            "manager_initialized": true
+        }))
+    } else {
+        Ok(serde_json::json!({
+            "is_running": false,
+            "services": {},
+            "manager_initialized": false
+        }))
+    }
+}
+
+#[tauri::command]
+async fn get_unmute_service_status(unmute_manager: State<'_, UnmuteServiceMgr>) -> Result<std::collections::HashMap<String, bool>, String> {
+    let manager_guard = unmute_manager.lock().await;
+    
+    if let Some(ref manager) = manager_guard.as_ref() {
+        Ok(manager.get_service_status().await)
+    } else {
+        // Return default status when manager is not initialized
+        let mut status = std::collections::HashMap::new();
+        status.insert("backend".to_string(), false);
+        status.insert("stt".to_string(), false);
+        status.insert("tts".to_string(), false);
+        Ok(status)
+    }
+}
+
+#[tauri::command]
+async fn update_unmute_config(
+    unmute_manager: State<'_, UnmuteServiceMgr>,
+    config: UnmuteConfig,
+) -> Result<String, String> {
+    info!("Updating Unmute service configuration");
+    
+    let mut manager_guard = unmute_manager.lock().await;
+    
+    if let Some(ref mut manager) = manager_guard.as_mut() {
+        match manager.update_config(config).await {
+            Ok(_) => Ok("Unmute configuration updated successfully".to_string()),
+            Err(e) => {
+                error!("Failed to update Unmute config: {}", e);
+                Err(format!("Failed to update Unmute configuration: {}", e))
+            }
+        }
+    } else {
+        Err("Unmute service manager not initialized".to_string())
+    }
+}
+
+#[tauri::command]
+async fn check_unmute_dependencies(unmute_manager: State<'_, UnmuteServiceMgr>) -> Result<serde_json::Value, String> {
+    let mut manager_guard = unmute_manager.lock().await;
+    
+    if manager_guard.is_none() {
+        return Ok(serde_json::json!({
+            "checked": false,
+            "dependencies": {},
+            "message": "Service manager not initialized"
+        }));
+    }
+    
+    if let Some(ref manager) = manager_guard.as_ref() {
+        match manager.check_dependencies().await {
+            Ok(_) => Ok(serde_json::json!({
+                "checked": true,
+                "dependencies": {
+                    "git": "installed",
+                    "uv": "installed", 
+                    "cargo": "installed",
+                    "pnpm": "installed"
+                },
+                "message": "All dependencies are available"
+            })),
+            Err(e) => Ok(serde_json::json!({
+                "checked": false,
+                "dependencies": {},
+                "message": format!("Dependency check failed: {}", e)
+            }))
+        }
+    } else {
+        Err("Unmute service manager not initialized".to_string())
     }
 }
 
@@ -1337,9 +1876,11 @@ fn main() {
                 app_config.inference.benchmark_on_startup
             );
             
-            // Create AI manager with configured backend
-            let ai_manager = AIManager::with_backend(app_handle.clone(), app_config.inference.backend)
-                .map_err(|e| format!("Failed to create AI manager: {}", e))?;
+            // Create new model registry and conversation manager (sync initialization)
+            let model_registry = InferenceModelRegistry::new();
+            
+            let conversation_manager = ConversationManager::new(None)
+                .map_err(|e| format!("Failed to create conversation manager: {}", e))?;
             
             let audio_recorder = AudioRecorder::new(app_handle.clone());
             let avatar_manager = AvatarManager::new(app_handle.clone());
@@ -1350,12 +1891,15 @@ fn main() {
             
             app.manage(ChatHistory::new(Mutex::new(Vec::new())));
             app.manage(Settings::new(Mutex::new(AppSettings::default())));
-            app.manage(AI::new(Mutex::new(ai_manager)));
+            app.manage(ModelRegistry::new(Mutex::new(model_registry)));
+            app.manage(ConversationMgr::new(Mutex::new(conversation_manager)));
             app.manage(AudioRec::new(Mutex::new(audio_recorder)));
             app.manage(Vision::new(Mutex::new(vision_manager)));
             app.manage(Avatar::new(Mutex::new(avatar_manager)));
             app.manage(VectorStore::new(Mutex::new(vector_db)));
             app.manage(DB::new(database));
+            app.manage(VoicePipelineMgr::new(Mutex::new(None)));
+            app.manage(UnmuteServiceMgr::new(Mutex::new(None)));
             
             // Store config for later use
             app.manage(Arc::new(Mutex::new(app_config)));
@@ -1374,6 +1918,8 @@ fn main() {
             check_model_status,
             get_available_models,
             get_model_capabilities,
+            load_model,
+            get_current_model,
             start_audio_recording,
             stop_audio_recording,
             is_recording,
@@ -1398,7 +1944,18 @@ fn main() {
             avatar_blink,
             get_backend_info,
             benchmark_backends,
-            restart_ollama,
+            restart_backend,
+            start_voice_session,
+            stop_voice_session,
+            get_voice_session_status,
+            update_voice_config,
+            get_voice_devices,
+            start_unmute_services,
+            stop_unmute_services,
+            get_unmute_services_status,
+            get_unmute_service_status,
+            update_unmute_config,
+            check_unmute_dependencies,
             create_project,
             get_projects,
             delete_project,

@@ -1,10 +1,9 @@
 use anyhow::Result;
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, debug, warn};
+use tracing::{info, debug};
 
 use crate::ai::document_processor::{
     DocumentFormat, ProcessedDocument, DocumentChunk, ChunkingStrategy,

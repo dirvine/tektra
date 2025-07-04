@@ -1,7 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::Path;
 use tracing::{info, warn};
 
 use crate::ai::unified_model_manager::{ModelConfig, DeviceConfig, GenerationParams};

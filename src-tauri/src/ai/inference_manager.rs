@@ -4,7 +4,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 use super::inference_backend::{InferenceBackend, InferenceConfig, InferenceMetrics, BackendType};
-use super::ollama_inference::OllamaInference;
+// Legacy ollama_inference removed
 use tauri::AppHandle;
 
 /// Unified inference manager that can switch between different backends
@@ -37,14 +37,9 @@ impl InferenceManager {
         })
     }
     
-    /// Create the Ollama backend (only option)
-    fn create_backend(_backend_type: BackendType, app_handle: Option<AppHandle>) -> Result<Box<dyn InferenceBackend>> {
-        info!("Using Ollama backend");
-        if let Some(handle) = app_handle {
-            Ok(Box::new(OllamaInference::with_app_handle(handle)))
-        } else {
-            Ok(Box::new(OllamaInference::new()))
-        }
+    /// Backend creation removed - legacy Ollama backend no longer available
+    fn create_backend(_backend_type: BackendType, _app_handle: Option<AppHandle>) -> Result<Box<dyn InferenceBackend>> {
+        Err(anyhow::anyhow!("Inference backends have been migrated to the new mistral.rs system. Use the ModelRegistry instead."))
     }
     
     /// Load a model file

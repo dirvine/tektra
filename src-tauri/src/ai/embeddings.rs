@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, debug};
+use tracing::info;
 
 /// Trait for generating embeddings from text
 #[async_trait]
@@ -90,101 +90,7 @@ impl EmbeddingGenerator for SimpleEmbeddingGenerator {
     }
 }
 
-/// Ollama-based embedding generator
-pub struct OllamaEmbeddingGenerator {
-    ollama: Arc<ollama_rs::Ollama>,
-    config: EmbeddingConfig,
-}
-
-impl OllamaEmbeddingGenerator {
-    pub fn new(ollama: Arc<ollama_rs::Ollama>) -> Self {
-        Self {
-            ollama,
-            config: EmbeddingConfig {
-                model_name: "nomic-embed-text".to_string(),
-                dimension: 768,
-                max_batch_size: 32,
-                normalize: true,
-            },
-        }
-    }
-    
-    pub fn with_model(ollama: Arc<ollama_rs::Ollama>, model_name: String, dimension: usize) -> Self {
-        Self {
-            ollama,
-            config: EmbeddingConfig {
-                model_name,
-                dimension,
-                max_batch_size: 32,
-                normalize: true,
-            },
-        }
-    }
-}
-
-#[async_trait]
-impl EmbeddingGenerator for OllamaEmbeddingGenerator {
-    async fn generate_embedding(&self, text: &str) -> Result<Vec<f32>> {
-        debug!("Generating embedding for text using {}", self.config.model_name);
-        
-        let request = ollama_rs::generation::embeddings::request::GenerateEmbeddingsRequest::new(
-            self.config.model_name.clone(),
-            ollama_rs::generation::embeddings::request::EmbeddingsInput::Single(text.to_string()),
-        );
-        
-        let response = self.ollama.generate_embeddings(request).await?;
-        let embedding = response.embeddings[0].clone();
-        
-        // Ensure correct dimension
-        if embedding.len() != self.config.dimension {
-            return Err(anyhow::anyhow!(
-                "Embedding dimension mismatch: expected {}, got {}",
-                self.config.dimension,
-                embedding.len()
-            ));
-        }
-        
-        // The embeddings are already f32, no conversion needed
-        let mut embedding_f32 = embedding;
-        
-        if self.config.normalize {
-            let norm: f32 = embedding_f32.iter().map(|x| x * x).sum::<f32>().sqrt();
-            if norm > 0.0 {
-                for val in &mut embedding_f32 {
-                    *val /= norm;
-                }
-            }
-        }
-        
-        Ok(embedding_f32)
-    }
-    
-    async fn generate_embeddings(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {
-        let mut embeddings = Vec::new();
-        
-        // Process in batches
-        for chunk in texts.chunks(self.config.max_batch_size) {
-            for text in chunk {
-                embeddings.push(self.generate_embedding(text).await?);
-            }
-            
-            // Small delay between batches to avoid overwhelming the server
-            if chunk.len() == self.config.max_batch_size {
-                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-            }
-        }
-        
-        Ok(embeddings)
-    }
-    
-    fn embedding_dimension(&self) -> usize {
-        self.config.dimension
-    }
-    
-    fn model_name(&self) -> &str {
-        &self.config.model_name
-    }
-}
+// Legacy OllamaEmbeddingGenerator removed - will be replaced with mistral.rs implementation
 
 /// Embedding manager that can switch between different generators
 pub struct EmbeddingManager {
@@ -260,7 +166,7 @@ impl EmbeddingManager {
 
 /// Utility functions for embeddings
 pub mod utils {
-    use super::*;
+    
     
     /// Calculate cosine similarity between two embeddings
     pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
