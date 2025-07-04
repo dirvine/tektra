@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ChevronRight,
   ChevronDown,
@@ -9,8 +9,13 @@ import {
   Settings,
   PanelLeft,
   PanelLeftClose,
+  X,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { useTektraStore } from '../store';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 const LeftSidebar: React.FC = () => {
   // Use individual selectors instead of destructuring - this is more reliable
@@ -24,6 +29,25 @@ const LeftSidebar: React.FC = () => {
   const [openSections, setOpenSections] = useState<Set<string>>(
     new Set(['ai-model'])
   );
+  
+  // Model selection state
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [loadingModel, setLoadingModel] = useState<string | null>(null);
+  
+  // Progress tracking state
+  const [downloadProgress, setDownloadProgress] = useState<{
+    modelId: string | null;
+    progress: number;
+    status: string;
+    stage: string;
+  }>({
+    modelId: null,
+    progress: 0,
+    status: '',
+    stage: 'idle'
+  });
 
   const toggleSection = (sectionId: string) => {
     const newOpenSections = new Set(openSections);
@@ -33,6 +57,143 @@ const LeftSidebar: React.FC = () => {
       newOpenSections.add(sectionId);
     }
     setOpenSections(newOpenSections);
+  };
+
+  // Load available models when component mounts and setup event listeners
+  useEffect(() => {
+    loadCurrentModel();
+    
+    // Setup progress event listener
+    const setupProgressListener = async () => {
+      await listen<{
+        model_id: string;
+        progress: number;
+        status: string;
+        stage: string;
+      }>('model-loading-progress', (event) => {
+        const { model_id, progress, status, stage } = event.payload;
+        setDownloadProgress({
+          modelId: model_id,
+          progress,
+          status,
+          stage
+        });
+        
+        // Update model status based on progress
+        if (stage === 'complete') {
+          // Find the model name for this ID
+          const selectedModel = availableModels.find(m => m.id === model_id);
+          if (selectedModel) {
+            setModelStatus({
+              ...modelStatus,
+              modelName: selectedModel.name,
+              isLoaded: true,
+              isLoading: false,
+              backend: 'mistral.rs'
+            });
+          }
+          setLoadingModel(null);
+          setShowModelSelector(false);
+        } else if (stage === 'error') {
+          setModelStatus({
+            ...modelStatus,
+            isLoading: false,
+            isLoaded: false
+          });
+          setLoadingModel(null);
+        }
+      });
+    };
+    
+    setupProgressListener();
+  }, [availableModels, modelStatus, setModelStatus]);
+
+  const loadCurrentModel = async () => {
+    try {
+      const currentModelId = await invoke<string | null>('get_current_model');
+      if (currentModelId) {
+        // Get the available models to find the display name
+        const models = await invoke<any[]>('get_available_models');
+        const currentModel = models.find(m => m.id === currentModelId);
+        
+        setModelStatus({
+          ...modelStatus,
+          modelName: currentModel ? currentModel.name : currentModelId,
+          isLoaded: true,
+          backend: 'mistral.rs'
+        });
+      } else {
+        // No active model, set default state
+        setModelStatus({
+          ...modelStatus,
+          modelName: 'No model loaded',
+          isLoaded: false,
+          backend: 'mistral.rs'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load current model:', error);
+      setModelStatus({
+        ...modelStatus,
+        modelName: 'Error loading model',
+        isLoaded: false,
+        backend: 'mistral.rs'
+      });
+    }
+  };
+
+  const fetchAvailableModels = async () => {
+    setLoadingModels(true);
+    try {
+      const models = await invoke<any[]>('get_available_models');
+      setAvailableModels(models);
+    } catch (error) {
+      console.error('Failed to fetch available models:', error);
+      setAvailableModels([]);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
+  const handleChangeModel = async () => {
+    setShowModelSelector(true);
+    await fetchAvailableModels();
+  };
+
+  const handleSelectModel = async (modelId: string, modelName: string) => {
+    setLoadingModel(modelId);
+    try {
+      // Update UI immediately to show loading
+      setModelStatus({
+        ...modelStatus,
+        modelName: modelName,
+        isLoading: true,
+        isLoaded: false
+      });
+
+      await invoke('load_model', { model_id: modelId });
+      
+      // Update final state
+      setModelStatus({
+        ...modelStatus,
+        modelName: modelName,
+        isLoaded: true,
+        isLoading: false,
+        backend: 'mistral.rs'
+      });
+
+      setShowModelSelector(false);
+    } catch (error) {
+      console.error('Failed to load model:', error);
+      // Revert UI state on error
+      setModelStatus({
+        ...modelStatus,
+        isLoading: false,
+        isLoaded: false
+      });
+    } finally {
+      setLoadingModel(null);
+    }
   };
 
   // Collapsed sidebar
@@ -112,18 +273,48 @@ const LeftSidebar: React.FC = () => {
                 <label className="block text-sm font-medium text-text-primary mb-2">
                   Status
                 </label>
-                <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    modelStatus.isLoaded ? 'bg-success' : 'bg-error'
-                  }`} />
-                  <span className="text-sm text-text-secondary">
-                    {modelStatus.isLoaded ? 'Ready' : 'Not Loaded'}
-                  </span>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      modelStatus.isLoaded ? 'bg-success' : 
+                      modelStatus.isLoading || downloadProgress.stage !== 'idle' ? 'bg-accent' : 'bg-error'
+                    }`} />
+                    <span className="text-sm text-text-secondary">
+                      {modelStatus.isLoaded ? 'Ready' : 
+                       modelStatus.isLoading || downloadProgress.stage !== 'idle' ? 'Loading' : 'Not Loaded'}
+                    </span>
+                  </div>
+                  
+                  {/* Progress bar when loading */}
+                  {(modelStatus.isLoading || downloadProgress.stage !== 'idle') && (
+                    <div className="space-y-1">
+                      <div className="w-full bg-surface rounded-full h-2">
+                        <div 
+                          className="bg-accent h-2 rounded-full transition-all duration-300" 
+                          style={{ width: `${downloadProgress.progress}%` }}
+                        />
+                      </div>
+                      <div className="text-xs text-text-tertiary">
+                        {downloadProgress.status || 'Loading...'}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <button className="w-full p-2 bg-accent hover:bg-accent-hover text-white rounded-button transition-colors text-sm">
-                Change Model
+              <button 
+                onClick={handleChangeModel}
+                disabled={modelStatus.isLoading}
+                className="w-full p-2 bg-accent hover:bg-accent-hover disabled:bg-accent/50 text-white rounded-button transition-colors text-sm flex items-center justify-center gap-2"
+              >
+                {modelStatus.isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Change Model'
+                )}
               </button>
             </div>
           </div>
@@ -287,6 +478,90 @@ const LeftSidebar: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Model Selection Modal */}
+      {showModelSelector && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-primary-bg border border-border-primary rounded-card w-96 max-h-96 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-border-primary">
+              <h3 className="text-lg font-semibold text-text-primary">Select Model</h3>
+              <button
+                onClick={() => setShowModelSelector(false)}
+                className="p-1 hover:bg-surface-hover rounded-button transition-colors"
+              >
+                <X className="w-5 h-5 text-text-secondary" />
+              </button>
+            </div>
+            
+            <div className="max-h-80 overflow-y-auto">
+              {loadingModels ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                  <span className="ml-2 text-text-secondary">Loading models...</span>
+                </div>
+              ) : availableModels.length > 0 ? (
+                <div className="p-2 space-y-2">
+                  {availableModels.map((model) => (
+                    <div
+                      key={model.id}
+                      className="border border-border-primary rounded-button hover:bg-surface-hover transition-colors"
+                    >
+                      <button
+                        onClick={() => handleSelectModel(model.id, model.name)}
+                        disabled={loadingModel === model.id}
+                        className="w-full p-3 text-left disabled:opacity-50"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-text-primary">{model.name}</h4>
+                              {model.default && (
+                                <span className="text-xs bg-accent text-white px-2 py-1 rounded">
+                                  Default
+                                </span>
+                              )}
+                              {modelStatus.modelName === model.name && (
+                                <Check className="w-4 h-4 text-success" />
+                              )}
+                            </div>
+                            <p className="text-sm text-text-secondary mt-1">
+                              {model.description}
+                            </p>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {model.supports_vision && (
+                                <span className="text-xs bg-surface text-text-secondary px-2 py-1 rounded">
+                                  Vision
+                                </span>
+                              )}
+                              {model.supports_audio && (
+                                <span className="text-xs bg-surface text-text-secondary px-2 py-1 rounded">
+                                  Audio
+                                </span>
+                              )}
+                              {model.supports_documents && (
+                                <span className="text-xs bg-surface text-text-secondary px-2 py-1 rounded">
+                                  Documents
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {loadingModel === model.id && (
+                            <Loader2 className="w-5 h-5 animate-spin text-accent ml-2" />
+                          )}
+                        </div>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center p-8">
+                  <span className="text-text-secondary">No models available</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

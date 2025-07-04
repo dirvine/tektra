@@ -23,8 +23,10 @@ import {
   AlertCircle,
   PanelRight,
   PanelRightClose,
+  Mic,
 } from 'lucide-react';
 import { useTektraStore } from '../store';
+import VoiceConversation from './VoiceConversation';
 
 // Tab Navigation
 const TabNavigation: React.FC<{
@@ -34,6 +36,7 @@ const TabNavigation: React.FC<{
   const tabs = [
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'session', label: 'Session', icon: <Clock className="w-4 h-4" /> },
+    { id: 'voice', label: 'Voice', icon: <Mic className="w-4 h-4" /> },
     { id: 'files', label: 'Files', icon: <FileText className="w-4 h-4" /> },
     { id: 'knowledge', label: 'Knowledge', icon: <Database className="w-4 h-4" /> },
     { id: 'tasks', label: 'Tasks', icon: <List className="w-4 h-4" /> },
@@ -483,6 +486,8 @@ const RightSidebar: React.FC = () => {
         return <AnalyticsTab />;
       case 'session':
         return <SessionTab />;
+      case 'voice':
+        return <VoiceConversation />;
       case 'files':
         return <FilesTab />;
       case 'knowledge':

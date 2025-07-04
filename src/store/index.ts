@@ -52,7 +52,7 @@ export interface AvatarState {
 export interface UIState {
   leftSidebarCollapsed: boolean;
   rightSidebarVisible: boolean;
-  activeTab: 'analytics' | 'session' | 'files' | 'knowledge' | 'tasks';
+  activeTab: 'analytics' | 'session' | 'voice' | 'files' | 'knowledge' | 'tasks';
   theme: 'dark' | 'light';
   currentProject: string;
   notifications: Array<{
@@ -106,8 +106,8 @@ interface TektraStore {
 // Default states
 const defaultModelStatus: ModelStatus = {
   isLoaded: false,
-  modelName: 'gemma3n:e4b',
-  backend: 'Ollama',
+  modelName: 'Qwen2.5-Omni 7B',
+  backend: 'mistral.rs',
   isLoading: false,
   whisperReady: false,
   cameraEnabled: false,

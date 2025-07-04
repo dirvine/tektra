@@ -1,0 +1,395 @@
+{
+  "name": "tektra-ai-assistant",
+  "displayName": "Tektra AI Assistant",
+  "version": "0.1.0",
+  "description": "Advanced multimodal AI assistant with voice, vision, and conversation capabilities using cutting-edge open models",
+  "author": "Tektra Development Team",
+  "license": "MIT",
+  "homepage": "https://github.com/tektra/tektra",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tektra/tektra.git"
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "multimodal",
+    "vision",
+    "conversation",
+    "ollama",
+    "mistral",
+    "qwen",
+    "mcp"
+  ],
+  "category": "productivity",
+  "main": "src-tauri/target/release/tektra",
+  "icon": "src-tauri/icons/icon.png",
+  "permissions": [
+    {
+      "permission": "fs:read",
+      "description": "Read access to user files for document analysis"
+    },
+    {
+      "permission": "fs:write", 
+      "description": "Write access to save conversation history and settings"
+    },
+    {
+      "permission": "network:request",
+      "description": "Network access for model downloads and API calls"
+    },
+    {
+      "permission": "camera:access",
+      "description": "Camera access for real-time vision processing"
+    },
+    {
+      "permission": "microphone:access",
+      "description": "Microphone access for voice interaction"
+    },
+    {
+      "permission": "process:spawn",
+      "description": "Process spawning for Ollama server management"
+    }
+  ],
+  "capabilities": {
+    "tools": {
+      "description": "Advanced AI tools for text generation, image analysis, and multimodal processing",
+      "tools": [
+        {
+          "name": "text_generation",
+          "description": "Generate text completion using active AI model",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string",
+                "description": "Text prompt for generation"
+              },
+              "max_tokens": {
+                "type": "integer",
+                "description": "Maximum tokens to generate",
+                "default": 2048
+              },
+              "temperature": {
+                "type": "number",
+                "description": "Sampling temperature",
+                "default": 0.7
+              }
+            },
+            "required": ["prompt"]
+          }
+        },
+        {
+          "name": "image_analysis",
+          "description": "Analyze images using multimodal AI capabilities",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "image_data": {
+                "type": "string",
+                "description": "Base64 encoded image data"
+              },
+              "analysis_type": {
+                "type": "string",
+                "enum": ["general", "detailed", "ocr", "scene", "technical"],
+                "description": "Type of analysis to perform",
+                "default": "general"
+              },
+              "custom_prompt": {
+                "type": "string",
+                "description": "Custom analysis prompt"
+              }
+            },
+            "required": ["image_data"]
+          }
+        },
+        {
+          "name": "model_management",
+          "description": "Manage AI models and switch between them",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": ["list", "switch", "status"],
+                "description": "Model management action"
+              },
+              "model_id": {
+                "type": "string",
+                "description": "Model identifier for switch action"
+              }
+            },
+            "required": ["action"]
+          }
+        },
+        {
+          "name": "conversation_session",
+          "description": "Manage conversation sessions with context and memory",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": ["start", "continue", "end"],
+                "description": "Session management action"
+              },
+              "session_id": {
+                "type": "string",
+                "description": "Session identifier"
+              },
+              "message": {
+                "type": "string",
+                "description": "User message for continue action"
+              },
+              "persona": {
+                "type": "string",
+                "description": "AI persona for start action"
+              }
+            },
+            "required": ["action", "session_id"]
+          }
+        },
+        {
+          "name": "multimodal_processing",
+          "description": "Process complex multimodal content with intelligent strategies",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "session_id": {
+                "type": "string",
+                "description": "Processing session identifier"
+              },
+              "content": {
+                "type": "object",
+                "description": "Multimodal content including text, images, audio, documents",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Text content"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "Base64 encoded image data"
+                    },
+                    "description": "Array of images"
+                  },
+                  "audio": {
+                    "type": "string",
+                    "description": "Base64 encoded audio data"
+                  },
+                  "documents": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "description": "Base64 encoded document data"
+                    },
+                    "description": "Array of documents"
+                  }
+                }
+              },
+              "processing_intent": {
+                "type": "string",
+                "enum": ["analysis", "extraction", "comparison", "summary", "translation", "generation"],
+                "description": "Processing intent",
+                "default": "analysis"
+              }
+            },
+            "required": ["session_id", "content"]
+          }
+        },
+        {
+          "name": "image_comparison",
+          "description": "Compare multiple images with detailed analysis",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "session_id": {
+                "type": "string",
+                "description": "Processing session identifier"
+              },
+              "images": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Base64 encoded image data"
+                },
+                "minItems": 2,
+                "description": "Array of images to compare"
+              },
+              "comparison_type": {
+                "type": "string",
+                "enum": ["similarity", "quality", "content", "style"],
+                "description": "Type of comparison",
+                "default": "similarity"
+              },
+              "include_individual_analysis": {
+                "type": "boolean",
+                "description": "Include individual image analysis",
+                "default": false
+              }
+            },
+            "required": ["session_id", "images"]
+          }
+        },
+        {
+          "name": "system_status",
+          "description": "Get system status and health information",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          }
+        },
+        {
+          "name": "performance_metrics",
+          "description": "Get performance metrics and usage statistics",
+          "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+          }
+        }
+      ]
+    },
+    "sampling": {
+      "description": "Advanced text generation with sampling capabilities"
+    },
+    "experimental": {
+      "tektra_multimodal": {
+        "version": "1.0",
+        "supports_vision": true,
+        "supports_audio": false,
+        "supports_documents": false,
+        "max_image_size_mb": 10,
+        "supported_formats": ["jpeg", "png", "gif", "webp", "bmp"]
+      },
+      "tektra_conversation": {
+        "version": "1.0",
+        "supports_personas": true,
+        "supports_memory": true,
+        "supports_context_management": true,
+        "supports_branching": true,
+        "max_context_length": 32768
+      },
+      "tektra_model_management": {
+        "version": "1.0",
+        "supports_model_switching": true,
+        "supports_dynamic_loading": true,
+        "supports_quantization": true,
+        "bundled_ollama": true,
+        "auto_model_download": true
+      }
+    }
+  },
+  "transport": {
+    "type": "stdio",
+    "description": "Standard input/output transport for MCP communication"
+  },
+  "configuration": {
+    "server_name": "tektra-mcp-server",
+    "protocol_version": "2024-11-05",
+    "max_concurrent_sessions": 10,
+    "rate_limit_requests_per_minute": 60,
+    "request_timeout_ms": 30000,
+    "enable_request_logging": true,
+    "default_model": "qwen2.5-vl:7b",
+    "bundled_ollama": {
+      "enabled": true,
+      "auto_download": true,
+      "fallback_to_system": true
+    },
+    "vision_processing": {
+      "max_image_size_mb": 10,
+      "auto_resize": true,
+      "auto_enhance": true,
+      "enable_caching": true
+    },
+    "conversation": {
+      "max_context_length": 32768,
+      "memory_enabled": true,
+      "sliding_window_size": 20,
+      "auto_summarize": true
+    }
+  },
+  "requirements": {
+    "platform": ["darwin", "linux", "win32"],
+    "architecture": ["x64", "arm64"],
+    "minimum_memory_gb": 4,
+    "recommended_memory_gb": 8,
+    "minimum_storage_gb": 2,
+    "recommended_storage_gb": 10,
+    "gpu_acceleration": {
+      "required": false,
+      "supported": ["metal", "cuda", "opencl"],
+      "description": "GPU acceleration improves performance but is not required"
+    }
+  },
+  "installation": {
+    "type": "standalone",
+    "executable": "src-tauri/target/release/tektra",
+    "setup_script": "setup.sh",
+    "dependencies": {
+      "automatic": [
+        {
+          "name": "ollama",
+          "version": "latest",
+          "source": "bundled",
+          "description": "Bundled Ollama for local AI inference"
+        }
+      ],
+      "optional": [
+        {
+          "name": "system-ollama",
+          "version": ">=0.1.0",
+          "source": "system",
+          "description": "Use system-installed Ollama if available"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "cargo build --release",
+    "dev": "cargo run",
+    "test": "cargo test",
+    "mcp-server": "cargo run --features mcp-server --bin tektra-mcp",
+    "install-deps": "./scripts/install-deps.sh"
+  },
+  "files": [
+    "src-tauri/target/release/tektra",
+    "src-tauri/icons/",
+    "manifest.json",
+    "README.md",
+    "LICENSE",
+    "scripts/"
+  ],
+  "metadata": {
+    "created": "2024-01-01",
+    "updated": "2024-01-01",
+    "mcp_version": "2024-11-05",
+    "dxt_version": "1.0",
+    "tags": [
+      "ai-assistant",
+      "multimodal",
+      "open-source",
+      "local-inference",
+      "privacy-focused"
+    ],
+    "features": [
+      "Local AI inference with Ollama",
+      "Multimodal processing (text, vision)",
+      "Advanced conversation management",
+      "Model switching and management",
+      "Privacy-focused local processing",
+      "Cross-platform support",
+      "MCP protocol compliance",
+      "Extensible tool system"
+    ],
+    "limitations": [
+      "Audio processing not yet implemented",
+      "Document analysis in development",
+      "Requires significant disk space for models",
+      "Performance depends on hardware capabilities"
+    ]
+  }
+}
