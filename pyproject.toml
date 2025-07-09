@@ -1,0 +1,235 @@
+[build-system]
+requires = ["briefcase"]
+
+[project]
+name = "tektra"
+version = "0.1.0"
+description = "A voice-interactive AI assistant with multimodal capabilities using Kyutai Unmute and Qwen"
+authors = [
+    {name = "David Irvine", email = "david.irvine@maidsafe.net"}
+]
+license = {text = "MIT OR Apache-2.0"}
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["ai", "assistant", "voice", "multimodal", "briefcase", "unmute", "qwen"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Desktop Environment",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications :: Chat",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # Core Briefcase and GUI
+    "briefcase>=0.3.17",
+    "toga>=0.4.0",
+    # AI and ML - Core (minimal set for clean build)
+    "transformers>=4.36.0",
+    "torch>=2.1.0",
+    "accelerate>=0.25.0",
+    "protobuf>=3.20.0",
+    "torchvision>=0.16.0",
+    # Vision processing
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+    # Unmute integration - WebSocket and HTTP clients
+    "websockets>=12.0",
+    "aiohttp>=3.9.0",
+    "httpx>=0.25.0",
+    # Docker integration for Unmute services
+    "docker>=7.0.0",
+    # Document processing
+    "python-docx>=0.8.11",
+    "pypdf>=3.0.1",
+    # Agent system
+    "croniter>=1.3.0", # For scheduled agents
+    "aiosqlite>=0.19.0", # For agent registry
+    # Memory system
+    "memoryos>=0.1.13", # MemOS for agent memory capabilities
+    # Utilities and data handling
+    "aiofiles>=23.2.1",
+    "pydantic>=2.5.0",
+    # Utility libraries
+    "python-dotenv>=1.0.0",
+    "loguru>=0.7.0",
+    "pyyaml>=6.0",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+    "pytest-mock>=3.14.1",
+    "hypothesis>=6.135.26",
+]
+
+[project.optional-dependencies]
+full = [
+    # Heavy ML dependencies (optional for development)
+    "bitsandbytes>=0.41.0; platform_machine != 'arm64'",
+    "sentencepiece>=0.1.99",
+    "sentence-transformers>=2.2.2",
+    "faiss-cpu>=1.7.4",
+    "chromadb>=0.4.18",
+    
+    # Audio processing for microphone input
+    "pyaudio>=0.2.11",
+    "sounddevice>=0.4.6",
+    
+    # Vision processing
+    "opencv-python>=4.8.0",
+    "torchvision>=0.16.0",
+    
+    # Additional utilities
+    "python-multipart>=0.0.6",
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+]
+
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-mock>=3.11.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.5.0",
+    "ruff>=0.0.290",
+]
+
+[project.urls]
+Homepage = "https://github.com/dirvine/tektra"
+Repository = "https://github.com/dirvine/tektra"
+Issues = "https://github.com/dirvine/tektra/issues"
+
+[project.scripts]
+tektra = "tektra.__main__:main"
+
+[tool.briefcase]
+project_name = "Tektra AI Assistant"
+bundle = "com.maidsafe.tektra"
+version = "0.1.0"
+url = "https://github.com/dirvine/tektra"
+license = "MIT OR Apache-2.0"
+author = "David Irvine"
+author_email = "david.irvine@maidsafe.net"
+
+[tool.briefcase.app.tektra]
+formal_name = "Tektra AI Assistant"
+description = "A voice-interactive AI assistant with multimodal capabilities using Kyutai Unmute and Qwen"
+long_description = """
+Tektra is an advanced AI assistant that combines the power of:
+- Kyutai Unmute for ultra-low latency voice conversations (STT, TTS, LLM)
+- Qwen 2.5-VL for complex reasoning, vision analysis, and analytical tasks
+- Smart routing between conversational and analytical AI systems
+- Multimodal capabilities including voice, vision, and document processing
+- Native desktop experience with cross-platform support
+
+Built with Python and Briefcase for a truly native desktop application experience.
+"""
+icon = "resources/icon"
+sources = ["src/tektra"]
+test_sources = ["tests"]
+
+requires = [
+    # System dependencies that might be needed
+]
+
+[tool.briefcase.app.tektra.permission]
+microphone = "This app needs access to the microphone for voice conversation features"
+camera = "This app needs access to the camera for vision analysis tasks"  
+network = "This app needs network access to communicate with AI services"
+
+[tool.briefcase.app.tektra.macOS]
+requires = [
+    "pyobjc-framework-AVFoundation>=9.0",  # For audio/video on macOS
+    "pyobjc-framework-CoreAudio>=9.0",
+]
+
+[tool.briefcase.app.tektra.linux]
+requires = [
+    "python3-pyaudio",     # Audio support on Linux
+    "libasound2-dev",      # ALSA development headers
+    "portaudio19-dev",     # PortAudio development headers
+]
+system_requires = [
+    "docker",              # Docker for Unmute services
+    "docker-compose",      # Docker Compose for service orchestration
+]
+
+[tool.briefcase.app.tektra.windows]
+requires = [
+    # Windows-specific audio requirements
+]
+
+# Development tools configuration
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["tektra"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+asyncio_mode = "auto"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest-cov>=6.2.1",
+]

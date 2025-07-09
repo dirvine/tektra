@@ -1,0 +1,39 @@
+{
+  "name": "tektra-voice-ai-server",
+  "version": "1.0.0",
+  "description": "MCP server for Tektra Voice AI Assistant",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "cross-spawn": "^7.0.3",
+    "form-data": "^4.0.0",
+    "node-fetch": "^3.3.2",
+    "node-pty": "^1.0.0",
+    "ws": "^8.18.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --inspect index.js",
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand"
+  },
+  "keywords": [
+    "mcp",
+    "voice",
+    "ai",
+    "assistant"
+  ],
+  "author": "David Irvine",
+  "license": "MIT",
+  "devDependencies": {
+    "@jest/globals": "^30.0.4",
+    "jest": "^30.0.4",
+    "supertest": "^7.1.3"
+  }
+}
