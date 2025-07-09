@@ -1,1 +1,0 @@
-pub mod new_architecture_test;

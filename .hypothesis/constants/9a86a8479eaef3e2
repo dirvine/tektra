@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/data/storage.py
+# hypothesis_version: 6.135.26
+
+[1000, '.local', 'AppData', 'Application Support', 'Darwin', 'Data', 'Library', 'Local', 'Tektra', 'Windows', 'active_sessions', 'cache_entries', 'content', 'conversations', 'conversations.db', 'created_at', 'current_session', 'data', 'data_directory', 'expires_at', 'exported_at', 'id', 'last_activity', 'message_count', 'metadata', 'original_name', 'role', 'routing_info', 'sessions', 'sessions_cleaned', 'share', 'size', 'tektra', 'temp', 'temp_files', 'temp_files_removed', 'temp_path', 'timestamp', 'total_messages', 'total_sessions', 'utf-8', 'value', 'w', 'wb']

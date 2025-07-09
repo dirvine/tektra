@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/voice/unmute_client.py
+# hypothesis_version: 6.135.26
+
+[2.0, 16000, 'None', 'audio_chunk', 'config', 'connected', 'context', 'conversation_id', 'data', 'default', 'en', 'end_conversation', 'format', 'handlers_registered', 'language', 'model', 'reconnect_attempts', 'sample_rate', 'start_conversation', 'streaming', 'text', 'text_message', 'tts_request', 'type', 'utf-8', 'voice_config', 'voice_enabled', 'wav', 'websocket_state', 'websocket_url', 'ws://localhost:8000']

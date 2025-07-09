@@ -17,7 +17,7 @@ test-all:
 
 # Python tests only
 test-python:
-	@echo "🐍 Running Python tests..."
+	@echo "🐍 Running Python tests (with mocked heavy models)..."
 	uv run python -m pytest tests/ -v
 
 test-python-unit:
@@ -35,6 +35,16 @@ test-python-performance:
 test-python-property:
 	@echo "🐍 Running Python property-based tests..."
 	uv run python -m pytest tests/test_property_*.py -v
+
+test-python-heavy:
+	@echo "🐍 Running Python tests with REAL AI models (requires 4GB+ RAM)..."
+	@echo "⚠️  This will download and load large models - may take time!"
+	uv run python -m pytest tests/ -v --no-heavy-models=false
+
+test-python-heavy-only:
+	@echo "🐍 Running ONLY heavy model tests..."
+	@echo "⚠️  This will download and load large models - may take time!"
+	uv run python -m pytest tests/ -v -m heavy --no-heavy-models=false
 
 # Frontend tests only
 test-frontend:
@@ -76,13 +86,13 @@ test-watch:
 	@echo "  2. Python: uv run python -m pytest tests/ -v --watch"
 	@echo "  3. Node.js: cd dxt-extension/server && npm run test:watch"
 
-# Quick tests (skip slow/integration tests)
+# Quick tests (skip slow/integration/heavy tests)
 test-quick:
 	@echo "⚡ Running quick tests only..."
 	@echo "\n📦 Frontend quick tests..."
 	npm test -- --run
 	@echo "\n🐍 Python quick tests..."
-	uv run python -m pytest tests/ -v -m "not slow"
+	uv run python -m pytest tests/ -v -m "not slow and not heavy"
 	@echo "\n🟢 Node.js quick tests..."
 	cd dxt-extension/server && npm test -- --testTimeout=5000
 
@@ -113,12 +123,12 @@ test-file:
 # Help command
 help:
 	@echo "Tektra Test Commands:"
-	@echo "  make test                - Run all tests"
+	@echo "  make test                - Run all tests (skips heavy model tests)"
 	@echo "  make test-python         - Run Python tests"
 	@echo "  make test-frontend       - Run frontend tests"
 	@echo "  make test-node          - Run Node.js tests"
 	@echo "  make test-coverage      - Run tests with coverage"
-	@echo "  make test-quick         - Run quick tests only"
+	@echo "  make test-quick         - Run quick tests only (skips slow & heavy)"
 	@echo "  make test-watch         - Show watch mode commands"
 	@echo "  make test-file FILE=... - Run specific test file"
 	@echo "  make clean-test         - Clean test artifacts"
@@ -128,7 +138,12 @@ help:
 	@echo "  make test-python-integration - Integration tests only"
 	@echo "  make test-python-performance - Performance tests only"
 	@echo "  make test-python-property    - Property-based tests only"
+	@echo "  make test-python-heavy       - All tests with REAL AI models (4GB+ RAM)"
+	@echo "  make test-python-heavy-only  - Only heavy model tests"
 	@echo ""
 	@echo "Frontend-specific:"
 	@echo "  make test-frontend-unit     - Unit tests only"
 	@echo "  make test-frontend-property - Property-based tests only"
+	@echo ""
+	@echo "NOTE: Heavy AI model tests use mocked models by default to prevent"
+	@echo "      system overheating. Use test-python-heavy to load real models."

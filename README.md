@@ -424,6 +424,8 @@ Tektra includes comprehensive test coverage across all components with unit test
 
 ### **Run All Tests**
 
+> **⚠️ Important Note**: Tests that require large AI models (7B+ parameters) use mocked models by default to prevent system overheating. The model is only loaded once per test session and reused across all tests when using real models.
+
 ```bash
 # Frontend Tests (JavaScript/TypeScript)
 npm test                                    # Run all frontend tests
@@ -431,8 +433,9 @@ npm run test:coverage                       # Run with coverage report
 npm run test:ui                            # Run with Vitest UI
 
 # Python Backend Tests
-uv run python -m pytest tests/ -v          # Run all Python tests
+uv run python -m pytest tests/ -v          # Run all Python tests (mocked models)
 uv run python -m pytest tests/ -v --cov    # Run with coverage report
+uv run python -m pytest tests/ -v --no-heavy-models=false  # Run with REAL models
 
 # Node.js/DXT Extension Tests
 cd dxt-extension/server
@@ -491,6 +494,7 @@ make test-python            # Python tests only
 make test-frontend          # Frontend tests only
 make test-node             # Node.js tests only
 make test-coverage         # All tests with coverage
+make test-python-heavy      # Python tests with REAL AI models (4GB+ RAM)
 make test-quick            # Fast tests only (skip slow)
 make help                  # Show all test commands
 
@@ -499,8 +503,12 @@ npm test && \
 uv run python -m pytest tests/ -v && \
 (cd dxt-extension/server && npm test)
 
-# Run only fast tests (skip performance/integration)
-uv run python -m pytest tests/ -v -m "not slow"
+# Run tests with REAL AI models (will download models)
+uv run python -m pytest tests/ -v --no-heavy-models=false
+
+# Run only specific test types
+uv run python -m pytest tests/ -v -m heavy                    # Only heavy model tests
+uv run python -m pytest tests/ -v -m "not slow"              # Skip slow tests
 
 # Run tests with coverage reports
 npm run test:coverage && \

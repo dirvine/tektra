@@ -1,0 +1,164 @@
+{
+  "dxt_version": "0.1",
+  "name": "tektra-voice-ai",
+  "version": "1.0.0",
+  "display_name": "Tektra Voice AI Assistant",
+  "description": "Voice-interactive AI assistant with multimodal capabilities using Qwen2.5-VL",
+  "long_description": "A comprehensive voice AI assistant that provides:\n\n- **Real-time voice conversation** with speech-to-text and text-to-speech\n- **Multimodal AI** using Qwen2.5-VL-7B model with vision capabilities\n- **Local inference** with Metal acceleration on macOS\n- **Voice pipeline management** for STT/TTS services\n- **Audio processing** with real-time transcription\n- **Model management** with automatic downloads and caching\n\nBuilt with Rust for performance and TypeScript for the UI, integrating with the Unmute voice pipeline for professional-grade speech processing.",
+  "author": {
+    "name": "David Irvine",
+    "email": "david.irvine@maidsafe.net",
+    "url": "https://github.com/dirvine/tektra"
+  },
+  "icon": "icon.png",
+  "screenshots": [
+    "screenshots/voice-interface.png",
+    "screenshots/model-loading.png",
+    "screenshots/multimodal-chat.png"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "start_voice_conversation",
+      "description": "Start a real-time voice conversation with the AI assistant"
+    },
+    {
+      "name": "stop_voice_conversation", 
+      "description": "Stop the current voice conversation session"
+    },
+    {
+      "name": "load_model",
+      "description": "Load or switch AI models (Qwen2.5-VL, other supported models)"
+    },
+    {
+      "name": "get_voice_status",
+      "description": "Get current status of voice services (STT, TTS, backend)"
+    },
+    {
+      "name": "process_multimodal_input",
+      "description": "Process text, images, audio, or combined multimodal inputs"
+    },
+    {
+      "name": "manage_voice_pipeline",
+      "description": "Start/stop/configure the Unmute voice processing pipeline"
+    },
+    {
+      "name": "get_model_info",
+      "description": "Get information about available and loaded AI models"
+    },
+    {
+      "name": "configure_voice_settings",
+      "description": "Configure voice processing parameters and preferences"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "voice_conversation_starter",
+      "description": "Start a natural voice conversation",
+      "template": "I'd like to have a voice conversation. Please start the voice services and let me know when ready."
+    },
+    {
+      "name": "multimodal_analysis",
+      "description": "Analyze multimodal content",
+      "template": "Please analyze this {content_type} content and provide detailed insights using your vision and reasoning capabilities."
+    },
+    {
+      "name": "model_comparison",
+      "description": "Compare available AI models",
+      "template": "Show me the available AI models and their capabilities, including which ones support vision, audio, and multimodal processing."
+    }
+  ],
+  "keywords": [
+    "voice",
+    "ai",
+    "assistant", 
+    "multimodal",
+    "vision",
+    "speech",
+    "qwen",
+    "real-time",
+    "local",
+    "rust",
+    "metal"
+  ],
+  "license": "MIT",
+  "compatibility": {
+    "node": ">=18.0.0",
+    "platforms": ["darwin", "linux", "win32"],
+    "dxt_min_version": "0.1"
+  },
+  "user_config": {
+    "voice_character": {
+      "type": "select",
+      "default": "default",
+      "options": [
+        {"value": "default", "label": "Default Assistant"},
+        {"value": "friendly", "label": "Friendly Guide"},
+        {"value": "professional", "label": "Professional Expert"}
+      ],
+      "description": "Choose the voice character personality"
+    },
+    "model_preference": {
+      "type": "select", 
+      "default": "qwen2.5-vl-7b",
+      "options": [
+        {"value": "qwen2.5-vl-7b", "label": "Qwen2.5-VL-7B (Recommended)"},
+        {"value": "qwen2.5-7b", "label": "Qwen2.5-7B (Text Only)"},
+        {"value": "auto", "label": "Auto-select best model"}
+      ],
+      "description": "Preferred AI model for inference"
+    },
+    "enable_gpu_acceleration": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable GPU acceleration (Metal on macOS, CUDA on others)"
+    },
+    "voice_sensitivity": {
+      "type": "number",
+      "default": 0.6,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.1,
+      "description": "Voice detection sensitivity (0.1 = less sensitive, 1.0 = more sensitive)"
+    },
+    "enable_interruption": {
+      "type": "boolean", 
+      "default": true,
+      "description": "Allow voice interruption during AI responses"
+    },
+    "auto_start_services": {
+      "type": "boolean",
+      "default": true,
+      "description": "Automatically start voice services when extension loads"
+    },
+    "cache_directory": {
+      "type": "string",
+      "default": "~/.cache/tektra-ai",
+      "description": "Directory for caching models and temporary files"
+    }
+  },
+  "permissions": [
+    "audio_input",
+    "audio_output", 
+    "file_system_read",
+    "file_system_write",
+    "network_http",
+    "process_spawn"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "ws": "^8.18.0",
+    "node-fetch": "^3.3.2",
+    "form-data": "^4.0.0"
+  }
+}

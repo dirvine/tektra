@@ -53,7 +53,7 @@ class TestMemoryManager:
         assert memory_manager.config.max_memories_per_user == 1000
     
     @pytest.mark.asyncio
-    async def test_store_and_retrieve_memory(self, memory_manager):
+    async def test_store_and_get_memory(self, memory_manager):
         """Test storing and retrieving memory entries."""
         # Initialize the memory manager
         await memory_manager.initialize()
@@ -148,25 +148,25 @@ class TestMemoryManager:
         old_entry = MemoryEntry(
             id="old_001",
             content="Old memory entry",
-            memory_type=MemoryType.CONVERSATION,
+            type=MemoryType.CONVERSATION,
             metadata={},
             importance=0.1,  # Low importance
-            created_at=old_date
+            timestamp=old_date
         )
         
         # Create recent memory entry
         recent_entry = MemoryEntry(
             id="recent_001",
             content="Recent memory entry",
-            memory_type=MemoryType.CONVERSATION,
+            type=MemoryType.CONVERSATION,
             metadata={},
             importance=0.9,  # High importance
-            created_at=datetime.now()
+            timestamp=datetime.now()
         )
         
         # Store both entries
-        await memory_manager.store_memory(old_entry)
-        await memory_manager.store_memory(recent_entry)
+        await memory_manager.add_memory(old_entry)
+        await memory_manager.add_memory(recent_entry)
         
         # Perform cleanup
         cleaned_count = await memory_manager.cleanup_old_memories(max_age_days=7)
@@ -190,31 +190,31 @@ class TestMemoryManager:
             MemoryEntry(
                 id="stats_001",
                 content="Conversation memory",
-                memory_type=MemoryType.CONVERSATION,
+                type=MemoryType.CONVERSATION,
                 metadata={},
                 importance=0.7,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             ),
             MemoryEntry(
                 id="stats_002",
                 content="Knowledge memory",
-                memory_type=MemoryType.KNOWLEDGE,
+                type=MemoryType.LEARNED_FACT,
                 metadata={},
                 importance=0.9,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             ),
             MemoryEntry(
                 id="stats_003",
                 content="Task memory",
-                memory_type=MemoryType.TASK,
+                type=MemoryType.TASK_RESULT,
                 metadata={},
                 importance=0.8,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             )
         ]
         
         for entry in entries:
-            await memory_manager.store_memory(entry)
+            await memory_manager.add_memory(entry)
         
         # Get statistics
         stats = await memory_manager.get_memory_statistics()
@@ -234,8 +234,8 @@ class TestMemoryTypes:
     def test_memory_type_enum(self):
         """Test MemoryType enum values."""
         assert MemoryType.CONVERSATION is not None
-        assert MemoryType.KNOWLEDGE is not None
-        assert MemoryType.TASK is not None
+        assert MemoryType.LEARNED_FACT is not None
+        assert MemoryType.TASK_RESULT is not None
         assert MemoryType.SYSTEM is not None
     
     def test_memory_entry_creation(self):
@@ -243,10 +243,10 @@ class TestMemoryTypes:
         entry = MemoryEntry(
             id="test_entry",
             content="Test content",
-            memory_type=MemoryType.CONVERSATION,
+            type=MemoryType.CONVERSATION,
             metadata={"test": "value"},
             importance=0.5,
-            created_at=datetime.now()
+            timestamp=datetime.now()
         )
         
         assert entry.id == "test_entry"
@@ -263,20 +263,20 @@ class TestMemoryTypes:
             MemoryEntry(
                 id="invalid_importance",
                 content="Test",
-                memory_type=MemoryType.CONVERSATION,
+                type=MemoryType.CONVERSATION,
                 metadata={},
                 importance=1.5,  # Invalid: > 1.0
-                created_at=datetime.now()
+                timestamp=datetime.now()
             )
         
         with pytest.raises(ValueError):
             MemoryEntry(
                 id="invalid_importance2",
                 content="Test",
-                memory_type=MemoryType.CONVERSATION,
+                type=MemoryType.CONVERSATION,
                 metadata={},
                 importance=-0.1,  # Invalid: < 0.0
-                created_at=datetime.now()
+                timestamp=datetime.now()
             )
     
     def test_memory_entry_serialization(self):
@@ -284,17 +284,17 @@ class TestMemoryTypes:
         entry = MemoryEntry(
             id="serialize_test",
             content="Serialization test",
-            memory_type=MemoryType.KNOWLEDGE,
+            type=MemoryType.LEARNED_FACT,
             metadata={"key": "value"},
             importance=0.8,
-            created_at=datetime.now()
+            timestamp=datetime.now()
         )
         
         # Test to_dict method
         entry_dict = entry.to_dict()
         assert entry_dict["id"] == "serialize_test"
         assert entry_dict["content"] == "Serialization test"
-        assert entry_dict["memory_type"] == MemoryType.KNOWLEDGE.value
+        assert entry_dict["memory_type"] == MemoryType.LEARNED_FACT.value
         assert entry_dict["metadata"]["key"] == "value"
         assert entry_dict["importance"] == 0.8
         
@@ -414,45 +414,45 @@ class TestMemoryIntegration:
             MemoryEntry(
                 id="conv_001",
                 content="User: Hello, how are you?",
-                memory_type=MemoryType.CONVERSATION,
+                type=MemoryType.CONVERSATION,
                 metadata={"speaker": "user", "session_id": "session_001"},
                 importance=0.3,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             ),
             MemoryEntry(
                 id="conv_002",
                 content="Assistant: I'm doing well, thank you for asking!",
-                memory_type=MemoryType.CONVERSATION,
+                type=MemoryType.CONVERSATION,
                 metadata={"speaker": "assistant", "session_id": "session_001"},
                 importance=0.3,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             ),
             MemoryEntry(
                 id="conv_003",
                 content="User: Can you help me with Python programming?",
-                memory_type=MemoryType.CONVERSATION,
+                type=MemoryType.CONVERSATION,
                 metadata={"speaker": "user", "session_id": "session_001", "topic": "programming"},
                 importance=0.8,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             ),
             MemoryEntry(
                 id="conv_004",
                 content="Assistant: Of course! I'd be happy to help with Python programming.",
-                memory_type=MemoryType.CONVERSATION,
+                type=MemoryType.CONVERSATION,
                 metadata={"speaker": "assistant", "session_id": "session_001", "topic": "programming"},
                 importance=0.8,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             )
         ]
         
         # Store conversation entries
         for entry in conversation_entries:
-            await manager.store_memory(entry)
+            await manager.add_memory(entry)
         
         # Test retrieval of conversation
         session_memories = await manager.search_memories(
             "",
-            memory_type=MemoryType.CONVERSATION,
+            type=MemoryType.CONVERSATION,
             limit=10
         )
         
@@ -492,37 +492,37 @@ class TestMemoryIntegration:
             MemoryEntry(
                 id="know_001",
                 content="Python is a high-level programming language",
-                memory_type=MemoryType.KNOWLEDGE,
+                type=MemoryType.LEARNED_FACT,
                 metadata={"domain": "programming", "language": "python"},
                 importance=0.9,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             ),
             MemoryEntry(
                 id="know_002",
                 content="Machine learning is a subset of artificial intelligence",
-                memory_type=MemoryType.KNOWLEDGE,
+                type=MemoryType.LEARNED_FACT,
                 metadata={"domain": "AI", "topic": "machine_learning"},
                 importance=0.9,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             ),
             MemoryEntry(
                 id="know_003",
                 content="Neural networks are inspired by biological neurons",
-                memory_type=MemoryType.KNOWLEDGE,
+                type=MemoryType.LEARNED_FACT,
                 metadata={"domain": "AI", "topic": "neural_networks"},
                 importance=0.8,
-                created_at=datetime.now()
+                timestamp=datetime.now()
             )
         ]
         
         # Store knowledge entries
         for entry in knowledge_entries:
-            await manager.store_memory(entry)
+            await manager.add_memory(entry)
         
         # Test knowledge retrieval
         all_knowledge = await manager.search_memories(
             "",
-            memory_type=MemoryType.KNOWLEDGE,
+            type=MemoryType.LEARNED_FACT,
             limit=10
         )
         assert len(all_knowledge) >= 3

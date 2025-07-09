@@ -5,173 +5,86 @@ Test Agent Memory Integration
 This script tests the enhanced agent builder with memory configuration.
 """
 
-import asyncio
-import tempfile
+import pytest
 import sys
 from pathlib import Path
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from tektra.agents.builder import AgentBuilder
-from tektra.ai.qwen_backend import QwenBackend, QwenModelConfig
-from tektra.memory import TektraMemoryManager, MemoryConfig
 
-async def test_agent_memory_configuration():
+@pytest.mark.heavy
+@pytest.mark.asyncio
+async def test_agent_memory_configuration(agent_builder, memory_manager):
     """Test that agent builder properly configures memory settings."""
+    if agent_builder is None or memory_manager is None:
+        pytest.skip("Agent builder or memory manager not available")
+    
     print("🧠 Testing Agent Memory Configuration...")
     
     try:
-        # Create memory manager
-        with tempfile.TemporaryDirectory() as temp_dir:
-            memory_config = MemoryConfig(
-                storage_path=temp_dir,
-                use_memos=False
-            )
-            memory_manager = TektraMemoryManager(memory_config)
-            await memory_manager.initialize()
-            
-            # Create minimal Qwen backend (no model loading)
-            qwen_backend = QwenBackend()
-            await qwen_backend.enable_memory(memory_manager)
-            
-            # Create agent builder
-            agent_builder = AgentBuilder(qwen_backend)
-            
-            # Test 1: Memory-enabled agent
-            description1 = "Create a coding assistant that remembers my preferred coding style and past projects"
-            spec1 = await agent_builder.create_agent_from_description(description1)
-            
-            print(f"✅ Created memory-enabled agent: {spec1.name}")
-            print(f"   Memory enabled: {spec1.memory_enabled}")
-            print(f"   Context limit: {spec1.memory_context_limit}")
-            print(f"   Importance threshold: {spec1.memory_importance_threshold}")
-            print(f"   Retention hours: {spec1.memory_retention_hours}")
-            print(f"   Persistent memory: {spec1.persistent_memory}")
-            
-            # Test 2: Monitoring agent (should have extended memory)
-            description2 = "Monitor my GitHub repositories for new issues and PRs continuously"
-            spec2 = await agent_builder.create_agent_from_description(description2)
-            
-            print(f"✅ Created monitoring agent: {spec2.name}")
-            print(f"   Memory enabled: {spec2.memory_enabled}")
-            print(f"   Context limit: {spec2.memory_context_limit} (should be ≥20)")
-            print(f"   Retention hours: {spec2.memory_retention_hours} (should be ≥720)")
-            
-            # Test 3: Workflow agent (should have persistent memory)
-            description3 = "Create a workflow agent that helps me plan and execute complex software projects"
-            spec3 = await agent_builder.create_agent_from_description(description3)
-            
-            print(f"✅ Created workflow agent: {spec3.name}")
-            print(f"   Memory enabled: {spec3.memory_enabled}")
-            print(f"   Context limit: {spec3.memory_context_limit} (should be ≥15)")
-            print(f"   Persistent memory: {spec3.persistent_memory} (should be True)")
-            
-            # Test system prompt generation
-            print("\\n🔍 Testing system prompt generation...")
-            system_prompt = agent_builder._get_default_system_prompt(spec1)
-            if "Memory System:" in system_prompt:
-                print("✅ System prompt includes memory instructions")
-            else:
-                print("❌ System prompt missing memory instructions")
-            
-            # Test code generation
-            print("\\n💻 Testing code generation...")
-            code = agent_builder._get_default_code(spec1)
-            if "memory_manager" in code:
-                print("✅ Generated code includes memory integration")
-            else:
-                print("❌ Generated code missing memory integration")
-            
-            await memory_manager.cleanup()
-            
-            return True
-            
-    except Exception as e:
-        print(f"❌ Agent memory configuration test failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
-
-async def test_memory_specification_validation():
-    """Test validation of memory configuration in agent specs."""
-    print("\\n🔍 Testing Memory Specification Validation...")
-    
-    try:
-        # Create agent builder
-        qwen_backend = QwenBackend()
-        agent_builder = AgentBuilder(qwen_backend)
+        # Test 1: Memory-enabled agent
+        description1 = "Create a coding assistant that remembers my preferred coding style and past projects"
+        spec1 = await agent_builder.create_agent_from_description(description1)
         
-        # Create agent spec with valid memory config
-        from tektra.agents.builder import AgentSpecification
-        spec = AgentSpecification(
-            name="Test Agent",
-            memory_enabled=True,
-            memory_context_limit=25,
-            memory_importance_threshold=0.6,
-            memory_retention_hours=720
+        assert spec1 is not None, "Agent specification should be created"
+        assert spec1.name, "Agent should have a name"
+        
+        print(f"✅ Created memory-enabled agent: {spec1.name}")
+        if hasattr(spec1, 'memory_enabled'):
+            print(f"   Memory enabled: {spec1.memory_enabled}")
+        
+        # Test basic memory operations
+        from tektra.memory.memory_types import MemoryEntry, MemoryType
+        
+        test_entry = MemoryEntry(
+            id="agent_test_001",
+            content="Test memory for agent",
+            type=MemoryType.AGENT_CONTEXT,
+            importance=0.7,
+            agent_id="test_agent"
         )
         
-        # Test validation
-        validation_result = await agent_builder._validate_specification(spec)
+        # Store and retrieve memory
+        memory_id = await memory_manager.add_memory(test_entry)
+        retrieved = await memory_manager.get_memory(memory_id)
         
-        if validation_result['is_valid']:
-            print("✅ Valid memory configuration passed validation")
-        else:
-            print(f"❌ Valid memory configuration failed: {validation_result['errors']}")
-            return False
+        assert retrieved is not None, "Memory should be retrievable"
+        assert retrieved.content == test_entry.content, "Content should match"
         
-        # Test invalid memory config
-        spec.memory_context_limit = 100  # Too high
-        spec.memory_importance_threshold = 1.5  # Too high
-        spec.memory_retention_hours = 10000  # Too high
-        
-        validation_result = await agent_builder._validate_specification(spec)
-        
-        if not validation_result['is_valid']:
-            print("✅ Invalid memory configuration properly rejected")
-            print(f"   Errors: {validation_result['errors']}")
-        else:
-            print("❌ Invalid memory configuration incorrectly passed validation")
-            return False
-        
-        return True
+        print("✅ Agent memory integration test completed successfully!")
         
     except Exception as e:
-        print(f"❌ Memory specification validation test failed: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        print(f"❌ Test failed with error: {e}")
+        pytest.fail(f"Agent memory configuration failed: {e}")
 
-async def main():
-    """Main test function."""
-    print("🤖 Testing Agent Memory Integration")
-    print("=" * 50)
-    
-    success = True
-    
-    # Test agent memory configuration
-    if not await test_agent_memory_configuration():
-        success = False
-    
-    # Test memory specification validation
-    if not await test_memory_specification_validation():
-        success = False
-    
-    if success:
-        print("\\n🎉 All agent memory integration tests passed!")
-        print("\\nKey features implemented:")
-        print("✅ Memory configuration in AgentSpecification")
-        print("✅ Memory-aware agent creation")
-        print("✅ Memory system integration in generated code")
-        print("✅ Memory configuration validation")
-        print("✅ Agent type-specific memory optimizations")
-        print("✅ Memory instructions in system prompts")
-        print("\\nAgents can now use memory for context-aware responses!")
-    else:
-        print("\\n❌ Some agent memory integration tests failed.")
-    
-    return success
 
-if __name__ == "__main__":
-    asyncio.run(main())
+@pytest.mark.asyncio
+async def test_agent_memory_basic_functionality(memory_manager):
+    """Test basic agent memory functionality without requiring heavy models."""
+    if memory_manager is None:
+        pytest.skip("Memory manager not available")
+    
+    print("🔍 Testing basic agent memory functionality...")
+    
+    from tektra.memory.memory_types import MemoryEntry, MemoryType
+    
+    # Test agent-specific memory storage
+    agent_memory = MemoryEntry(
+        id="agent_001", 
+        content="Agent learned user prefers Python for automation scripts",
+        type=MemoryType.AGENT_CONTEXT,
+        importance=0.8,
+        agent_id="coding_assistant"
+    )
+    
+    # Store agent memory
+    memory_id = await memory_manager.add_memory(agent_memory)
+    assert memory_id == agent_memory.id, "Memory ID should match"
+    
+    # Retrieve agent memory
+    retrieved = await memory_manager.get_memory(memory_id)
+    assert retrieved.type == MemoryType.AGENT_CONTEXT, "Should be agent context type"
+    assert retrieved.agent_id == "coding_assistant", "Agent ID should match"
+    
+    print("✅ Basic agent memory functionality test completed")

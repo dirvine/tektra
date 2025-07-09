@@ -38,8 +38,8 @@ class ProjectTektra {
             // Settings modal
             settingsModal: document.getElementById('settingsModal'),
             closeSettings: document.getElementById('closeSettings'),
-            ollamaModel: document.getElementById('ollamaModel'),
-            ollamaUrl: document.getElementById('ollamaUrl'),
+            modelSelector: document.getElementById('modelSelector'),
+            modelUrl: document.getElementById('modelUrl'),
             settingsVoiceEnabled: document.getElementById('settingsVoiceEnabled'),
             saveSettings: document.getElementById('saveSettings'),
             systemPrompt: document.getElementById('systemPrompt'),
@@ -149,7 +149,7 @@ class ProjectTektra {
             await this.loadSettings();
             
             // Initialize the AI model
-            this.addMessage('system', 'Initializing Google Gemma-3n E2B model...');
+            this.addMessage('system', 'Initializing Qwen2.5-VL-7B model...');
             const modelLoaded = await invoke('initialize_model');
             
             if (modelLoaded) {
@@ -158,7 +158,7 @@ class ProjectTektra {
                 await this.loadChatHistory();
                 
                 // Tektra introduces itself on startup
-                const introduction = "Hello! I'm Tektra, your AI assistant powered by Google's Gemma-3n model. I'm here to help you with questions, tasks, and conversations. I'm always listening when you enable the microphone toggle, so just speak naturally and I'll assist you. How can I help you today?";
+                const introduction = "Hello! I'm Tektra, your AI assistant powered by the Qwen2.5-VL model. I'm here to help you with questions, tasks, and conversations. I'm always listening when you enable the microphone toggle, so just speak naturally and I'll assist you. How can I help you today?";
                 this.addMessage('assistant', introduction);
                 
                 // Auto-speak the introduction if voice is enabled
@@ -398,7 +398,7 @@ class ProjectTektra {
             
             try {
                 // Show that we're processing audio
-                this.addMessage('system', `🎤 Processing ${duration_secs.toFixed(1)}s audio with Gemma-3n...`);
+                this.addMessage('system', `🎤 Processing ${duration_secs.toFixed(1)}s audio with Qwen2.5-VL...`);
                 
                 // Show typing indicator
                 const typingId = this.addMessage('assistant', 'Listening and understanding...');
@@ -564,14 +564,14 @@ class ProjectTektra {
     async loadSettings() {
         try {
             const settings = await invoke('get_settings');
-            this.elements.ollamaModel.value = settings.model_name;
-            this.elements.ollamaUrl.style.display = 'none'; // Hide URL setting for embedded model
+            this.elements.modelSelector.value = settings.model_name;
+            this.elements.modelUrl.style.display = 'none'; // Hide URL setting for embedded model
             this.elements.settingsVoiceEnabled.checked = settings.voice_enabled;
             this.elements.voiceEnabled.checked = settings.voice_enabled;
             this.elements.autoSpeech.checked = settings.auto_speech;
             
             // Load prompt settings
-            this.elements.systemPrompt.value = settings.system_prompt || 'You are Tektra, a helpful AI assistant powered by the Gemma-3n model. You provide accurate, thoughtful, and detailed responses.';
+            this.elements.systemPrompt.value = settings.system_prompt || 'You are Tektra, a helpful AI assistant powered by the Qwen2.5-VL model. You provide accurate, thoughtful, and detailed responses.';
             this.elements.userPrefix.value = settings.user_prefix || 'User: ';
             this.elements.assistantPrefix.value = settings.assistant_prefix || 'Assistant: ';
             
@@ -584,13 +584,13 @@ class ProjectTektra {
     async loadAvailableModels() {
         try {
             const models = await invoke('get_available_models');
-            this.elements.ollamaModel.innerHTML = '';
+            this.elements.modelSelector.innerHTML = '';
             
             models.forEach(model => {
                 const option = document.createElement('option');
                 option.value = model;
                 option.textContent = model;
-                this.elements.ollamaModel.appendChild(option);
+                this.elements.modelSelector.appendChild(option);
             });
         } catch (error) {
             console.error('Load models error:', error);
@@ -608,7 +608,7 @@ class ProjectTektra {
     async saveSettings() {
         try {
             const settings = {
-                model_name: this.elements.ollamaModel.value,
+                model_name: this.elements.modelSelector.value,
                 max_tokens: 512,
                 temperature: 0.7,
                 voice_enabled: this.elements.settingsVoiceEnabled.checked,

@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/memory/memory_types.py
+# hypothesis_version: 6.135.26
+
+[0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 'MemoryEntry', 'agent_context', 'agent_id', 'agent_initialization', 'assistant', 'average_importance', 'content', 'context_type', 'conversation', 'embedding', 'entries', 'exchange_type', 'id', 'importance', 'learned_fact', 'max_results', 'memories_by_agent', 'memories_by_type', 'memories_by_user', 'memory_types', 'metadata', 'min_relevance', 'newest_memory', 'oldest_memory', 'query', 'relevance_scores', 'result', 'result_type', 'role', 'search_time_ms', 'session_id', 'storage_size_bytes', 'success', 'system_event', 'task_description', 'task_execution', 'task_result', 'time_window_hours', 'timestamp', 'total_found', 'total_memories', 'type', 'user', 'user_id', 'user_preference']

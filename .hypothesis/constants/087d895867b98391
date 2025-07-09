@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/utils/docker_utils.py
+# hypothesis_version: 6.135.26
+
+[2.0, 200, 300, '--format', '-f', 'Command timed out', 'Containers', 'Created', 'Docker not available', 'Images', 'MemTotal', 'NCPU', 'NetworkSettings', 'Ports', 'ServerVersion', 'Service', 'State', 'SystemTime', 'Unknown', 'available', 'containers', 'containers_running', 'cpu_stats', 'cpu_usage', 'cpus', 'created', 'docker-compose', 'error', 'exited', 'id', 'image', 'images', 'json', 'memory', 'memory_stats', 'name', 'ports', 'ps', 'running', 'status', 'system_time', 'total_memory', 'total_usage', 'up -d', 'usage', 'used_memory', 'utf-8', 'version']

@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/agents/registry.py
+# hypothesis_version: 6.135.26
+
+[0.0, 100, 1024, '.tektra', 'active', 'active_agents', 'agents', 'archived', 'average_success_rate', 'by_capability', 'by_status', 'by_tag', 'by_type', 'capabilities', 'changed_at', 'changed_by', 'child_agents', 'collaborating_agents', 'collaboration', 'completed_at', 'cpu_percent', 'created_at', 'error', 'inactive', 'isoformat', 'memory_mb', 'metrics', 'output', 'parent-child', 'parent_agents', 'registry.db', 'registry_size_mb', 'specification', 'started_at', 'success', 'suspended', 'system', 'total_agents', 'total_executions', 'type', 'type_distribution', 'value', 'version']

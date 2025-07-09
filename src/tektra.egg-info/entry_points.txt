@@ -1,0 +1,2 @@
+[console_scripts]
+tektra = tektra.__main__:main

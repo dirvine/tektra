@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/ai/multimodal.py
+# hypothesis_version: 6.135.26
+
+[1.1, 128, 1024, 8000, '... [truncated]', '.bmp', '.csv', '.doc', '.docx', '.gif', '.jpeg', '.jpg', '.json', '.log', '.md', '.pdf', '.png', '.tiff', '.txt', '.webp', '.yaml', '.yml', 'PIL Image object', 'RGB', 'analysis', 'aspect_ratio', 'brightness_std', 'bytes', 'content', 'content_type', 'dimensions', 'document', 'docx', 'dominant_colors', 'error', 'extension', 'file', 'file_name', 'file_path', 'file_size', 'ignore', 'image', 'mean_brightness', 'metadata', 'mime_type', 'original_format', 'original_length', 'original_size', 'pdf', 'pil_image', 'processed_files', 'processed_size', 'processing_errors', 'processing_status', 'prompt', 'r', 'rb', 'source_info', 'source_type', 'success', 'success_rate', 'supported_formats', 'text_analysis', 'total_pixels', 'truncated', 'type', 'unsupported', 'utf-8', 'vision_analysis']

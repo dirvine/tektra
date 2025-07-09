@@ -2,110 +2,93 @@
 """
 Test script for Tektra Agent Creation
 
-This script tests the agent creation functionality without the GUI.
+This script tests the agent creation functionality using shared model fixtures.
 """
 
-import asyncio
+import pytest
 import sys
 from pathlib import Path
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from tektra.agents import AgentBuilder, AgentRegistry, AgentRuntime, SandboxType
-from tektra.ai.qwen_backend import QwenBackend, QwenModelConfig
-from loguru import logger
 
-async def test_agent_creation():
+@pytest.mark.heavy
+@pytest.mark.asyncio
+async def test_agent_creation_from_description(qwen_backend, agent_builder, agent_registry):
     """Test creating an agent from natural language description."""
+    if qwen_backend is None or agent_builder is None:
+        pytest.skip("Qwen backend or agent builder not available")
     
     print("🤖 Testing Tektra Agent Creation System")
     print("=" * 50)
     
-    try:
-        # Initialize Qwen backend for agent creation
-        print("1. Initializing Qwen backend...")
-        qwen_config = QwenModelConfig(
-            model_name='Qwen/Qwen2.5-VL-7B-Instruct',
-            quantization_bits=None,  # Disabled for compatibility
-            max_memory_gb=8.0
-        )
-        
-        qwen_backend = QwenBackend(qwen_config)
-        success = await qwen_backend.initialize()
-        
-        if not success:
-            print("❌ Failed to initialize Qwen backend")
-            return False
-        
-        print("✅ Qwen backend initialized successfully")
-        
-        # Initialize agent system
-        print("\n2. Initializing agent system...")
-        agent_registry = AgentRegistry()
-        agent_builder = AgentBuilder(qwen_backend)
-        agent_runtime = AgentRuntime(SandboxType.PROCESS)
-        
-        print("✅ Agent system initialized")
-        
-        # Test agent creation from natural language
-        print("\n3. Testing agent creation from natural language...")
-        
-        test_descriptions = [
-            "Create an agent that monitors GitHub repositories for new issues and pull requests",
-            "Build an agent that analyzes stock prices and sends alerts when they change significantly",
-            "Make an agent that organizes my downloads folder by file type every day"
-        ]
-        
-        for i, description in enumerate(test_descriptions, 1):
-            print(f"\n   Test {i}: {description}")
-            
-            try:
-                # Create agent specification
-                spec = await agent_builder.create_agent_from_description(description)
-                
-                print(f"   ✅ Agent created: {spec.name}")
-                print(f"      Type: {spec.type.value}")
-                print(f"      Goal: {spec.goal[:100]}...")
-                print(f"      Capabilities: {len(spec.capabilities)} features")
-                
-                # Register agent
-                agent_id = await agent_registry.register_agent(spec)
-                print(f"      Registered with ID: {agent_id[:8]}...")
-                
-                # Test deployment (but don't actually run)
-                print(f"      ✅ Agent ready for deployment")
-                
-            except Exception as e:
-                print(f"   ❌ Failed to create agent: {e}")
-                logger.error(f"Agent creation failed: {e}")
-        
-        # Test listing agents
-        print("\n4. Testing agent registry...")
-        agents = await agent_registry.list_agents()
-        print(f"✅ Total agents in registry: {len(agents)}")
-        
-        for agent in agents:
-            print(f"   • {agent.specification.name} - {agent.status.value}")
-        
-        print("\n🎉 Agent system test completed successfully!")
-        return True
-        
-    except Exception as e:
-        print(f"\n❌ Test failed with error: {e}")
-        logger.error(f"Test failed: {e}")
-        return False
+    # Test agent creation from natural language
+    test_descriptions = [
+        "Create an agent that monitors GitHub repositories for new issues and pull requests",
+        "Build an agent that analyzes stock prices and sends alerts when they change significantly",
+        "Make an agent that organizes my downloads folder by file type every day"
+    ]
     
-    finally:
-        # Cleanup
-        if 'qwen_backend' in locals():
-            await qwen_backend.cleanup()
+    for i, description in enumerate(test_descriptions, 1):
+        print(f"\n   Test {i}: {description[:50]}...")
+        
+        try:
+            # Create agent specification
+            spec = await agent_builder.create_agent_from_description(description)
+            
+            assert spec is not None, "Agent specification should not be None"
+            assert spec.name, "Agent should have a name"
+            assert spec.goal, "Agent should have a goal"
+            assert spec.type, "Agent should have a type"
+            
+            print(f"   ✅ Agent created: {spec.name}")
+            print(f"      Type: {spec.type.value}")
+            print(f"      Goal: {spec.goal[:100]}...")
+            
+            # Register agent if registry is available
+            if agent_registry:
+                agent_id = await agent_registry.register_agent(spec)
+                assert agent_id, "Agent should be registered with an ID"
+                print(f"      Registered with ID: {agent_id[:8]}...")
+            
+        except Exception as e:
+            pytest.fail(f"Failed to create agent: {e}")
 
-async def main():
-    """Main test function."""
-    success = await test_agent_creation()
-    exit_code = 0 if success else 1
-    sys.exit(exit_code)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+@pytest.mark.heavy
+@pytest.mark.asyncio
+async def test_agent_registry_operations(agent_registry):
+    """Test basic agent registry operations."""
+    if agent_registry is None:
+        pytest.skip("Agent registry not available")
+    
+    # Test listing agents (should be empty initially)
+    agents = await agent_registry.list_agents()
+    initial_count = len(agents)
+    
+    print(f"✅ Agent registry has {initial_count} agents initially")
+    
+    # Test that registry is functional
+    assert isinstance(agents, list), "list_agents should return a list"
+
+
+def test_agent_creation_infrastructure():
+    """Test that agent creation infrastructure is properly set up."""
+    # Test imports work
+    try:
+        from tektra.agents import AgentBuilder, AgentRegistry, AgentRuntime
+        from tektra.ai.qwen_backend import QwenBackend, QwenModelConfig
+        assert True, "All imports successful"
+    except ImportError as e:
+        pytest.skip(f"Agent infrastructure not available: {e}")
+
+
+@pytest.mark.asyncio 
+async def test_mock_agent_creation(qwen_backend):
+    """Test agent creation with mock backend (when --no-heavy-models is used)."""
+    if hasattr(qwen_backend, 'process_text_query'):
+        # This is likely a mock, test it works
+        response = await qwen_backend.process_text_query("test query")
+        assert response is not None, "Mock backend should return a response"
+        print("✅ Mock backend working correctly")
