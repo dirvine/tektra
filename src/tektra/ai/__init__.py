@@ -7,8 +7,8 @@ This package contains the AI backend systems including:
 - Multimodal processing capabilities
 """
 
-from .qwen_backend import QwenBackend
-from .smart_router import SmartRouter, QueryRoute
 from .multimodal import MultimodalProcessor
+from .qwen_backend import QwenBackend
+from .smart_router import QueryRoute, SmartRouter
 
 __all__ = ["QwenBackend", "SmartRouter", "QueryRoute", "MultimodalProcessor"]

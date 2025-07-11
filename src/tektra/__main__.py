@@ -6,7 +6,6 @@ This module provides the main entry point for the Tektra AI Assistant applicatio
 """
 
 import sys
-import asyncio
 from pathlib import Path
 
 # Add the source directory to Python path for development
@@ -20,10 +19,7 @@ from tektra.app import TektraApp
 def main():
     """Main entry point for the Tektra AI Assistant application."""
     try:
-        app = TektraApp(
-            formal_name="Tektra AI Assistant",
-            app_id="com.maidsafe.tektra"
-        )
+        app = TektraApp(formal_name="Tektra AI Assistant", app_id="com.maidsafe.tektra")
         return app.main_loop()
     except KeyboardInterrupt:
         print("\nTektra AI Assistant stopped by user.")

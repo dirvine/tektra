@@ -2,7 +2,7 @@
 Tektra AI Assistant
 
 A voice-interactive AI assistant with multimodal capabilities using:
-- Kyutai Unmute for ultra-low latency voice conversations  
+- Kyutai Unmute for ultra-low latency voice conversations
 - Qwen 2.5-VL for complex reasoning and vision analysis
 - Smart routing between conversational and analytical AI systems
 
