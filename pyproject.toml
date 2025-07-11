@@ -50,6 +50,7 @@ dependencies = [
     "python-docx>=0.8.11",
     "pypdf>=3.0.1",
     # Agent system
+    "smolagents>=0.1.0", # SmolAgents framework for AI agents
     "croniter>=1.3.0", # For scheduled agents
     "aiosqlite>=0.19.0", # For agent registry
     # Memory system
@@ -65,6 +66,7 @@ dependencies = [
     "pytest-asyncio>=1.0.0",
     "pytest-mock>=3.14.1",
     "hypothesis>=6.135.26",
+    "duckduckgo-search>=8.1.1",
 ]
 
 [project.optional-dependencies]

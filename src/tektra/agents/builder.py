@@ -22,12 +22,28 @@ from typing import Any
 
 from loguru import logger
 
-# Import SmolAgents (with fallback to mock)
-from .smolagents_mock import smolagents
-
-CodeAgent = smolagents.CodeAgent
-ToolCallingAgent = smolagents.ToolCallingAgent
-Tool = smolagents.Tool
+# Import SmolAgents (real implementation)
+try:
+    from .smolagents_real import smolagents
+    
+    if smolagents is None:
+        # Fallback to mock if real implementation failed
+        logger.warning("Real SmolAgents failed, falling back to mock")
+        from .smolagents_mock import smolagents
+    
+    CodeAgent = smolagents.CodeAgent
+    ToolCallingAgent = smolagents.ToolCallingAgent
+    Tool = smolagents.Tool
+    
+    logger.info("SmolAgents integration loaded successfully")
+    
+except ImportError as e:
+    logger.error(f"Failed to import SmolAgents: {e}")
+    # Fallback to mock
+    from .smolagents_mock import smolagents
+    CodeAgent = smolagents.CodeAgent
+    ToolCallingAgent = smolagents.ToolCallingAgent
+    Tool = smolagents.Tool
 
 from ..ai.qwen_backend import QwenBackend
 
@@ -493,29 +509,39 @@ Always:
 async def run_agent(input_data):
     '''Main agent execution function'''
     try:
-        # Initialize the agent
-        from smolagents import CodeAgent{memory_code}
+        # Import Tektra SmolAgents implementation
+        from tektra.agents.smolagents_real import TektraCodeAgent
+        from tektra.ai.qwen_backend import QwenBackend
+        import asyncio
+        from datetime import datetime
+        from loguru import logger{memory_code}
 
-        agent = CodeAgent(
-            model=get_model(),
+        # Get backend and memory manager from input
+        qwen_backend = input_data.get('qwen_backend')
+        memory_manager = input_data.get('memory_manager')
+        agent_id = input_data.get('agent_id', '{spec.id}')
+        
+        # Initialize the Tektra CodeAgent
+        agent = TektraCodeAgent(
+            qwen_backend=qwen_backend,
+            memory_manager=memory_manager,
             system_prompt=SYSTEM_PROMPT,
-            tools=get_available_tools()
+            max_iterations=10,
+            executor_type='local'
         )
 
         # Execute the agent's task
-        result = await agent.run(task_with_context){memory_save_code}
+        result = await agent.run(task_with_context, agent_id=agent_id){memory_save_code}
 
-        return {{
-            'success': True,
-            'result': result,
-            'timestamp': datetime.now().isoformat()
-        }}
+        return result
+
     except Exception as e:
         logger.error(f"Agent execution failed: {{e}}")
         return {{
             'success': False,
             'error': str(e),
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'agent_type': 'CodeAgent'
         }}
 """
         else:
@@ -523,29 +549,38 @@ async def run_agent(input_data):
 async def run_agent(input_data):
     '''Main agent execution function for tool-calling agent'''
     try:
-        # Initialize the tool-calling agent
-        from smolagents import ToolCallingAgent{memory_code}
+        # Import Tektra SmolAgents implementation
+        from tektra.agents.smolagents_real import TektraToolCallingAgent
+        from tektra.ai.qwen_backend import QwenBackend
+        import asyncio
+        from datetime import datetime
+        from loguru import logger{memory_code}
 
-        agent = ToolCallingAgent(
-            model=get_model(),
+        # Get backend and memory manager from input
+        qwen_backend = input_data.get('qwen_backend')
+        memory_manager = input_data.get('memory_manager')
+        agent_id = input_data.get('agent_id', '{spec.id}')
+        
+        # Initialize the Tektra ToolCallingAgent
+        agent = TektraToolCallingAgent(
+            qwen_backend=qwen_backend,
+            memory_manager=memory_manager,
             system_prompt=SYSTEM_PROMPT,
-            tools=get_available_tools()
+            max_tool_threads=4
         )
 
         # Execute the agent's task using tool calls
-        result = await agent.run(task_with_context){memory_save_code}
+        result = await agent.run(task_with_context, agent_id=agent_id){memory_save_code}
 
-        return {{
-            'success': True,
-            'result': result,
-            'timestamp': datetime.now().isoformat()
-        }}
+        return result
+
     except Exception as e:
         logger.error(f\"Tool-calling agent execution failed: {{e}}\")
         return {{
             'success': False,
             'error': str(e),
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'agent_type': 'ToolCallingAgent'
         }}
 """
 

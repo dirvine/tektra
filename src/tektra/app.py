@@ -468,7 +468,11 @@ class TektraApp(toga.App):
                 if self.config.get("use_docker_sandbox", False):
                     sandbox_type = SandboxType.DOCKER
 
-                self.agent_runtime = AgentRuntime(sandbox_type)
+                self.agent_runtime = AgentRuntime(
+                    sandbox_type=sandbox_type,
+                    memory_manager=self.data_storage.memory_manager,
+                    qwen_backend=self.qwen_backend
+                )
 
                 # Create agent panel for UI
                 self.agent_panel = AgentPanel(

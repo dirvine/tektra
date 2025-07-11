@@ -104,10 +104,11 @@ class AgentSandbox:
     - Interfering with other agents
     """
 
-    def __init__(self, sandbox_type: SandboxType = SandboxType.DOCKER):
+    def __init__(self, sandbox_type: SandboxType = SandboxType.DOCKER, qwen_backend=None):
         """Initialize sandbox with specified isolation type."""
         self.sandbox_type = sandbox_type
         self.docker_client = None
+        self.qwen_backend = qwen_backend
 
         if sandbox_type == SandboxType.DOCKER:
             try:
@@ -324,12 +325,16 @@ class AgentSandbox:
         start_time = time.time()
 
         try:
-            # Prepare input with memory manager if available
+            # Prepare input with memory manager and backend if available
             execution_input = context.input_data.copy()
             if context.memory_manager and context.spec.memory_enabled:
                 execution_input["memory_manager"] = context.memory_manager
                 execution_input["agent_id"] = context.agent_id
                 execution_input["session_id"] = context.session_id
+            
+            # Add qwen backend for real SmolAgents integration
+            if self.qwen_backend:
+                execution_input["qwen_backend"] = self.qwen_backend
 
             # Run agent function
             result = await asyncio.wait_for(
@@ -530,10 +535,13 @@ class AgentRuntime:
         self,
         sandbox_type: SandboxType = SandboxType.DOCKER,
         memory_manager: TektraMemoryManager | None = None,
+        qwen_backend=None,
     ):
-        """Initialize runtime with specified sandbox type and optional memory manager."""
-        self.sandbox = AgentSandbox(sandbox_type)
+        """Initialize runtime with specified sandbox type, memory manager, and AI backend."""
+        self.sandbox = AgentSandbox(sandbox_type, qwen_backend)
         self.running_agents: dict[str, AgentExecutionContext] = {}
+        self.memory_manager = memory_manager
+        self.qwen_backend = qwen_backend
         self.agent_queues: dict[str, asyncio.Queue] = {}
         self.working_directory = Path.home() / ".tektra" / "agents"
         self.working_directory.mkdir(parents=True, exist_ok=True)
