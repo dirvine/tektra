@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/voice/services.py
+# hypothesis_version: 6.135.26
+
+[120, 200, 8000, 8001, 8002, '-d', '-f', 'Unknown error', 'all_healthy', 'backend', 'compose_file_exists', 'docker-compose', 'docker-compose.yml', 'down', 'healthy_count', 'http://localhost', 'ignore', 'llm', 'service_health', 'service_urls', 'services_running', 'stt', 'total_services', 'tts', 'unmute', 'unmute_path', 'up', 'utf-8']

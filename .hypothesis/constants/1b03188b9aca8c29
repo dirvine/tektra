@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/utils/file_utils.py
+# hypothesis_version: 6.135.26
+
+[1024.0, 100, 200, 500, 1024, 3600, 8192, '*', '.aac', '.avi', '.bmp', '.doc', '.docx', '.flac', '.flv', '.gif', '.jpeg', '.jpg', '.m4a', '.md', '.mkv', '.mov', '.mp3', '.mp4', '.odt', '.ogg', '.pdf', '.png', '.rtf', '.svg', '.tektra', '.tiff', '.tmp', '.txt', '.wav', '.webm', '.webp', 'B', 'File does not exist', 'GB', 'KB', 'MB', 'PNG', 'Path is not a file', 'RGB', 'RGBA', 'TB', 'accessed', 'audio', 'base64_data', 'cp1252', 'created', 'dimensions', 'document', 'error', 'errors', 'exists', 'extension', 'file_path', 'file_type', 'format', 'hash_sha256', 'image', 'is_directory', 'is_file', 'latin-1', 'mime_type', 'mode', 'modified', 'name', 'path', 'permissions', 'rb', 'sha256', 'size', 'size_human', 'stem', 'suffix', 'temp', 'thumbnail', 'unknown', 'utf-16', 'utf-8', 'valid', 'video']

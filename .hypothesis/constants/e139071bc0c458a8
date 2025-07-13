@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/gui/main_window.py
+# hypothesis_version: 6.135.26
+
+[800, 1200, 'Main window closed', 'Save File', 'Select File', 'Tektra AI Assistant', 'active_dialogs', 'active_windows', 'app', 'created', 'has_content', 'maximize', 'minimize', 'normal', 'resizable', 'size', 'title', 'window_count']

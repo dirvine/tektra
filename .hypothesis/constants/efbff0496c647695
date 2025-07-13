@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/voice/pipeline_mock.py
+# hypothesis_version: 6.135.26
+
+[0.5, 1024, 16000, 'audio_enabled', 'channels', 'chunk_size', 'connected', 'initialized', 'is_processing', 'is_recording', 'is_speaking', 'mock', 'mode', 'processing', 'recording', 'sample_rate', 'services_healthy']

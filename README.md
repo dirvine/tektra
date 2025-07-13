@@ -89,7 +89,7 @@ Tektra is a revolutionary AI assistant platform that combines cutting-edge artif
 ├─────────────────────────────────────────────────────────────────────────┤
 │  🌐 Distributed Network Layer (Future P2P Integration)                 │
 │  ├─ P2P Communication (Secure Peer-to-Peer Networking)                 │
-│  ├─ MPC Coordination (Multi-Party Computation for Collaboration)       │
+│  ├─ MCP Integration (Model Context Protocol for AI Coordination)        │
 │  ├─ Consensus Engine (Distributed Decision Making)                     │
 │  ├─ Identity Management (Cryptographic Identity & Reputation)          │
 │  └─ Network Security (End-to-End Encryption & Privacy Protection)      │
@@ -194,7 +194,7 @@ peer_agents = await p2p_network.discover_agents(
 collaboration = await p2p_network.start_collaboration(
     task="Analyze global climate data trends",
     participants=peer_agents,
-    privacy_preservation=MPCProtocol.SECURE_AGGREGATION
+    coordination_protocol=MCPProtocol.AGENT_COLLABORATION
 )
 ```
 
@@ -205,36 +205,36 @@ collaboration = await p2p_network.start_collaboration(
 - **🤝 Trust Networks**: Build trusted networks of verified agents and users
 - **📊 Reputation Systems**: Community-driven agent reliability and capability ratings
 
-### **Phase 2: Multi-Party Computation (MPC) Integration (Planned 2025)**
+### **Phase 2: Model Context Protocol (MCP) Integration (Planned 2025)**
 
 ```python
-# Secure multi-party computation for collaborative AI
-mpc_session = await TektraMPCCoordinator.create_session(
+# Model Context Protocol for AI agent coordination
+mcp_session = await TektraMCPCoordinator.create_session(
     participants=verified_peer_agents,
-    computation_type=MPCType.SECURE_AGGREGATION,
-    privacy_level=PrivacyLevel.DIFFERENTIAL_PRIVATE
+    protocol_type=MCPType.CONTEXT_SHARING,
+    security_level=SecurityLevel.HIGH
 )
 
-# Collaborative model training without data sharing
-trained_model = await mpc_session.collaborative_training(
-    model_architecture=SharedModelArchitecture.TRANSFORMER,
-    data_contribution=local_private_data,
-    privacy_budget=DifferentialPrivacyBudget(epsilon=1.0)
+# Collaborative task execution with shared context
+task_result = await mcp_session.collaborative_execution(
+    task_description="Analyze global climate data trends",
+    context_sharing=MCPContextSharing.STRUCTURED_KNOWLEDGE,
+    coordination_method=MCPCoordination.DISTRIBUTED_CONSENSUS
 )
 
-# Secure knowledge aggregation
-collective_knowledge = await mpc_session.aggregate_knowledge(
-    knowledge_sources=[agent.knowledge_base for agent in participants],
-    aggregation_method=SecureAggregation.FEDERATED_AVERAGING
+# Secure knowledge and context aggregation
+collective_context = await mcp_session.aggregate_context(
+    context_sources=[agent.context for agent in participants],
+    aggregation_method=MCPAggregation.SEMANTIC_MERGE
 )
 ```
 
-**MPC Capabilities:**
-- **🧮 Secure Computation**: Perform computations on distributed data without revealing it
-- **🤖 Federated Learning**: Train AI models collaboratively while preserving privacy
-- **🔍 Private Analytics**: Generate insights from distributed datasets securely
-- **🌐 Collective Intelligence**: Combine knowledge from multiple agents while maintaining privacy
-- **⚖️ Consensus Mechanisms**: Distributed decision-making with Byzantine fault tolerance
+**MCP Capabilities:**
+- **🔗 Context Protocol**: Standardized protocol for AI agent context sharing and coordination
+- **🤖 Agent Coordination**: Seamless coordination between AI agents across different systems
+- **🔍 Structured Knowledge**: Organize and share structured knowledge between AI models
+- **🌐 Distributed Intelligence**: Enable AI agents to work together on complex tasks
+- **⚖️ Consensus Coordination**: Distributed decision-making and task coordination protocols
 
 ### **Phase 3: Autonomous AI Economy (Vision 2025+)**
 
@@ -480,10 +480,12 @@ make dev
 ## 📄 License & Legal
 
 This project is dual-licensed under:
-- **Apache License 2.0** ([LICENSE-APACHE](LICENSE-APACHE))
-- **MIT License** ([LICENSE-MIT](LICENSE-MIT))
+- **GNU Affero General Public License v3.0** ([LICENSE-AGPL-3.0](LICENSE-AGPL-3.0)) - For open source projects
+- **Commercial License** ([LICENSE-COMMERCIAL](LICENSE-COMMERCIAL)) - For proprietary applications
 
-Choose the license that best fits your use case.
+See [LICENSING.md](LICENSING.md) for detailed information about choosing the right license.
+
+For commercial licensing inquiries: saorsalabs@gmail.com
 
 ## 🙏 Acknowledgments
 

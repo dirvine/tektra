@@ -2,37 +2,71 @@
 
 This file contains the development standards and practices that Claude should follow when working on the Tektra AI Assistant codebase.
 
-[... existing content remains unchanged ...]
+## Project Overview
+
+Tektra is a **production-ready, enterprise-grade AI assistant platform** built with Python. The system integrates SmolAgents for AI capabilities, comprehensive security frameworks, performance optimization, and enterprise deployment features.
+
+### Key Technologies
+- **Python 3.11+** with UV package manager
+- **SmolAgents** for AI agent execution
+- **Docker & Kubernetes** for deployment
+- **PostgreSQL & Redis** for data storage
+- **Prometheus & Grafana** for monitoring
 
 ## Development Workflow
 
-### 1. Specification-Driven Development
-- **Always reference** `specifications.md` for feature requirements
-- **Maintain compatibility** with the original vision while modernizing implementation
-- **Request user acceptance** before major architectural changes
+### 1. Architecture-Driven Development
+- **Reference documentation** in `docs/` for system architecture and API specifications
+- **Maintain enterprise standards** with security, performance, and scalability focus
+- **Follow existing patterns** established in the current codebase
 
-### 2. Rust Development Standards
+### 2. Python Development Standards
 
-#### AI Module Guidelines
-```rust
-// Use proper error handling - NO unwrap() or expect()
-pub async fn load_model(&mut self, model_name: &str) -> Result<()> {
-    let tokenizer = match Tokenizer::from_file(&path) {
-        Ok(tok) => tok,
-        Err(e) => return Err(anyhow::anyhow!("Failed to load tokenizer: {}", e)),
-    };
-    // Implementation...
-}
+#### Core Module Guidelines
+```python
+# Use proper async/await patterns
+async def create_agent(self, config: AgentConfig) -> Agent:
+    """Create and initialize a new agent."""
+    try:
+        # Validate configuration
+        await self._validate_agent_config(config)
+        
+        # Create security context
+        security_context = await self.security_manager.create_context(config)
+        
+        # Initialize agent
+        agent = await self._initialize_agent(config, security_context)
+        return agent
+    except Exception as e:
+        logger.error(f"Failed to create agent: {e}")
+        raise AgentCreationError(f"Agent creation failed: {e}") from e
 
-// Emit progress events for long operations
-let _ = self.app_handle.emit("model-loading-progress", json!({
-    "progress": 85,
-    "status": "Loading tokenizer...",
-    "model_name": model_name
-}));
+# Use comprehensive logging
+logger.info(f"Creating agent {config.name} with model {config.model}")
 ```
 
-- **remember and use UV at all times**
-- **Never use placeholders or dummy code, no mocks**
+#### Security and Error Handling
+- **Never use mock implementations** in production code
+- **Always use proper exception handling** with custom exception types
+- **Implement comprehensive logging** with structured data
+- **Follow security-first design** with validation and sandboxing
 
-[... rest of the existing content remains unchanged ...]
+#### SmolAgents Integration
+```python
+# Proper SmolAgent integration
+from smolagents import CodeAgent, Tool
+
+async def create_smolagent(self, config: AgentConfig) -> CodeAgent:
+    """Create SmolAgent with Tektra security integration."""
+    # Convert Tektra tools to SmolAgent tools
+    tools = await self._convert_tools(config.tools)
+    
+    # Create agent with security wrapper
+    agent = CodeAgent(
+        model=config.model,
+        tools=tools,
+        system_prompt=config.system_prompt
+    )
+    
+    return agent
+```

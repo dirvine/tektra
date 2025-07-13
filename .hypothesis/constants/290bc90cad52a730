@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/gui/chat_panel.py
+# hypothesis_version: 6.135.26
+
+[200, 400, 600, 1024, '#1976d2', '#2196f3', '#666666', '#e3f2fd', '#f5f5f5', '#ff5722', '#ffffff', '...', 'No response received', 'Send', 'Thinking...', 'Unknown error', 'analysis', 'assistant', 'center', 'content', 'content_type', 'data', 'document', 'end', 'error', 'file_data', 'file_path', 'image', 'italic', 'left', 'metadata', 'processing_status', 'qwen_analytical', 'qwen_vision', 'response', 'right', 'role', 'routing_decision', 'start', 'success', 'system', 'type', 'unknown', 'uploaded_files', 'user', '🎤', '📎', '🔴']

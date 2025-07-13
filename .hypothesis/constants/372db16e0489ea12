@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/gui/__init__.py
+# hypothesis_version: 6.135.26
+
+['ChatPanel', 'MainWindow']

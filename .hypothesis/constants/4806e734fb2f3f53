@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/memory/memory_config.py
+# hypothesis_version: 6.135.26
+
+[0.3, 100, 365, 500, 1000, 5000, 10000, 25000, 50000, 'MemoryConfig', 'PRO_MODE', 'all-MiniLM-L6-v2', 'anonymize_content', 'auto_cleanup_enabled', 'batch_size', 'cache_size', 'database_name', 'default_search_limit', 'embedding_model', 'enable_compression', 'encrypt_storage', 'max_search_results', 'max_turns_window', 'memos_config', 'relevance_threshold', 'retention_days', 'sqlite', 'storage_path', 'storage_type', 'tektra_memory.db', 'top_k', 'use_memos', 'w', '~/.tektra/memory']

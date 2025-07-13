@@ -17,6 +17,7 @@ src/tektra/agents/builder.py
 src/tektra/agents/registry.py
 src/tektra/agents/runtime.py
 src/tektra/agents/smolagents_mock.py
+src/tektra/agents/smolagents_real.py
 src/tektra/agents/templates.py
 src/tektra/ai/__init__.py
 src/tektra/ai/multimodal.py
@@ -39,6 +40,8 @@ src/tektra/utils/config.py
 src/tektra/utils/docker_utils.py
 src/tektra/utils/file_utils.py
 src/tektra/vision/__init__.py
+src/tektra/vision/camera.py
+src/tektra/vision/processor.py
 src/tektra/voice/__init__.py
 src/tektra/voice/pipeline_mock.py
 src/tektra/voice/pipeline_real.py

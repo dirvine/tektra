@@ -13,7 +13,8 @@ import asyncio
 import gc
 import time
 from collections.abc import Callable
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
 
 import numpy as np
 import psutil
@@ -32,6 +33,16 @@ from transformers import (
 
 # Import memory system
 from ..memory import MemoryContext, TektraMemoryManager
+from .memory_monitor import AdvancedMemoryMonitor, create_memory_monitor
+from .model_validator import ModelValidator, create_model_validator
+
+# Import UI integration
+try:
+    from ..ui.event_bridge import create_model_loading_emitter, create_tauri_progress_callback
+    UI_AVAILABLE = True
+except ImportError:
+    UI_AVAILABLE = False
+    logger.warning("UI integration not available - progress events will not be emitted")
 
 
 class QwenModelConfig:
@@ -49,6 +60,7 @@ class QwenModelConfig:
         temperature: float = 0.7,
         top_p: float = 0.9,
         do_sample: bool = True,
+        strict_validation: bool = False,
     ):
         self.model_name = model_name
         self.quantization_bits = quantization_bits
@@ -60,6 +72,7 @@ class QwenModelConfig:
         self.temperature = temperature
         self.top_p = top_p
         self.do_sample = do_sample
+        self.strict_validation = strict_validation
 
     def get_quantization_config(self) -> BitsAndBytesConfig | None:
         """
@@ -382,6 +395,7 @@ class QwenBackend:
         self.is_vision_model = False
         self.model_loading_progress = 0.0
         self.loading_status = "Not started"
+        self.initialization_error = None
 
         # Performance monitoring
         self.performance_monitor = QwenPerformanceMonitor()
@@ -391,16 +405,43 @@ class QwenBackend:
 
         # Memory management
         self.max_memory_bytes = int(self.config.max_memory_gb * 1024 * 1024 * 1024)
+        self.memory_monitor: AdvancedMemoryMonitor | None = None
+        self.auto_quantization_enabled = True
+        self.loading_cancelled = False
 
         # Memory system integration
         self.memory_manager: TektraMemoryManager | None = None
         self.memory_enabled = False
+        
+        # UI integration
+        self.ui_emitter = None
+        if UI_AVAILABLE:
+            try:
+                self.ui_emitter = create_model_loading_emitter()
+                logger.debug("UI event emitter initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize UI emitter: {e}")
+                self.ui_emitter = None
+        
+        # Model validation
+        self.model_validator = create_model_validator()
+        self.validation_enabled = True
+
+        # Model size estimates (in GB) for different model variants
+        self.model_size_estimates = {
+            "Qwen/Qwen2.5-VL-7B": 14.0,
+            "Qwen/Qwen2.5-VL-3B": 6.0,
+            "Qwen/Qwen2.5-7B": 14.0,
+            "Qwen/Qwen2.5-3B": 6.0,
+            "Qwen/Qwen2.5-1.5B": 3.0,
+        }
 
         logger.info(f"Qwen backend initialized with model: {self.config.model_name}")
+        logger.info(f"Auto-quantization: {'enabled' if self.auto_quantization_enabled else 'disabled'}")
 
     async def initialize(self, progress_callback: Callable | None = None) -> bool:
         """
-        Initialize the Qwen model asynchronously.
+        Initialize the Qwen model asynchronously with comprehensive memory monitoring.
 
         Args:
             progress_callback: Optional callback for progress updates
@@ -412,48 +453,411 @@ class QwenBackend:
             logger.info("Qwen backend already initialized")
             return True
 
+        # Reset state
+        self.loading_cancelled = False
+        self.initialization_error = None
+
         try:
-            logger.info(f"Initializing Qwen model: {self.config.model_name}")
+            # Track start time
+            self._start_time = asyncio.get_event_loop().time()
+            
+            logger.info(f"🚀 Initializing Qwen model: {self.config.model_name}")
+            
+            # Emit loading started event
+            if self.ui_emitter:
+                await self.ui_emitter.emit_loading_started(self.config.model_name)
 
-            # Update progress
-            await self._update_progress(
-                0, "Starting model initialization...", progress_callback
-            )
+            # Phase 1: Pre-initialization analysis
+            await self._update_progress(5, "Analyzing system capabilities...", progress_callback)
+            
+            # Get estimated model size
+            estimated_size_gb = self._get_estimated_model_size()
+            logger.info(f"Estimated model size: {estimated_size_gb:.1f}GB")
 
-            # Detect device
-            self.device = self._detect_optimal_device()
-            logger.info(f"Using device: {self.device}")
+            # Initialize memory monitor
+            self.memory_monitor = create_memory_monitor(estimated_size_gb)
+            
+            with self.memory_monitor:
+                # Log initial memory status
+                self.memory_monitor.log_memory_status("info")
+                
+                # Phase 2: Memory optimization and analysis
+                await self._update_progress(10, "Optimizing memory for loading...", progress_callback)
+                optimization_result = self.memory_monitor.optimize_memory_for_loading()
+                
+                # Check for OOM risk
+                oom_risk, oom_reason = self.memory_monitor.predict_oom_risk(estimated_size_gb)
+                if oom_risk:
+                    logger.warning(f"OOM risk detected: {oom_reason}")
+                    
+                    if self.auto_quantization_enabled:
+                        # Auto-adjust quantization
+                        await self._update_progress(15, "Auto-selecting optimal quantization...", progress_callback)
+                        new_bits, reason = self.memory_monitor.recommend_quantization(estimated_size_gb)
+                        
+                        if new_bits != self.config.quantization_bits:
+                            logger.info(f"Auto-adjusting quantization: {self.config.quantization_bits}-bit → {new_bits}-bit")
+                            logger.info(f"Reason: {reason}")
+                            self.config.quantization_bits = new_bits
+                    else:
+                        logger.error(f"Insufficient memory and auto-quantization disabled: {oom_reason}")
+                        return False
 
-            # Check if this is a vision model
-            self.is_vision_model = (
-                "VL" in self.config.model_name
-                or "vision" in self.config.model_name.lower()
-            )
+                # Phase 3: Device detection and setup
+                await self._update_progress(20, "Detecting optimal device...", progress_callback)
+                self.device = self._detect_optimal_device()
+                logger.info(f"Using device: {self.device}")
 
-            if self.is_vision_model:
-                success = await self._initialize_vision_model(progress_callback)
-            else:
-                success = await self._initialize_text_model(progress_callback)
-
-            if success:
-                self.is_initialized = True
-                await self._update_progress(
-                    100, "Model initialization complete!", progress_callback
+                # Check if this is a vision model
+                self.is_vision_model = (
+                    "VL" in self.config.model_name
+                    or "vision" in self.config.model_name.lower()
                 )
-                logger.success("Qwen model initialized successfully")
+                logger.info(f"Model type: {'Vision-Language' if self.is_vision_model else 'Text-only'}")
 
-                # Log memory usage
-                memory_mb = psutil.Process().memory_info().rss / 1024 / 1024
-                logger.info(f"Current memory usage: {memory_mb:.1f} MB")
+                # Phase 4: Model validation (if enabled)
+                if self.validation_enabled:
+                    await self._update_progress(25, "Validating model integrity...", progress_callback)
+                    
+                    if self.loading_cancelled:
+                        logger.info("Model loading cancelled by user")
+                        return False
+                    
+                    validation_success = await self._validate_model_before_loading(progress_callback)
+                    if not validation_success:
+                        logger.error("Model validation failed")
+                        return False
 
-            return success
+                # Phase 5: Model loading with monitoring
+                await self._update_progress(35, "Loading model components...", progress_callback)
+                
+                if self.loading_cancelled:
+                    logger.info("Model loading cancelled by user")
+                    return False
+
+                if self.is_vision_model:
+                    success = await self._initialize_vision_model_enhanced(progress_callback)
+                else:
+                    success = await self._initialize_text_model_enhanced(progress_callback)
+
+                if success and not self.loading_cancelled:
+                    # Phase 5: Post-loading validation and optimization
+                    await self._update_progress(95, "Finalizing initialization...", progress_callback)
+                    
+                    self.is_initialized = True
+                    await self._update_progress(100, "Model initialization complete!", progress_callback)
+                    
+                    # Log final memory status
+                    self.memory_monitor.log_memory_status("info")
+                    final_snapshot = self.memory_monitor.get_memory_snapshot()
+                    
+                    # Calculate total time if we have start time
+                    total_time = None
+                    if hasattr(self, '_start_time'):
+                        total_time = asyncio.get_event_loop().time() - self._start_time
+                    
+                    # Emit completion event
+                    if self.ui_emitter:
+                        await self.ui_emitter.emit_complete(success=True, total_time=total_time)
+                    
+                    logger.success(f"✅ Qwen model initialized successfully!")
+                    logger.info(f"📊 Memory usage: {final_snapshot.process_rss_gb:.1f}GB process, "
+                              f"{final_snapshot.torch_allocated_gb:.1f}GB torch")
+                    
+                    return True
+                elif self.loading_cancelled:
+                    # Emit cancellation event
+                    if self.ui_emitter:
+                        await self.ui_emitter.emit_cancelled(int(self.model_loading_progress))
+                    logger.info("Model loading was cancelled")
+                    return False
+                else:
+                    # Emit failure event
+                    if self.ui_emitter:
+                        await self.ui_emitter.emit_complete(success=False)
+                    logger.error("Model initialization failed")
+                    return False
 
         except Exception as e:
-            logger.error(f"Failed to initialize Qwen model: {e}")
-            await self._update_progress(
-                0, f"Initialization failed: {e}", progress_callback
-            )
+            self.initialization_error = str(e)
+            logger.error(f"❌ Failed to initialize Qwen model: {e}")
+            await self._update_progress(0, f"Initialization failed: {e}", progress_callback)
+            
+            # Emit error event
+            if self.ui_emitter:
+                await self.ui_emitter.emit_error(str(e), phase="initialization")
+            
+            # Try graceful fallback
+            if self.auto_quantization_enabled and "out of memory" in str(e).lower():
+                logger.info("Attempting fallback with more aggressive quantization...")
+                return await self._attempt_fallback_initialization(progress_callback)
+            
+            # Emit final failure if no fallback
+            if self.ui_emitter:
+                await self.ui_emitter.emit_complete(success=False)
+            
             return False
+        finally:
+            # Cleanup monitor if initialization failed
+            if not self.is_initialized and self.memory_monitor:
+                self.memory_monitor.stop_monitoring()
+                self.memory_monitor = None
+    
+    async def cancel_initialization(self):
+        """Cancel ongoing model initialization."""
+        if not self.loading_cancelled and self.model_loading_progress < 95:
+            self.loading_cancelled = True
+            
+            # Emit cancellation requested event
+            if self.ui_emitter:
+                current_phase = "unknown"
+                status_lower = self.loading_status.lower()
+                if "analyzing" in status_lower:
+                    current_phase = "analysis"
+                elif "optimizing" in status_lower:
+                    current_phase = "optimization"
+                elif "tokenizer" in status_lower:
+                    current_phase = "tokenizer"
+                elif "model" in status_lower:
+                    current_phase = "model"
+                elif "pipeline" in status_lower:
+                    current_phase = "pipeline"
+                
+                await self.ui_emitter.emit_cancellation_requested(current_phase)
+            
+            logger.info("Model initialization cancellation requested")
+            return True
+        return False
+    
+    async def _validate_model_before_loading(self, progress_callback: Callable | None = None) -> bool:
+        """
+        Validate model before loading using the model validator.
+        
+        Args:
+            progress_callback: Optional progress callback
+            
+        Returns:
+            bool: True if validation passed
+        """
+        try:
+            if not self.validation_enabled:
+                logger.debug("Model validation disabled, skipping")
+                return True
+            
+            # Try to determine model cache path
+            model_cache_path = self._get_model_cache_path()
+            
+            if not model_cache_path or not model_cache_path.exists():
+                logger.info("Model not cached locally, skipping validation (will download)")
+                return True
+            
+            logger.info(f"Validating cached model at: {model_cache_path}")
+            
+            # Create validation progress callback
+            async def validation_progress(percentage: int, status: str):
+                # Map validation progress to overall loading progress (25-35%)
+                overall_progress = 25 + (percentage / 100) * 10
+                if progress_callback:
+                    await self._call_progress_callback(progress_callback, int(overall_progress), f"Validation: {status}")
+            
+            # Perform validation
+            validation_result = await self.model_validator.validate_model(
+                model_path=model_cache_path,
+                model_name=self.config.model_name,
+                progress_callback=validation_progress
+            )
+            
+            # Log validation results
+            if validation_result.is_valid:
+                logger.success(f"✅ Model validation passed for {self.config.model_name}")
+                logger.info(f"Validation completed in {validation_result.validation_time_seconds:.2f}s")
+                logger.info(f"Verified {len(validation_result.checksums_verified)} checksums")
+                
+                if validation_result.warnings:
+                    for warning in validation_result.warnings:
+                        logger.warning(f"Validation warning: {warning}")
+                
+                return True
+            else:
+                logger.error(f"❌ Model validation failed for {self.config.model_name}")
+                
+                for error in validation_result.errors:
+                    logger.error(f"Validation error: {error}")
+                
+                # Emit validation error event
+                if self.ui_emitter:
+                    error_msg = f"Model validation failed: {'; '.join(validation_result.errors[:3])}"
+                    await self.ui_emitter.emit_error(error_msg, phase="validation")
+                
+                return False
+                
+        except Exception as e:
+            logger.error(f"Model validation exception: {e}")
+            
+            # Emit validation error event
+            if self.ui_emitter:
+                await self.ui_emitter.emit_error(f"Validation error: {str(e)}", phase="validation")
+            
+            # Continue with loading if validation fails due to error (unless strict mode)
+            if self.config.strict_validation:
+                return False
+            else:
+                logger.warning("Continuing with model loading despite validation error")
+                return True
+    
+    def _get_model_cache_path(self) -> Optional[Path]:
+        """
+        Get the local cache path for the model.
+        
+        Returns:
+            Path to cached model or None if not found
+        """
+        try:
+            # Common Hugging Face cache locations
+            cache_locations = [
+                Path.home() / ".cache" / "huggingface" / "transformers",
+                Path.home() / ".cache" / "huggingface" / "hub",
+                Path.home() / ".cache" / "torch" / "transformers"
+            ]
+            
+            # Model name parts for path matching
+            model_parts = self.config.model_name.replace("/", "--")
+            
+            for cache_dir in cache_locations:
+                if not cache_dir.exists():
+                    continue
+                
+                # Look for model directories
+                for path in cache_dir.iterdir():
+                    if path.is_dir() and model_parts in path.name:
+                        # Check if it contains model files
+                        if self._contains_model_files(path):
+                            return path
+            
+            # Also check current directory for local models
+            local_path = Path(self.config.model_name)
+            if local_path.exists() and self._contains_model_files(local_path):
+                return local_path
+            
+            return None
+            
+        except Exception as e:
+            logger.debug(f"Error finding model cache path: {e}")
+            return None
+    
+    def _contains_model_files(self, path: Path) -> bool:
+        """Check if a path contains model files."""
+        try:
+            model_files = [
+                "config.json",
+                "pytorch_model.bin",
+                "model.safetensors",
+                "tokenizer.json",
+                "tokenizer_config.json"
+            ]
+            
+            # Check if at least config.json exists
+            if not (path / "config.json").exists():
+                return False
+            
+            # Check for at least one model weight file
+            weight_files = [
+                "pytorch_model.bin",
+                "model.safetensors",
+                "pytorch_model-00001-of-*.bin"
+            ]
+            
+            for weight_file in weight_files:
+                if "*" in weight_file:
+                    # Check for pattern match
+                    if list(path.glob(weight_file)):
+                        return True
+                else:
+                    if (path / weight_file).exists():
+                        return True
+            
+            return False
+            
+        except Exception:
+            return False
+    
+    async def _call_progress_callback(self, callback: Callable, percentage: int, status: str):
+        """Call progress callback safely."""
+        try:
+            if callback:
+                if asyncio.iscoroutinefunction(callback):
+                    await callback(percentage, status)
+                else:
+                    callback(percentage, status)
+        except Exception as e:
+            logger.debug(f"Progress callback error: {e}")
+    
+    def _get_estimated_model_size(self) -> float:
+        """Get estimated model size in GB based on model name."""
+        model_name = self.config.model_name
+        
+        # Check for exact matches first
+        for name, size in self.model_size_estimates.items():
+            if name in model_name:
+                return size
+        
+        # Fallback based on model name patterns
+        if "7B" in model_name:
+            return 14.0
+        elif "3B" in model_name:
+            return 6.0
+        elif "1.5B" in model_name:
+            return 3.0
+        else:
+            # Conservative estimate for unknown models
+            return 10.0
+    
+    async def _attempt_fallback_initialization(self, progress_callback: Callable | None = None) -> bool:
+        """Attempt initialization with fallback strategies."""
+        logger.info("🔄 Attempting fallback initialization strategies...")
+        
+        original_quantization = self.config.quantization_bits
+        
+        # Strategy 1: More aggressive quantization
+        if self.config.quantization_bits > 4:
+            logger.info("Fallback strategy 1: INT4 quantization")
+            self.config.quantization_bits = 4
+            
+            try:
+                await self._update_progress(10, "Retrying with INT4 quantization...", progress_callback)
+                return await self.initialize(progress_callback)
+            except Exception as e:
+                logger.warning(f"INT4 fallback failed: {e}")
+        
+        # Strategy 2: CPU-only execution
+        if self.device != "cpu":
+            logger.info("Fallback strategy 2: CPU execution")
+            self.device = "cpu"
+            self.config.device_map = "cpu"
+            
+            try:
+                await self._update_progress(20, "Retrying with CPU execution...", progress_callback)
+                return await self.initialize(progress_callback)
+            except Exception as e:
+                logger.warning(f"CPU fallback failed: {e}")
+        
+        # Strategy 3: Smaller model variant (if available)
+        if "7B" in self.config.model_name:
+            logger.info("Fallback strategy 3: Smaller model variant")
+            original_model = self.config.model_name
+            self.config.model_name = self.config.model_name.replace("7B", "3B")
+            
+            try:
+                await self._update_progress(30, "Retrying with smaller model...", progress_callback)
+                return await self.initialize(progress_callback)
+            except Exception as e:
+                logger.warning(f"Smaller model fallback failed: {e}")
+                self.config.model_name = original_model
+        
+        # All fallback strategies failed
+        self.config.quantization_bits = original_quantization
+        logger.error("All fallback strategies exhausted")
+        return False
 
     async def _initialize_text_model(
         self, progress_callback: Callable | None = None
@@ -605,6 +1009,371 @@ class QwenBackend:
         else:
             logger.info("Using CPU for inference")
             return "cpu"
+
+    async def _initialize_text_model_enhanced(
+        self, progress_callback: Callable | None = None
+    ) -> bool:
+        """
+        Enhanced text-only model initialization with memory monitoring and cancellation support.
+        
+        Args:
+            progress_callback: Optional callback for progress updates
+            
+        Returns:
+            bool: True if initialization successful
+        """
+        try:
+            logger.info("🔤 Initializing enhanced text-only Qwen model...")
+            
+            # Check for cancellation
+            if self.loading_cancelled:
+                return False
+            
+            await self._update_progress(25, "Loading tokenizer with memory monitoring...", progress_callback)
+            
+            # Monitor memory before tokenizer loading
+            if self.memory_monitor:
+                pre_tokenizer_snapshot = self.memory_monitor.get_memory_snapshot()
+                logger.info(f"Pre-tokenizer memory: {pre_tokenizer_snapshot.system_available_gb:.1f}GB available")
+
+            # Use a simpler text-only model name if we're falling back from vision
+            text_model_name = self.config.model_name
+            if "VL" in text_model_name:
+                # Try to use a text-only version
+                text_model_name = text_model_name.replace("-VL", "")
+                logger.info(f"Using text-only model: {text_model_name}")
+
+            # Load tokenizer with error handling
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    text_model_name, 
+                    trust_remote_code=True, 
+                    use_fast=True,
+                    cache_dir=None,  # Use default cache
+                    local_files_only=False,
+                    token=None
+                )
+                logger.info("✅ Tokenizer loaded successfully")
+                
+            except Exception as e:
+                logger.error(f"Failed to load tokenizer: {e}")
+                return False
+
+            # Set padding token
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+                logger.debug("Set pad_token to eos_token")
+
+            # Check for cancellation
+            if self.loading_cancelled:
+                return False
+
+            await self._update_progress(45, "Configuring model quantization...", progress_callback)
+            
+            # Configure quantization with memory awareness
+            quantization_config = self.config.get_quantization_config()
+            if quantization_config:
+                logger.info(f"Using {self.config.quantization_bits}-bit quantization")
+            else:
+                logger.info("Using full precision (no quantization)")
+
+            # Monitor memory before model loading
+            if self.memory_monitor:
+                pre_model_snapshot = self.memory_monitor.get_memory_snapshot()
+                logger.info(f"Pre-model memory: {pre_model_snapshot.system_available_gb:.1f}GB available")
+                
+                # Check if we have enough memory
+                estimated_model_memory = self._get_estimated_model_size()
+                if self.config.quantization_bits == 8:
+                    estimated_model_memory *= 0.5
+                elif self.config.quantization_bits == 4:
+                    estimated_model_memory *= 0.25
+                
+                oom_risk, oom_reason = self.memory_monitor.predict_oom_risk(estimated_model_memory)
+                if oom_risk:
+                    logger.error(f"Insufficient memory for model loading: {oom_reason}")
+                    return False
+
+            await self._update_progress(60, "Loading main model (this may take several minutes)...", progress_callback)
+
+            # Load model with optimization and memory monitoring
+            try:
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    text_model_name,
+                    torch_dtype=self.config.torch_dtype,
+                    device_map=self.config.device_map,
+                    quantization_config=quantization_config,
+                    trust_remote_code=True,
+                    attn_implementation=(
+                        "flash_attention_2" if self.config.use_flash_attention else None
+                    ),
+                    low_cpu_mem_usage=True,
+                    cache_dir=None,  # Use default cache
+                    local_files_only=False,
+                    token=None
+                )
+                logger.info("✅ Main model loaded successfully")
+                
+            except Exception as e:
+                logger.error(f"Failed to load main model: {e}")
+                # Log memory status for debugging
+                if self.memory_monitor:
+                    self.memory_monitor.log_memory_status("error")
+                return False
+
+            # Check for cancellation
+            if self.loading_cancelled:
+                return False
+
+            await self._update_progress(80, "Setting up generation pipeline...", progress_callback)
+
+            # Create generation pipeline with memory awareness
+            try:
+                generation_config = self.config.get_generation_config()
+                generation_config["pad_token_id"] = self.tokenizer.pad_token_id
+                generation_config["eos_token_id"] = self.tokenizer.eos_token_id
+
+                self.text_generator = pipeline(
+                    "text-generation",
+                    model=self.model,
+                    tokenizer=self.tokenizer,
+                    device_map=self.config.device_map,
+                    torch_dtype=self.config.torch_dtype,
+                    **generation_config,
+                )
+                logger.info("✅ Generation pipeline created successfully")
+                
+            except Exception as e:
+                logger.error(f"Failed to create generation pipeline: {e}")
+                return False
+
+            # Monitor memory after model loading
+            if self.memory_monitor:
+                post_model_snapshot = self.memory_monitor.get_memory_snapshot()
+                memory_used = pre_model_snapshot.process_rss_gb - post_model_snapshot.process_rss_gb
+                logger.info(f"Model loading used ~{abs(memory_used):.1f}GB additional memory")
+                logger.info(f"Post-model memory: {post_model_snapshot.system_available_gb:.1f}GB available")
+
+            # Mark as text-only mode
+            self.is_vision_model = False
+            await self._update_progress(90, "Text model initialization complete", progress_callback)
+            
+            logger.success("✅ Enhanced text-only Qwen model initialized successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Enhanced text model initialization failed: {e}")
+            if self.memory_monitor:
+                self.memory_monitor.log_memory_status("error")
+            return False
+
+    async def _initialize_vision_model_enhanced(
+        self, progress_callback: Callable | None = None
+    ) -> bool:
+        """
+        Enhanced vision model initialization with memory monitoring and cancellation support.
+        
+        Args:
+            progress_callback: Optional callback for progress updates
+            
+        Returns:
+            bool: True if initialization successful
+        """
+        try:
+            logger.info("👁️ Initializing enhanced vision-capable Qwen-VL model...")
+            
+            # Check for cancellation
+            if self.loading_cancelled:
+                return False
+
+            await self._update_progress(25, "Checking vision dependencies...", progress_callback)
+
+            # Check for torchvision dependency
+            try:
+                import torchvision  # noqa: F401
+                logger.info("✅ Torchvision available for vision processing")
+            except ImportError:
+                logger.warning("⚠️ Torchvision not available - falling back to text-only mode")
+                return await self._initialize_text_model_enhanced(progress_callback)
+
+            # Monitor memory before processor loading
+            if self.memory_monitor:
+                pre_processor_snapshot = self.memory_monitor.get_memory_snapshot()
+                logger.info(f"Pre-processor memory: {pre_processor_snapshot.system_available_gb:.1f}GB available")
+
+            await self._update_progress(35, "Loading vision processor with memory monitoring...", progress_callback)
+
+            # Load processor for vision model with error handling
+            try:
+                self.processor = AutoProcessor.from_pretrained(
+                    self.config.model_name, 
+                    trust_remote_code=True,
+                    cache_dir=None,  # Use default cache
+                    local_files_only=False,
+                    token=None
+                )
+                logger.info("✅ Vision processor loaded successfully")
+                
+            except Exception as e:
+                logger.error(f"Failed to load vision processor: {e}")
+                logger.info("Attempting fallback to text-only mode")
+                return await self._initialize_text_model_enhanced(progress_callback)
+
+            # Check for cancellation
+            if self.loading_cancelled:
+                return False
+
+            await self._update_progress(50, "Configuring vision model quantization...", progress_callback)
+
+            # Configure quantization with memory awareness
+            quantization_config = self.config.get_quantization_config()
+            if quantization_config:
+                logger.info(f"Using {self.config.quantization_bits}-bit quantization for vision model")
+            else:
+                logger.info("Using full precision for vision model (no quantization)")
+
+            # Monitor memory before model loading
+            if self.memory_monitor:
+                pre_model_snapshot = self.memory_monitor.get_memory_snapshot()
+                logger.info(f"Pre-vision-model memory: {pre_model_snapshot.system_available_gb:.1f}GB available")
+                
+                # Check if we have enough memory (vision models typically need more)
+                estimated_model_memory = self._get_estimated_model_size() * 1.2  # 20% overhead for vision
+                if self.config.quantization_bits == 8:
+                    estimated_model_memory *= 0.5
+                elif self.config.quantization_bits == 4:
+                    estimated_model_memory *= 0.25
+                
+                oom_risk, oom_reason = self.memory_monitor.predict_oom_risk(estimated_model_memory)
+                if oom_risk:
+                    logger.error(f"Insufficient memory for vision model: {oom_reason}")
+                    logger.info("Attempting fallback to text-only mode")
+                    return await self._initialize_text_model_enhanced(progress_callback)
+
+            await self._update_progress(65, "Loading vision model (this may take several minutes)...", progress_callback)
+
+            # Load vision model - use correct class based on model version
+            try:
+                if "2.5-VL" in self.config.model_name:
+                    # Use Qwen2_5_VLForConditionalGeneration for Qwen2.5-VL models
+                    logger.info("Loading Qwen2.5-VL model...")
+                    self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                        self.config.model_name,
+                        torch_dtype=self.config.torch_dtype,
+                        device_map=self.config.device_map,
+                        quantization_config=quantization_config,
+                        trust_remote_code=True,
+                        low_cpu_mem_usage=True,
+                        cache_dir=None,  # Use default cache
+                        local_files_only=False,
+                        token=None
+                    )
+                else:
+                    # Use Qwen2VLForConditionalGeneration for Qwen2-VL models
+                    logger.info("Loading Qwen2-VL model...")
+                    self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+                        self.config.model_name,
+                        torch_dtype=self.config.torch_dtype,
+                        device_map=self.config.device_map,
+                        quantization_config=quantization_config,
+                        trust_remote_code=True,
+                        low_cpu_mem_usage=True,
+                        cache_dir=None,  # Use default cache
+                        local_files_only=False,
+                        token=None
+                    )
+                logger.info("✅ Vision model loaded successfully")
+                
+            except Exception as e:
+                logger.error(f"Failed to load vision model: {e}")
+                # Log memory status for debugging
+                if self.memory_monitor:
+                    self.memory_monitor.log_memory_status("error")
+                logger.info("Attempting fallback to text-only mode")
+                return await self._initialize_text_model_enhanced(progress_callback)
+
+            # Check for cancellation
+            if self.loading_cancelled:
+                return False
+
+            await self._update_progress(85, "Setting up vision processing pipeline...", progress_callback)
+
+            # The processor already includes the tokenizer for vision models
+            self.tokenizer = self.processor.tokenizer
+            logger.info("✅ Vision processing pipeline configured")
+
+            # Monitor memory after model loading
+            if self.memory_monitor:
+                post_model_snapshot = self.memory_monitor.get_memory_snapshot()
+                memory_used = pre_model_snapshot.process_rss_gb - post_model_snapshot.process_rss_gb
+                logger.info(f"Vision model loading used ~{abs(memory_used):.1f}GB additional memory")
+                logger.info(f"Post-vision-model memory: {post_model_snapshot.system_available_gb:.1f}GB available")
+
+            await self._update_progress(95, "Vision model initialization complete", progress_callback)
+            
+            logger.success("✅ Enhanced vision-capable Qwen-VL model initialized successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Enhanced vision model initialization failed: {e}")
+            if self.memory_monitor:
+                self.memory_monitor.log_memory_status("error")
+            logger.info("Attempting fallback to text-only mode")
+            return await self._initialize_text_model_enhanced(progress_callback)
+
+    async def _update_progress(self, percentage: int, status: str, callback: Callable | None = None):
+        """Update initialization progress with optional callback."""
+        # Update internal state
+        self.model_loading_progress = percentage
+        self.loading_status = status
+        
+        # Call provided callback
+        if callback:
+            try:
+                if asyncio.iscoroutinefunction(callback):
+                    await callback(percentage, status)
+                else:
+                    callback(percentage, status)
+            except Exception as e:
+                logger.debug(f"Progress callback error: {e}")
+        
+        # Emit UI event
+        if self.ui_emitter:
+            try:
+                # Detect phase from status
+                phase = "loading"
+                status_lower = status.lower()
+                if "analyzing" in status_lower:
+                    phase = "analysis"
+                elif "optimizing" in status_lower:
+                    phase = "optimization"
+                elif "detecting" in status_lower:
+                    phase = "device_detection"
+                elif "tokenizer" in status_lower:
+                    phase = "tokenizer"
+                elif "model" in status_lower:
+                    phase = "model"
+                elif "pipeline" in status_lower:
+                    phase = "pipeline"
+                elif "finalizing" in status_lower:
+                    phase = "finalization"
+                
+                await self.ui_emitter.emit_progress_update(
+                    percentage=percentage,
+                    status=status,
+                    phase=phase,
+                    can_cancel=percentage < 95
+                )
+                
+                # Emit memory update if monitor is available
+                if self.memory_monitor:
+                    snapshot = self.memory_monitor.get_memory_snapshot()
+                    await self.ui_emitter.emit_memory_update(snapshot.process_rss_gb)
+                    
+            except Exception as e:
+                logger.debug(f"UI event emission error: {e}")
+        
+        logger.info(f"[{percentage:3d}%] {status}")
 
     async def enable_memory(self, memory_manager: TektraMemoryManager):
         """Enable memory support for context-aware generation."""

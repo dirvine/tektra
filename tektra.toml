@@ -1,7 +1,0 @@
-[inference]
-backend = "auto"  # Auto will use MLX on Apple Silicon, GGUF elsewhere
-benchmark_on_startup = false
-max_tokens = 512
-temperature = 0.7
-top_p = 0.9
-repeat_penalty = 1.1

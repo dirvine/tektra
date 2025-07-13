@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/agents/smolagents_mock.py
+# hypothesis_version: 6.135.26
+
+['Mock search results', 'agent_type', 'arguments', 'code', 'input', 'mock-model', 'mock_tool', 'query', 'result', 'search', 'smolagents', 'status', 'success', 'task', 'tool', 'tool_calls']

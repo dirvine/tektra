@@ -8,7 +8,7 @@ description = "A voice-interactive AI assistant with multimodal capabilities usi
 authors = [
     {name = "David Irvine", email = "david.irvine@maidsafe.net"}
 ]
-license = {text = "MIT OR Apache-2.0"}
+license = {text = "AGPL-3.0 OR Commercial"}
 readme = "README.md"
 requires-python = ">=3.11"
 keywords = ["ai", "assistant", "voice", "multimodal", "briefcase", "unmute", "qwen"]
@@ -16,8 +16,8 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Desktop Environment",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: MIT License",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "License :: Other/Proprietary License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -115,7 +115,7 @@ project_name = "Tektra AI Assistant"
 bundle = "com.maidsafe.tektra"
 version = "0.1.0"
 url = "https://github.com/dirvine/tektra"
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0 OR Commercial"
 author = "David Irvine"
 author_email = "david.irvine@maidsafe.net"
 

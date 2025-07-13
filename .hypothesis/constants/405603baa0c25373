@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/data/vector_db.py
+# hypothesis_version: 6.135.26
+
+[0.5, 384, 'all-MiniLM-L6-v2', 'content', 'created_at', 'distance', 'embedding_dimension', 'embeddings_available', 'error', 'faiss_available', 'id', 'metadata', 'model_name', 'similarity_score', 'source_id', 'source_stats', 'source_type', 'total_embeddings', 'unknown', 'utf-8', 'vector_index_size']

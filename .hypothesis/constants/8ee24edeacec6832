@@ -1,0 +1,4 @@
+# file: /Users/davidirvine/Desktop/Devel/projects/tektra/src/tektra/memory/memory_manager.py
+# hypothesis_version: 6.135.26
+
+[0.0, 0.5, 0.7, 100, 1000, ',', '?', 'AND agent_id = ?', 'AND content LIKE ?', 'AND importance >= ?', 'AND session_id = ?', 'AND timestamp >= ?', 'AND user_id = ?', 'LIMIT ?', 'memos_instance']
