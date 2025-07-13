@@ -604,9 +604,21 @@ at your option.
 - **BeeWare**: For the Briefcase application framework
 - **SmolAgents**: For the agent execution framework
 
+## 📚 Documentation
+
+Comprehensive documentation is available in the `/docs` directory:
+
+- **[📖 Documentation Overview](docs/README.md)** - Complete documentation index and navigation
+- **[🚀 Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md)** - Enterprise deployment and configuration
+- **[🏗️ Architecture Overview](docs/ARCHITECTURE.md)** - System architecture and design decisions
+- **[🔌 API Reference](docs/API_REFERENCE.md)** - Complete API documentation with examples
+- **[🔒 Security Guide](docs/SECURITY_GUIDE.md)** - Security implementation and best practices
+- **[🛠️ Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[⚡ Performance Guide](docs/PERFORMANCE_GUIDE.md)** - Performance optimization and tuning
+
 ## 📞 Support
 
-- **Documentation**: [docs.tektra.ai](https://docs.tektra.ai)
+- **Documentation**: [Complete Documentation](docs/README.md)
 - **Issues**: [GitHub Issues](https://github.com/dirvine/tektra/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/dirvine/tektra/discussions)
 - **Community**: [Discord Server](https://discord.gg/tektra)
