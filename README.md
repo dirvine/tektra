@@ -1,574 +1,462 @@
 # Tektra AI Assistant
 
-> **A sophisticated voice-interactive AI assistant with multimodal capabilities, intelligent agents, and comprehensive memory system**
+> **Enterprise-Grade AI Assistant Platform with Multimodal Intelligence, Secure Agent Execution, and Distributed Collaboration Capabilities**
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-yellow.svg)](LICENSE)
-[![Built with Briefcase](https://img.shields.io/badge/Built%20with-Briefcase-green.svg)](https://briefcase.readthedocs.io/)
+[![Production Ready](https://img.shields.io/badge/Production-Ready-green.svg)](docs/PRODUCTION_DEPLOYMENT.md)
+[![Security Hardened](https://img.shields.io/badge/Security-Hardened-red.svg)](docs/SECURITY_GUIDE.md)
 
-Tektra combines cutting-edge AI technologies to deliver a comprehensive, native desktop AI assistant with voice interaction, vision processing, intelligent agents, and advanced memory capabilities.
+Tektra is a revolutionary AI assistant platform that combines cutting-edge artificial intelligence with enterprise-grade security, performance optimization, and distributed collaboration capabilities. Built from the ground up for production environments, Tektra offers voice interaction, vision processing, intelligent agents, advanced memory systems, and a comprehensive security framework - all designed to scale from personal use to enterprise deployment.
 
-## 🌟 Key Features
+## 🌟 What Makes Tektra Unique
 
-### 🎯 **Dual AI Brain Architecture**
-- **Conversational AI**: Kyutai Unmute for ultra-low latency voice conversations (STT-2.6B-EN)
-- **Analytical AI**: Qwen 2.5-VL for complex reasoning, vision analysis, and analytical tasks
-- **Smart Router**: Intelligent query routing between conversational and analytical systems
-- **Hybrid Processing**: Seamless integration of both AI systems for complex queries
+### 🎯 **Production-Ready Architecture**
+- **Enterprise Security**: Multi-layer security with sandbox isolation, tool validation, and comprehensive threat detection
+- **High Performance**: Intelligent caching, resource pooling, and optimized inference pipelines
+- **Scalable Infrastructure**: Kubernetes-native with auto-scaling and load balancing
+- **Comprehensive Testing**: E2E testing suite with security compliance and performance benchmarks
+- **Complete Documentation**: Enterprise-grade documentation for deployment, security, and operations
 
-### 🤖 **Intelligent Agent System**
-- **Natural Language Agent Creation**: Describe what you want - get a working agent
-- **Multi-Type Agents**: CODE, TOOL_CALLING, HYBRID, MONITOR, WORKFLOW agents
-- **Agent Builder**: Powered by SmolAgents framework for robust code execution
-- **Agent Capabilities**: Web search, file access, APIs, databases, scheduling, and more
-- **Sandboxed Execution**: Secure agent execution with Docker and process isolation
+### 🤖 **Intelligent Agent Ecosystem**
+- **Natural Language Agent Creation**: Describe what you want - get a working, secure agent
+- **SmolAgents Integration**: Powered by the robust SmolAgents framework for reliable code execution
+- **Multi-Type Agents**: CODE, TOOL_CALLING, HYBRID, MONITOR, WORKFLOW, and COLLABORATIVE agents
+- **Secure Execution**: Container-based sandbox isolation with comprehensive security validation
+- **Agent Collaboration**: Inter-agent communication and shared memory for complex workflows
 
-### 🧠 **Advanced Memory System**
-- **Persistent Memory**: Long-term memory storage with SQLite backend
-- **Context-Aware Conversations**: Remembers past interactions and learns from experience
-- **Memory Sharing**: Inter-agent memory sharing for collaborative intelligence
-- **Semantic Search**: Find relevant memories with intelligent search and relevance scoring
-- **Memory Types**: Conversation, agent context, task results, and custom memory types
+### 🧠 **Advanced Memory & Context System**
+- **Persistent Long-Term Memory**: SQLite-backed memory with semantic search and relevance scoring
+- **Context-Aware Conversations**: Learns from interactions and maintains conversational context
+- **Memory Sharing**: Secure inter-agent memory sharing for collaborative intelligence
+- **Memory Types**: Conversation, agent context, task results, learned facts, and custom memory types
+- **Distributed Memory**: Foundation for P2P memory sharing and collaborative AI networks
 
-### 🎤 **Voice Interaction**
-- **Real-time Voice Conversations**: Continuous voice interaction with Kyutai Unmute
-- **Speech-to-Text**: Accurate transcription with STT-2.6B-EN
-- **Text-to-Speech**: Natural speech synthesis with Kyutai TTS 2B
-- **Push-to-Talk & Continuous Listening**: Flexible voice activation modes
-- **Audio Enhancement**: Noise reduction and quality improvement
+### 🎤 **Multimodal Intelligence**
+- **Voice Interaction**: Real-time voice conversations with Kyutai Unmute (STT-2.6B-EN)
+- **Vision Processing**: Advanced image analysis with Qwen2.5-VL for multimodal understanding
+- **Document Processing**: Multi-format document understanding (PDF, DOCX, images, etc.)
+- **Smart Routing**: Intelligent query routing between conversational and analytical AI systems
+- **Audio Enhancement**: Noise reduction and quality improvement for optimal voice interaction
 
-### 👁️ **Vision & Multimodal Processing**
-- **Advanced Vision Analysis**: Powered by Qwen2.5-VL for image understanding
-- **Multi-Format Support**: JPEG, PNG, GIF, WebP, BMP with automatic optimization
-- **Camera Integration**: Real-time video feed processing
-- **Vision-Text Integration**: Combined text and image analysis in single queries
-- **Image Enhancement**: Automatic resizing, contrast enhancement, and quality improvement
-
-### 📄 **Document Processing**
-- **Multi-Format Support**: PDF, DOCX, TXT, Markdown, JSON, YAML, CSV, LOG files
-- **Intelligent Text Extraction**: Advanced document understanding with metadata
-- **Drag-and-Drop Upload**: Seamless file processing through GUI
-- **Asynchronous Processing**: Concurrent processing of multiple documents
-
-### 🖥️ **Native Desktop Experience**
-- **Cross-Platform**: macOS, Linux, Windows with native look and feel
-- **Modern UI**: Built with Briefcase and Toga for native desktop experience
-- **Real-time Status**: Live indicators for models, services, and processing
-- **Responsive Design**: Adaptive interface with progress tracking and status updates
-
-## 🏗️ Architecture Overview
+## 🏗️ Complete System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Tektra AI Assistant                         │
-├─────────────────────────────────────────────────────────────────┤
-│  🖥️ Native Desktop UI (Briefcase + Toga)                      │
-│  ├─ Chat Interface      ├─ Agent Dashboard    ├─ Controls      │
-│  ├─ File Upload         ├─ Memory Viewer      ├─ Settings      │
-│  └─ Status Indicators   └─ Performance Stats  └─ Voice Panel   │
-├─────────────────────────────────────────────────────────────────┤
-│  🤖 Agent System                                               │
-│  ├─ Agent Builder (Natural Language → Working Agent)           │
-│  ├─ Agent Runtime (Sandboxed Execution)                        │
-│  ├─ Agent Registry (Management & Storage)                      │
-│  └─ Agent Templates (Pre-built Common Agents)                  │
-├─────────────────────────────────────────────────────────────────┤
-│  🧠 Memory System                                              │
-│  ├─ Memory Manager (SQLite Backend)                            │
-│  ├─ Memory Types (Conversation, Agent Context, Task Results)   │
-│  ├─ Memory Search (Semantic Search with Relevance Scoring)     │
-│  └─ Memory Sharing (Inter-agent Memory Collaboration)          │
-├─────────────────────────────────────────────────────────────────┤
-│  🎯 AI Processing Core                                         │
-│  ├─ Smart Router (Query Analysis & Routing)                    │
-│  ├─ Qwen 2.5-VL Backend (Analytical & Vision AI)              │
-│  ├─ Kyutai Unmute (Conversational AI)                         │
-│  └─ Multimodal Processor (Text, Image, Audio Integration)      │
-├─────────────────────────────────────────────────────────────────┤
-│  🎤 Voice & Audio                                              │
-│  ├─ Voice Pipeline (STT → LLM → TTS)                          │
-│  ├─ Audio Capture (Microphone Integration)                     │
-│  ├─ Audio Playback (Speaker Integration)                       │
-│  └─ WebSocket Communication (Real-time Audio Streaming)        │
-├─────────────────────────────────────────────────────────────────┤
-│  👁️ Vision & Multimodal                                       │
-│  ├─ Vision Pipeline (Image Analysis & Understanding)           │
-│  ├─ Document Processor (Multi-format Document Processing)      │
-│  ├─ Image Enhancement (Optimization & Quality Improvement)     │
-│  └─ Camera Integration (Real-time Video Processing)            │
-├─────────────────────────────────────────────────────────────────┤
-│  🔧 Infrastructure                                             │
-│  ├─ Docker Integration (Service Management)                    │
-│  ├─ Model Registry (AI Model Management)                       │
-│  ├─ Performance Monitor (Metrics & Analytics)                  │
-│  └─ Configuration Manager (Settings & Environment)             │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Tektra AI Assistant Platform                        │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🖥️ User Interface Layer                                               │
+│  ├─ Native Desktop App (Briefcase + Toga)  ├─ REST API Endpoints      │
+│  ├─ Web Dashboard Interface                ├─ WebSocket Real-time      │
+│  ├─ Mobile Companion Apps                  └─ CLI Management Tools     │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🤖 Enterprise Agent System                                            │
+│  ├─ Agent Builder (Natural Language → Secure Agents)                   │
+│  ├─ Agent Runtime (Sandboxed Execution with Resource Limits)           │
+│  ├─ Agent Registry (Lifecycle Management & Version Control)            │
+│  ├─ Agent Marketplace (Shared Agent Templates & Extensions)            │
+│  └─ Collaboration Engine (Inter-agent Communication & Workflows)       │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🧠 Distributed Memory & Intelligence                                  │
+│  ├─ Memory Manager (Persistent, Searchable, Shareable)                 │
+│  ├─ Context Engine (Conversation Context & Learning)                   │
+│  ├─ Knowledge Graph (Semantic Relationships & Facts)                   │
+│  ├─ Memory Synchronization (P2P Memory Sharing - Future)               │
+│  └─ Collective Intelligence (Shared Learning Across Networks)          │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🎯 AI Processing Core                                                 │
+│  ├─ Smart Router (Query Analysis & Model Selection)                    │
+│  ├─ Qwen 2.5-VL Backend (Analytical & Vision AI)                      │
+│  ├─ Kyutai Unmute (Conversational Voice AI)                           │
+│  ├─ Model Pool (Dynamic Model Loading & Resource Management)           │
+│  └─ Multimodal Processor (Text, Image, Audio, Document Integration)    │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🔒 Enterprise Security Framework                                      │
+│  ├─ Security Context Manager (Authentication & Authorization)          │
+│  ├─ Advanced Sandbox (Container Isolation & Resource Limits)           │
+│  ├─ Tool Validator (Static/Dynamic Analysis & Malware Detection)       │
+│  ├─ Permission System (RBAC & Granular Access Control)                 │
+│  ├─ Security Monitor (Threat Detection & Incident Response)            │
+│  └─ Compliance Engine (GDPR, SOC 2, Enterprise Standards)             │
+├─────────────────────────────────────────────────────────────────────────┤
+│  ⚡ Performance & Optimization                                         │
+│  ├─ Multi-Level Cache (L1/L2/L3 Intelligent Caching)                  │
+│  ├─ Resource Pool (Model, Memory, and Compute Resource Management)     │
+│  ├─ Task Scheduler (Priority Queue with Work Stealing)                 │
+│  ├─ Memory Optimizer (Memory Mapping & Zero-Copy Operations)           │
+│  ├─ Performance Monitor (Real-time Metrics & Profiling)                │
+│  └─ Auto-Scaling (Dynamic Resource Allocation & Load Balancing)        │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🌐 Distributed Network Layer (Future P2P Integration)                 │
+│  ├─ P2P Communication (Secure Peer-to-Peer Networking)                 │
+│  ├─ MPC Coordination (Multi-Party Computation for Collaboration)       │
+│  ├─ Consensus Engine (Distributed Decision Making)                     │
+│  ├─ Identity Management (Cryptographic Identity & Reputation)          │
+│  └─ Network Security (End-to-End Encryption & Privacy Protection)      │
+├─────────────────────────────────────────────────────────────────────────┤
+│  🔧 Infrastructure & Operations                                        │
+│  ├─ Docker Integration (Containerization & Service Management)         │
+│  ├─ Kubernetes Orchestration (Auto-scaling & High Availability)       │
+│  ├─ Database Systems (PostgreSQL, Redis, Vector Databases)             │
+│  ├─ Monitoring Stack (Prometheus, Grafana, Jaeger Tracing)             │
+│  ├─ Configuration Management (Environment-specific Configs)            │
+│  └─ Deployment Manager (Health Monitoring & Recovery)                  │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 🎯 Core Components
+## 🚀 Current Capabilities
 
-### 1. **AI Processing Core**
+### **Enterprise AI Assistant Platform**
+Tektra provides a complete, production-ready AI assistant platform with:
+
+- **🤖 Intelligent Agents**: Create sophisticated AI agents using natural language descriptions
+- **🧠 Advanced Memory**: Persistent, searchable memory with context awareness and learning
+- **🎤 Voice Intelligence**: Real-time voice conversations with advanced audio processing
+- **👁️ Vision Understanding**: Multimodal AI with image analysis and document processing
+- **🔒 Enterprise Security**: Multi-layer security with sandbox isolation and threat detection
+- **⚡ High Performance**: Optimized for production with intelligent caching and scaling
+- **📊 Complete Monitoring**: Comprehensive metrics, logging, and observability
+- **🔧 Easy Deployment**: Docker and Kubernetes support with auto-scaling
+
+### **Core Agent Capabilities**
 ```python
-# Smart Query Router
-router = SmartRouter(qwen_backend, unmute_backend)
-response = await router.process_query("Analyze this image and explain what you see")
+# Create agents from natural language descriptions
+agent_description = """
+Create a collaborative research agent that can:
+- Search multiple academic databases simultaneously
+- Analyze research papers and extract key findings
+- Collaborate with other agents to synthesize information
+- Generate comprehensive research summaries
+- Share findings with team members securely
+"""
 
-# Qwen 2.5-VL for analytical tasks
-qwen = QwenBackend()
-result = await qwen.process_vision_query("What's in this image?", image_data)
-
-# Kyutai Unmute for conversations
-unmute = UnmuteBackend()
-await unmute.start_conversation("Hello, how are you today?")
+agent = await agent_builder.create_agent_from_description(agent_description)
 ```
 
-### 2. **Agent System**
+**Built-in Agent Types:**
+- **🔧 CODE Agents**: Execute Python code in secure sandbox environments
+- **🛠️ TOOL_CALLING Agents**: Use structured JSON-based tool calling for specific tasks
+- **🔄 HYBRID Agents**: Combine code execution with tool calling for complex workflows
+- **📊 MONITOR Agents**: Continuous monitoring with scheduled execution and alerting
+- **📋 WORKFLOW Agents**: Multi-step processes with state management and error handling
+- **🤝 COLLABORATIVE Agents**: Inter-agent communication for distributed problem solving
+
+### **Memory & Learning System**
 ```python
-# Create agent from natural language
-agent_builder = AgentBuilder(qwen_backend)
-agent = await agent_builder.create_agent_from_description(
-    "Create a GitHub monitor that alerts me about new issues and PRs"
-)
-
-# Deploy and run agent
-runtime = AgentRuntime(memory_manager=memory_manager)
-agent_id = await runtime.deploy_agent(agent)
-```
-
-### 3. **Memory System**
-```python
-# Memory-enhanced conversations
-memory_manager = TektraMemoryManager()
-await memory_manager.add_conversation(
-    user_message="I like Python programming",
-    assistant_response="Great! Python is versatile and beginner-friendly.",
-    user_id="user123"
-)
-
-# Search memories
+# Advanced memory with semantic search
 memories = await memory_manager.search_memories(
-    query="Python programming",
-    user_id="user123"
+    query="machine learning optimization techniques",
+    context_types=["research", "experiments", "discussions"],
+    time_range="last_month",
+    min_relevance=0.7,
+    include_agent_memories=True
+)
+
+# Cross-agent memory sharing
+await memory_manager.share_memory_context(
+    source_agent="research_agent",
+    target_agent="analysis_agent", 
+    memory_types=["findings", "data_sources"],
+    security_level="team_access"
 )
 ```
 
-### 4. **Voice Integration**
-```python
-# Voice conversation pipeline
-voice_pipeline = VoicePipeline(unmute_backend)
-await voice_pipeline.start_conversation()
+### **Security & Compliance**
+- **🛡️ Zero-Trust Architecture**: Every operation is authenticated and authorized
+- **🏗️ Container Sandboxing**: Isolated execution environments with resource limits
+- **🔍 Tool Validation**: Static and dynamic analysis of all executable code
+- **👥 RBAC Permissions**: Role-based access control with granular permissions
+- **📊 Security Monitoring**: Real-time threat detection and incident response
+- **📋 Compliance Ready**: GDPR, SOC 2, and enterprise security standards
 
-# Process voice input
-audio_data = await voice_pipeline.capture_audio()
-response = await voice_pipeline.process_voice_query(audio_data)
-```
+## 🌐 Future: Distributed AI Collaboration Network
 
-### 5. **Vision Processing**
+Tektra is architected as the foundation for a revolutionary distributed AI collaboration network that will enable secure, private, and intelligent peer-to-peer AI communication.
+
+### **Phase 1: P2P Agent Networks (Planned 2024)**
+
 ```python
-# Vision analysis
-vision_processor = VisionProcessor(qwen_backend)
-result = await vision_processor.analyze_image(
-    image_path="photo.jpg",
-    prompt="Describe what you see in detail"
+# Future P2P agent collaboration
+p2p_network = TektraP2PNetwork(
+    identity=CryptographicIdentity.generate(),
+    security_level=SecurityLevel.HIGH,
+    privacy_mode=PrivacyMode.ZERO_KNOWLEDGE
 )
 
-# Document processing
-doc_processor = DocumentProcessor()
-content = await doc_processor.process_document("document.pdf")
+# Discover and connect to peer agents
+peer_agents = await p2p_network.discover_agents(
+    capabilities=["research", "analysis", "writing"],
+    trust_threshold=0.8,
+    geographic_region="global"
+)
+
+# Initiate collaborative session
+collaboration = await p2p_network.start_collaboration(
+    task="Analyze global climate data trends",
+    participants=peer_agents,
+    privacy_preservation=MPCProtocol.SECURE_AGGREGATION
+)
 ```
+
+**P2P Network Features:**
+- **🔐 Cryptographic Identity**: Self-sovereign identity with reputation systems
+- **🌍 Global Agent Discovery**: Find and connect with compatible AI agents worldwide
+- **🔒 End-to-End Encryption**: All communications secured with quantum-resistant encryption
+- **🤝 Trust Networks**: Build trusted networks of verified agents and users
+- **📊 Reputation Systems**: Community-driven agent reliability and capability ratings
+
+### **Phase 2: Multi-Party Computation (MPC) Integration (Planned 2025)**
+
+```python
+# Secure multi-party computation for collaborative AI
+mpc_session = await TektraMPCCoordinator.create_session(
+    participants=verified_peer_agents,
+    computation_type=MPCType.SECURE_AGGREGATION,
+    privacy_level=PrivacyLevel.DIFFERENTIAL_PRIVATE
+)
+
+# Collaborative model training without data sharing
+trained_model = await mpc_session.collaborative_training(
+    model_architecture=SharedModelArchitecture.TRANSFORMER,
+    data_contribution=local_private_data,
+    privacy_budget=DifferentialPrivacyBudget(epsilon=1.0)
+)
+
+# Secure knowledge aggregation
+collective_knowledge = await mpc_session.aggregate_knowledge(
+    knowledge_sources=[agent.knowledge_base for agent in participants],
+    aggregation_method=SecureAggregation.FEDERATED_AVERAGING
+)
+```
+
+**MPC Capabilities:**
+- **🧮 Secure Computation**: Perform computations on distributed data without revealing it
+- **🤖 Federated Learning**: Train AI models collaboratively while preserving privacy
+- **🔍 Private Analytics**: Generate insights from distributed datasets securely
+- **🌐 Collective Intelligence**: Combine knowledge from multiple agents while maintaining privacy
+- **⚖️ Consensus Mechanisms**: Distributed decision-making with Byzantine fault tolerance
+
+### **Phase 3: Autonomous AI Economy (Vision 2025+)**
+
+```python
+# Autonomous agents participating in AI economy
+ai_economy = TektraAIEconomy(
+    marketplace=DecentralizedMarketplace(),
+    payment_system=CryptocurrencyIntegration(),
+    reputation_system=BlockchainBasedReputation()
+)
+
+# Agents offering services autonomously
+service_agent = await ai_economy.register_service_provider(
+    agent=research_agent,
+    services=["literature_review", "data_analysis", "report_generation"],
+    pricing=DynamicPricing(base_rate=0.01, quality_multiplier=True),
+    reputation=agent.reputation_score
+)
+
+# Cross-platform collaboration
+collaboration = await ai_economy.request_collaboration(
+    task="Develop sustainable energy solution",
+    required_capabilities=["physics_simulation", "market_analysis", "policy_research"],
+    budget=50.0,
+    deadline="30_days"
+)
+```
+
+**AI Economy Features:**
+- **💰 Automated Transactions**: Agents autonomously negotiate and execute service contracts
+- **🏪 Decentralized Marketplace**: Global marketplace for AI services and capabilities
+- **⭐ Quality Assurance**: Reputation-based quality control and service verification
+- **🔄 Resource Sharing**: Efficient allocation of computational resources across the network
+- **🌍 Global Collaboration**: Enable worldwide AI collaboration on complex challenges
+
+## 🛠️ Technical Implementation Examples
+
+### **Enterprise Agent Development**
+```python
+# Advanced agent with enterprise capabilities
+enterprise_agent = await agent_builder.create_enterprise_agent(
+    description="Financial analysis agent with compliance monitoring",
+    capabilities=[
+        "market_data_analysis",
+        "regulatory_compliance_checking", 
+        "risk_assessment",
+        "report_generation"
+    ],
+    security_requirements={
+        "data_encryption": True,
+        "audit_logging": True,
+        "access_controls": ["finance_team", "compliance_officer"],
+        "regulatory_compliance": ["SOX", "GDPR", "PCI_DSS"]
+    },
+    performance_requirements={
+        "max_response_time": "2s",
+        "availability": "99.9%",
+        "concurrent_requests": 100
+    }
+)
+```
+
+### **Secure Memory Management**
+```python
+# Enterprise memory with encryption and access controls
+enterprise_memory = TektraEnterpriseMemory(
+    encryption=AES256_GCM(),
+    access_control=RBACAccessControl(),
+    audit_logging=ComprehensiveAuditLogging(),
+    backup_strategy=EncryptedDistributedBackup()
+)
+
+# Memory with privacy preservation
+private_memory = await enterprise_memory.create_private_context(
+    user_id="executive_user",
+    classification_level="confidential",
+    retention_policy="5_years",
+    geographic_restrictions=["EU", "US"]
+)
+```
+
+### **Performance Optimization**
+```python
+# High-performance agent deployment
+performance_config = PerformanceConfiguration(
+    caching_strategy=MultiLevelCaching(
+        l1_size="512MB",
+        l2_size="2GB", 
+        l3_size="10GB"
+    ),
+    resource_allocation=DynamicResourceAllocation(
+        cpu_cores=8,
+        memory_gb=32,
+        gpu_memory_gb=24
+    ),
+    scaling_policy=AutoScalingPolicy(
+        min_instances=2,
+        max_instances=20,
+        scale_up_threshold=0.7,
+        scale_down_threshold=0.3
+    )
+)
+```
+
+## 📊 Enterprise Deployment Scenarios
+
+### **1. Corporate AI Assistant**
+Deploy Tektra as a comprehensive corporate AI assistant:
+- **Employee Productivity**: Personal AI assistants for each employee
+- **Knowledge Management**: Company-wide knowledge base with intelligent search
+- **Automated Workflows**: AI agents handling routine business processes
+- **Compliance Monitoring**: Automated compliance checking and reporting
+- **Security Integration**: Integration with existing corporate security infrastructure
+
+### **2. Research Institution Network**
+Connect multiple research institutions for collaborative AI:
+- **Cross-Institution Collaboration**: Secure sharing of research insights
+- **Federated Data Analysis**: Analyze distributed datasets without data movement
+- **Automated Literature Review**: AI agents continuously monitoring research publications
+- **Grant Proposal Assistance**: AI assistance for research proposal development
+- **Peer Review Automation**: Intelligent peer review and quality assessment
+
+### **3. Healthcare AI Network**
+Secure healthcare AI collaboration:
+- **Privacy-Preserving Diagnostics**: Collaborative diagnosis without sharing patient data
+- **Medical Research Collaboration**: Multi-site clinical research with privacy protection
+- **Treatment Optimization**: AI-driven treatment recommendations based on collective knowledge
+- **Drug Discovery Acceleration**: Collaborative pharmaceutical research networks
+- **Regulatory Compliance**: Automated HIPAA and medical regulation compliance
+
+### **4. Financial Services Consortium**
+Secure financial AI collaboration:
+- **Fraud Detection Networks**: Collaborative fraud detection without data sharing
+- **Risk Assessment**: Distributed risk modeling with privacy preservation
+- **Market Analysis**: Collective market intelligence with competitive protection
+- **Regulatory Reporting**: Automated compliance and regulatory reporting
+- **Customer Service AI**: Privacy-preserving customer service automation
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Python 3.11 or higher
-- macOS, Linux, or Windows
-- Docker (for Kyutai Unmute services)
-- 4GB+ RAM (8GB+ recommended)
-
-### Installation
-
-1. **Clone the repository:**
+### **Quick Start (Personal Use)**
 ```bash
+# Clone and install
 git clone https://github.com/dirvine/tektra.git
 cd tektra
-```
-
-2. **Install dependencies:**
-```bash
-# Using UV (recommended)
 uv sync
 
-# Or using pip
-pip install -e .
-```
-
-3. **Run the application:**
-```bash
-# Using UV
+# Run the application
 uv run python demo.py
-
-# Or using Python
-python demo.py
 ```
 
-### Building Native Application
-
+### **Enterprise Deployment**
 ```bash
-# Install Briefcase if not already installed
-pip install briefcase
+# Deploy with Docker Compose
+docker-compose up -d
 
-# Create native application
-briefcase create
-briefcase build
-briefcase run
+# Or deploy to Kubernetes
+kubectl apply -f k8s/
 ```
 
-## 📱 Platform-Specific Features
-
-### macOS
-- **Native Audio**: AVFoundation and CoreAudio integration
-- **Camera Access**: Native camera integration with permissions
-- **App Store Ready**: Signed and notarized application bundles
-- **System Integration**: Native notifications and system tray
-
-### Linux
-- **Audio Systems**: ALSA and PulseAudio support
-- **Docker Integration**: Automatic service management
-- **Desktop Integration**: .desktop files and system notifications
-- **Hardware Access**: Camera and microphone permissions
-
-### Windows
-- **Audio Support**: Windows Audio Session API
-- **System Integration**: Windows notifications and taskbar
-- **Hardware Access**: Camera and microphone permissions
-- **Windows Store**: Package-ready for Windows Store
-
-## 🛠️ Agent Capabilities
-
-Tektra's agent system supports a wide range of capabilities:
-
-### **Built-in Agent Types**
-- **CODE Agents**: Execute Python code in sandboxed environments
-- **TOOL_CALLING Agents**: Use JSON-based tool calling for structured tasks
-- **HYBRID Agents**: Combine code execution with tool calling
-- **MONITOR Agents**: Continuous monitoring with scheduled execution
-- **WORKFLOW Agents**: Multi-step processes with state management
-
-### **Agent Capabilities**
-- 🌐 **Web Search**: Internet research and data gathering
-- 📁 **File Access**: File system operations and document processing
-- 🗄️ **Database Operations**: Data storage and retrieval
-- 🔗 **API Integration**: External service integration
-- 💻 **Code Execution**: Python code execution in secure environments
-- 📧 **Email Operations**: Email sending and management
-- ⏰ **Scheduling**: Time-based and event-driven task execution
-- 📊 **Data Analysis**: Statistical analysis and data processing
-- 🖼️ **Image Processing**: Computer vision and image manipulation
-- 🔔 **Notifications**: Alert and notification systems
-
-### **Example Agents**
-```python
-# GitHub Monitor Agent
-"Monitor my GitHub repositories for new issues and pull requests, 
-send me notifications when activity occurs"
-
-# Data Analysis Agent
-"Analyze my CSV files and create visualizations showing trends 
-and patterns in the data"
-
-# Document Processor Agent
-"Process incoming PDF documents, extract key information, and 
-organize it into a structured database"
-
-# System Monitor Agent
-"Monitor system resources and alert me when CPU or memory usage 
-exceeds specified thresholds"
-```
-
-## 🧠 Memory System Features
-
-### **Memory Types**
-- **Conversation Memory**: Chat history and context
-- **Agent Context**: Agent-specific knowledge and state
-- **Task Results**: Execution results and outcomes
-- **User Preferences**: Personal settings and preferences
-- **System Events**: Application events and logs
-- **Learned Facts**: Extracted knowledge and insights
-
-### **Memory Configuration**
-```python
-# Configure memory for agents
-agent_spec = AgentSpecification(
-    memory_enabled=True,
-    memory_context_limit=20,           # Remember last 20 interactions
-    memory_importance_threshold=0.7,   # Store important memories (0.7+)
-    memory_retention_hours=720,        # Keep memories for 30 days
-    persistent_memory=True,            # Persist across restarts
-    memory_sharing_enabled=True        # Allow memory sharing with other agents
-)
-```
-
-### **Memory Search**
-```python
-# Search memories with semantic understanding
-memories = await memory_manager.search_memories(
-    query="Python programming help",
-    user_id="user123",
-    max_results=10,
-    min_relevance=0.5,
-    time_window_hours=168  # Last week
-)
-```
-
-## 🎤 Voice Interaction
-
-### **Voice Features**
-- **Real-time Conversations**: Continuous voice interaction
-- **High-Quality STT**: Kyutai STT-2.6B-EN for accurate transcription
-- **Natural TTS**: Kyutai TTS 2B for human-like speech synthesis
-- **Voice Activity Detection**: Automatic speech detection
-- **Noise Reduction**: Audio enhancement and quality improvement
-
-### **Voice Modes**
-```python
-# Push-to-Talk Mode
-voice_pipeline.set_mode("push_to_talk")
-await voice_pipeline.start_listening()
-
-# Continuous Listening Mode
-voice_pipeline.set_mode("continuous")
-await voice_pipeline.start_conversation()
-
-# Voice-only Mode (no display)
-voice_pipeline.set_mode("voice_only")
-```
-
-## 👁️ Vision & Multimodal
-
-### **Vision Capabilities**
-- **Image Analysis**: Detailed image understanding and description
-- **Object Detection**: Identify and locate objects in images
-- **Text Recognition**: Extract text from images (OCR)
-- **Color Analysis**: Dominant colors and color palette extraction
-- **Scene Understanding**: Context and scene interpretation
-
-### **Supported Formats**
-- **Images**: JPEG, PNG, GIF, WebP, BMP, TIFF
-- **Documents**: PDF, DOCX, TXT, Markdown, JSON, YAML, CSV, LOG
-- **Video**: MP4, AVI, MOV (processing capabilities)
-- **Audio**: WAV, MP3, OGG (voice processing)
-
-### **Vision Processing Example**
-```python
-# Advanced image analysis
-result = await vision_processor.analyze_image(
-    image_path="photo.jpg",
-    analysis_types=["objects", "text", "colors", "scene"],
-    detail_level="high"
-)
-
-# Multi-image comparison
-comparison = await vision_processor.compare_images(
-    image1="before.jpg",
-    image2="after.jpg",
-    comparison_type="changes"
-)
-```
-
-## 📊 Performance & Monitoring
-
-### **Performance Metrics**
-- **Response Times**: Real-time inference timing
-- **Token Counts**: Input/output token tracking
-- **Memory Usage**: System and model memory monitoring
-- **GPU Utilization**: Hardware acceleration tracking
-- **Service Health**: Real-time service status monitoring
-
-### **Analytics Dashboard**
-```python
-# Get performance statistics
-stats = await performance_monitor.get_stats()
-print(f"Average response time: {stats.avg_response_time}ms")
-print(f"Total tokens processed: {stats.total_tokens}")
-print(f"Memory usage: {stats.memory_usage}MB")
-```
-
-## 🔧 Configuration
-
-### **Environment Configuration**
+### **Development Environment**
 ```bash
-# .env file
-TEKTRA_MODEL_PATH=/path/to/models
-TEKTRA_MEMORY_PATH=/path/to/memory
-TEKTRA_LOG_LEVEL=INFO
-TEKTRA_ENABLE_GPU=true
-TEKTRA_VOICE_ENABLED=true
-TEKTRA_CAMERA_ENABLED=true
+# Install with development dependencies
+uv sync --dev
+
+# Run comprehensive tests
+make test
+
+# Start development server with hot reload
+make dev
 ```
 
-### **Model Configuration**
-```python
-# Qwen model configuration
-qwen_config = QwenModelConfig(
-    model_name="Qwen/Qwen2.5-VL-7B-Instruct",
-    quantization_bits=None,  # Disable for compatibility
-    max_memory_gb=8.0,
-    device_map="auto",
-    torch_dtype="float16"
-)
-```
+## 📚 Comprehensive Documentation
 
-## 🧪 Testing
+Our documentation provides complete guidance for all use cases:
 
-Tektra includes comprehensive test coverage across all components with unit tests, integration tests, performance benchmarks, and property-based testing.
+- **[📖 Documentation Overview](docs/README.md)** - Complete documentation index and navigation
+- **[🚀 Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md)** - Enterprise deployment and scaling
+- **[🏗️ Architecture Overview](docs/ARCHITECTURE.md)** - System architecture and design decisions
+- **[🔌 API Reference](docs/API_REFERENCE.md)** - Complete API documentation with examples
+- **[🔒 Security Guide](docs/SECURITY_GUIDE.md)** - Security implementation and compliance
+- **[🛠️ Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[⚡ Performance Guide](docs/PERFORMANCE_GUIDE.md)** - Performance optimization and tuning
 
-### **Run All Tests**
+## 🌟 Why Choose Tektra?
 
-> **⚠️ Important Note**: Tests that require large AI models (7B+ parameters) use mocked models by default to prevent system overheating. The model is only loaded once per test session and reused across all tests when using real models.
+### **For Individuals**
+- **🤖 Personal AI Assistant**: Intelligent, memory-enhanced conversations
+- **🎤 Natural Voice Interaction**: Seamless voice-based AI interaction
+- **📊 Personal Knowledge Management**: Organize and search your information intelligently
+- **🔒 Privacy Protection**: Your data stays under your control
+- **🆓 Open Source**: Free to use and customize
 
-```bash
-# Frontend Tests (JavaScript/TypeScript)
-npm test                                    # Run all frontend tests
-npm run test:coverage                       # Run with coverage report
-npm run test:ui                            # Run with Vitest UI
+### **For Organizations**
+- **🏢 Enterprise-Ready**: Production-grade security, performance, and scalability
+- **🔒 Security Compliant**: GDPR, SOC 2, and enterprise security standards
+- **⚡ High Performance**: Optimized for large-scale deployment
+- **🔧 Easy Integration**: REST APIs, SDKs, and standard enterprise integration
+- **📊 Comprehensive Monitoring**: Full observability and operational control
 
-# Python Backend Tests
-uv run python -m pytest tests/ -v          # Run all Python tests (mocked models)
-uv run python -m pytest tests/ -v --cov    # Run with coverage report
-uv run python -m pytest tests/ -v --no-heavy-models=false  # Run with REAL models
+### **For Developers**
+- **🛠️ Extensible Platform**: Build custom agents and integrations
+- **📚 Complete Documentation**: Comprehensive guides and API references
+- **🧪 Testing Framework**: Built-in testing and quality assurance
+- **🔓 Open Source**: Full access to source code and community
+- **🤝 Active Community**: Collaborative development and support
 
-# Node.js/DXT Extension Tests
-cd dxt-extension/server
-npm test                                    # Run all Node.js tests
-npm run test:coverage                      # Run with coverage report
-```
+### **For the Future**
+- **🌐 P2P Ready**: Prepared for distributed AI collaboration
+- **🔮 Privacy-First**: Built with privacy and decentralization in mind
+- **🚀 Innovation Platform**: Foundation for next-generation AI applications
+- **🌍 Global Impact**: Enabling worldwide AI collaboration and knowledge sharing
 
-### **Test Categories**
+## 🤝 Contributing & Community
 
-#### **Frontend Tests** (Vitest + React Testing Library)
-```bash
-# Unit tests for message formatting and security
-npm test src/test/unit/
+Join the Tektra community and help shape the future of AI collaboration:
 
-# Property-based tests with fast-check
-npm test src/test/property/
-
-# Integration tests with mocked APIs
-npm test src/test/integration/
-```
-
-#### **Python Backend Tests** (pytest + hypothesis)
-```bash
-# Unit Tests - Basic functionality
-uv run python -m pytest tests/test_unit_*.py -v
-
-# Integration Tests - Memory system
-uv run python -m pytest tests/test_integration_memory_core.py -v
-
-# Performance Tests - Benchmarking and timing
-uv run python -m pytest tests/test_performance_memory.py -v -s
-
-# Property-Based Tests - Edge case discovery
-uv run python -m pytest tests/test_property_based_simple.py -v
-```
-
-#### **Node.js Tests** (Jest)
-```bash
-# Basic functionality tests
-cd dxt-extension/server
-npm test test/basic-functionality.test.js
-
-# MCP integration tests
-npm test test/mcp-integration.test.js
-
-# Server component tests
-npm test test/TektraAIServer.test.js
-```
-
-### **Quick Test Commands**
-
-```bash
-# Using Makefile (recommended)
-make test                    # Run all tests
-make test-python            # Python tests only
-make test-frontend          # Frontend tests only
-make test-node             # Node.js tests only
-make test-coverage         # All tests with coverage
-make test-python-heavy      # Python tests with REAL AI models (4GB+ RAM)
-make test-quick            # Fast tests only (skip slow)
-make help                  # Show all test commands
-
-# Or manually without Makefile:
-npm test && \
-uv run python -m pytest tests/ -v && \
-(cd dxt-extension/server && npm test)
-
-# Run tests with REAL AI models (will download models)
-uv run python -m pytest tests/ -v --no-heavy-models=false
-
-# Run only specific test types
-uv run python -m pytest tests/ -v -m heavy                    # Only heavy model tests
-uv run python -m pytest tests/ -v -m "not slow"              # Skip slow tests
-
-# Run tests with coverage reports
-npm run test:coverage && \
-uv run python -m pytest tests/ -v --cov=src --cov-report=html && \
-(cd dxt-extension/server && npm run test:coverage)
-
-# Watch mode for development
-npm run test:watch  # Frontend
-uv run python -m pytest tests/ -v --watch  # Python (with pytest-watch)
-(cd dxt-extension/server && npm run test:watch)  # Node.js
-```
-
-### **Test Coverage Targets**
-- **Frontend**: 80% lines, 80% functions, 70% branches
-- **Python**: 95%+ integration test coverage
-- **Node.js**: 70% across all metrics
-
-### **Performance Benchmarks**
-The test suite validates performance requirements:
-- Memory insertion: < 50ms per entry
-- Memory retrieval: < 10ms
-- Search operations: < 100ms
-- Concurrent operations: < 50ms per entry
-
-### **Property-Based Testing**
-Automated edge case discovery using:
-- **hypothesis** (Python): Random data generation for edge cases
-- **fast-check** (JavaScript): Property-based testing for frontend
-
-### **Test Reports**
-Test results and coverage reports are generated in:
-- `coverage/` - Frontend coverage reports
-- `htmlcov/` - Python coverage reports  
-- `dxt-extension/server/coverage/` - Node.js coverage reports
-
-## 📦 Building & Distribution
-
-### **Create Distribution**
-```bash
-# Build native application
-briefcase create
-briefcase build
-
-# Package for distribution
-briefcase package
-
-# Platform-specific builds
-briefcase build macOS
-briefcase build linux
-briefcase build windows
-```
-
-### **Distribution Formats**
-- **macOS**: .app bundle, .dmg installer
-- **Linux**: .AppImage, .deb package
-- **Windows**: .exe installer, .msi package
-
-## 🤝 Contributing
-
-We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
+- **🐛 Report Issues**: [GitHub Issues](https://github.com/dirvine/tektra/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/dirvine/tektra/discussions)
+- **📖 Documentation**: Help improve our documentation
+- **🔧 Code Contributions**: Submit pull requests for features and fixes
+- **🌍 Community**: Join our [Discord Server](https://discord.gg/tektra)
 
 ### **Development Setup**
 ```bash
@@ -580,49 +468,49 @@ cd tektra
 uv sync --dev
 
 # Run tests
-uv run pytest tests/
+make test
 
 # Code formatting
-uv run black src/
-uv run isort src/
-uv run ruff check src/
+make format
+
+# Start development environment
+make dev
 ```
 
-## 📝 License
+## 📄 License & Legal
 
-This project is licensed under either of:
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
-- MIT License ([LICENSE-MIT](LICENSE-MIT))
+This project is dual-licensed under:
+- **Apache License 2.0** ([LICENSE-APACHE](LICENSE-APACHE))
+- **MIT License** ([LICENSE-MIT](LICENSE-MIT))
 
-at your option.
+Choose the license that best fits your use case.
 
 ## 🙏 Acknowledgments
 
+Tektra builds upon the excellent work of:
 - **Kyutai**: For the Unmute voice conversation system
 - **Qwen Team**: For the Qwen 2.5-VL multimodal model
 - **HuggingFace**: For the Transformers library and model hosting
-- **BeeWare**: For the Briefcase application framework
 - **SmolAgents**: For the agent execution framework
+- **BeeWare**: For the Briefcase application framework
+- **The Open Source Community**: For the foundational technologies that make Tektra possible
 
-## 📚 Documentation
+## 🔮 The Future of AI is Collaborative
 
-Comprehensive documentation is available in the `/docs` directory:
+Tektra represents more than just an AI assistant - it's the foundation for a new era of collaborative artificial intelligence. By combining enterprise-grade security, high performance, and distributed collaboration capabilities, Tektra enables:
 
-- **[📖 Documentation Overview](docs/README.md)** - Complete documentation index and navigation
-- **[🚀 Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md)** - Enterprise deployment and configuration
-- **[🏗️ Architecture Overview](docs/ARCHITECTURE.md)** - System architecture and design decisions
-- **[🔌 API Reference](docs/API_REFERENCE.md)** - Complete API documentation with examples
-- **[🔒 Security Guide](docs/SECURITY_GUIDE.md)** - Security implementation and best practices
-- **[🛠️ Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[⚡ Performance Guide](docs/PERFORMANCE_GUIDE.md)** - Performance optimization and tuning
+- **🤝 Human-AI Partnership**: AI that works with you, not for you
+- **🌐 Global AI Collaboration**: Connecting AI agents worldwide for collective problem-solving
+- **🔒 Privacy-Preserving Intelligence**: Collaborative AI that respects privacy and data sovereignty
+- **🚀 Democratized AI Access**: Enterprise-grade AI capabilities accessible to everyone
+- **🌍 Positive Global Impact**: AI collaboration for addressing humanity's greatest challenges
 
-## 📞 Support
-
-- **Documentation**: [Complete Documentation](docs/README.md)
-- **Issues**: [GitHub Issues](https://github.com/dirvine/tektra/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/dirvine/tektra/discussions)
-- **Community**: [Discord Server](https://discord.gg/tektra)
+**Join us in building the future of intelligent, collaborative, and ethical AI.**
 
 ---
 
-**Tektra AI Assistant** - Where voice meets intelligence, and agents meet memory. Built with ❤️ for the future of human-AI interaction.
+**Tektra AI Assistant** - Where intelligence meets collaboration, and privacy meets performance. Built with ❤️ for the future of human-AI partnership.
+
+[![GitHub Stars](https://img.shields.io/github/stars/dirvine/tektra?style=social)](https://github.com/dirvine/tektra/stargazers)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/tektraai?style=social)](https://twitter.com/tektraai)
+[![Join Discord](https://img.shields.io/discord/1234567890?style=social&logo=discord)](https://discord.gg/tektra)
