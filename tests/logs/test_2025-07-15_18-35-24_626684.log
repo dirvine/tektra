@@ -1,0 +1,151 @@
+2025-07-15T18:35:24.631494+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T18:35:24.632436+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T18:35:24.711014+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T18:35:24.711167+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T18:35:24.711213+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T18:35:24.711607+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T18:35:24.711650+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T18:35:24.714979+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T18:35:24.716346+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T18:35:24.722870+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T18:35:24.722986+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T18:35:24.730679+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T18:35:24.731194+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T18:35:24.736071+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T18:35:24.852362+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:90 | No event loop running, scroll monitoring will start later
+2025-07-15T18:35:24.852547+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:92 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:35:24.853294+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T18:35:24.854662+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_add_item
+2025-07-15T18:35:24.855349+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:90 | No event loop running, scroll monitoring will start later
+2025-07-15T18:35:24.855388+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:92 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:35:24.891072+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_add_item
+2025-07-15T18:35:24.891764+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_virtual_mode_activation
+2025-07-15T18:35:24.892437+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:90 | No event loop running, scroll monitoring will start later
+2025-07-15T18:35:24.892482+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:92 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:35:24.903250+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_virtual_mode_activation
+2025-07-15T18:35:24.903866+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_remove_item
+2025-07-15T18:35:24.904556+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:90 | No event loop running, scroll monitoring will start later
+2025-07-15T18:35:24.904602+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:92 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:35:24.914588+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_remove_item
+2025-07-15T18:35:24.915017+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_clear_items
+2025-07-15T18:35:24.915507+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:90 | No event loop running, scroll monitoring will start later
+2025-07-15T18:35:24.915543+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:92 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:35:24.925096+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_clear_items
+2025-07-15T18:35:24.925454+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_scroll_to_bottom
+2025-07-15T18:35:24.925859+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:90 | No event loop running, scroll monitoring will start later
+2025-07-15T18:35:24.925896+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:92 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:35:24.936144+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_scroll_to_bottom
+2025-07-15T18:35:24.936516+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_performance_stats
+2025-07-15T18:35:24.936951+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:90 | No event loop running, scroll monitoring will start later
+2025-07-15T18:35:24.936992+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:92 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:35:24.946931+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_performance_stats
+2025-07-15T18:35:24.947293+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T18:35:24.958675+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:__init__:92 | No event loop running, smooth scrolling will start later
+2025-07-15T18:35:24.958724+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:94 | SmoothScrollContainer initialized with momentum scrolling
+2025-07-15T18:35:24.958965+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T18:35:24.959376+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_scroll_to_position
+2025-07-15T18:35:24.960728+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:__init__:92 | No event loop running, smooth scrolling will start later
+2025-07-15T18:35:24.960845+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:94 | SmoothScrollContainer initialized with momentum scrolling
+2025-07-15T18:35:24.961193+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_scroll_to_position
+2025-07-15T18:35:24.961515+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_scroll_by_delta
+2025-07-15T18:35:24.962260+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:__init__:92 | No event loop running, smooth scrolling will start later
+2025-07-15T18:35:24.962291+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:94 | SmoothScrollContainer initialized with momentum scrolling
+2025-07-15T18:35:24.962481+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_scroll_by_delta
+2025-07-15T18:35:24.962788+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_momentum_scrolling
+2025-07-15T18:35:24.963532+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:__init__:92 | No event loop running, smooth scrolling will start later
+2025-07-15T18:35:24.963564+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:94 | SmoothScrollContainer initialized with momentum scrolling
+2025-07-15T18:35:24.963770+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_momentum_scrolling
+2025-07-15T18:35:24.964097+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_auto_scroll_enabled
+2025-07-15T18:35:24.964873+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:__init__:92 | No event loop running, smooth scrolling will start later
+2025-07-15T18:35:24.964908+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:94 | SmoothScrollContainer initialized with momentum scrolling
+2025-07-15T18:35:24.965050+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:set_auto_scroll_enabled:196 | Auto-scroll disabled
+2025-07-15T18:35:24.965148+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_auto_scroll_enabled
+2025-07-15T18:35:24.965490+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_performance_mode
+2025-07-15T18:35:24.966263+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:__init__:92 | No event loop running, smooth scrolling will start later
+2025-07-15T18:35:24.966291+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:94 | SmoothScrollContainer initialized with momentum scrolling
+2025-07-15T18:35:24.966406+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:set_performance_mode:207 | Performance mode set to: performance
+2025-07-15T18:35:24.966425+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:set_performance_mode:207 | Performance mode set to: quality
+2025-07-15T18:35:24.966514+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_performance_mode
+2025-07-15T18:35:24.966838+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_scroll_info
+2025-07-15T18:35:24.967554+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:__init__:92 | No event loop running, smooth scrolling will start later
+2025-07-15T18:35:24.967582+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:94 | SmoothScrollContainer initialized with momentum scrolling
+2025-07-15T18:35:24.967777+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_scroll_info
+2025-07-15T18:35:24.968092+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T18:35:24.968319+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:419 | ConversationScrollManager initialized
+2025-07-15T18:35:24.968496+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T18:35:24.968815+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_on_new_user_message
+2025-07-15T18:35:24.969025+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:419 | ConversationScrollManager initialized
+2025-07-15T18:35:25.371852+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:_simulate_bounce_effect:533 | Bounce effect simulated
+2025-07-15T18:35:25.473529+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:on_new_message:441 | Auto-scrolled to new user message
+2025-07-15T18:35:25.475609+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_on_new_user_message
+2025-07-15T18:35:25.480696+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_on_new_assistant_message
+2025-07-15T18:35:25.481553+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:419 | ConversationScrollManager initialized
+2025-07-15T18:35:25.884805+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:_simulate_bounce_effect:533 | Bounce effect simulated
+2025-07-15T18:35:25.985811+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:on_new_message:441 | Auto-scrolled to new assistant message
+2025-07-15T18:35:25.987224+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_on_new_assistant_message
+2025-07-15T18:35:25.989104+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_typing_indicator_scroll
+2025-07-15T18:35:25.990185+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:419 | ConversationScrollManager initialized
+2025-07-15T18:35:26.042596+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_typing_indicator_scroll
+2025-07-15T18:35:26.044385+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_auto_scroll_preferences
+2025-07-15T18:35:26.045484+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:419 | ConversationScrollManager initialized
+2025-07-15T18:35:26.046022+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:set_auto_scroll_preferences:489 | Auto-scroll preferences updated: user=False, assistant=True, system=True
+2025-07-15T18:35:26.046360+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_auto_scroll_preferences
+2025-07-15T18:35:26.047274+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T18:35:26.047628+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:83 | ScrollPerformanceOptimizer initialized with target 60.0 fps
+2025-07-15T18:35:26.048095+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T18:35:26.048630+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_record_good_performance
+2025-07-15T18:35:26.048709+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:83 | ScrollPerformanceOptimizer initialized with target 60.0 fps
+2025-07-15T18:35:26.048995+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_record_good_performance
+2025-07-15T18:35:26.049392+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_record_poor_performance
+2025-07-15T18:35:26.049548+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:83 | ScrollPerformanceOptimizer initialized with target 60.0 fps
+2025-07-15T18:35:26.049896+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:_increase_optimization_level:283 | Increased optimization level to 1 (FPS: 30.3)
+2025-07-15T18:35:26.050535+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_record_poor_performance
+2025-07-15T18:35:26.051389+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_optimization_callbacks
+2025-07-15T18:35:26.051511+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:83 | ScrollPerformanceOptimizer initialized with target 60.0 fps
+2025-07-15T18:35:26.051755+0100 | DEBUG | src.tektra.gui.scroll_performance_optimizer:add_optimization_callback:140 | Added optimization callback for reduce_animations
+2025-07-15T18:35:26.051799+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:force_optimization_level:199 | Forced optimization level from 0 to 1
+2025-07-15T18:35:26.051956+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_optimization_callbacks
+2025-07-15T18:35:26.052312+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_force_optimization_level
+2025-07-15T18:35:26.052376+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:83 | ScrollPerformanceOptimizer initialized with target 60.0 fps
+2025-07-15T18:35:26.052515+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:force_optimization_level:199 | Forced optimization level from 0 to 2
+2025-07-15T18:35:26.052650+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_force_optimization_level
+2025-07-15T18:35:26.053017+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_reset_optimizations
+2025-07-15T18:35:26.053077+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:83 | ScrollPerformanceOptimizer initialized with target 60.0 fps
+2025-07-15T18:35:26.053270+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:force_optimization_level:199 | Forced optimization level from 0 to 3
+2025-07-15T18:35:26.053456+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:reset_optimizations:206 | Reset all performance optimizations
+2025-07-15T18:35:26.053798+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_reset_optimizations
+2025-07-15T18:35:26.054457+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_optimization_recommendations
+2025-07-15T18:35:26.054574+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:83 | ScrollPerformanceOptimizer initialized with target 60.0 fps
+2025-07-15T18:35:26.054777+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:_increase_optimization_level:283 | Increased optimization level to 1 (FPS: 20.0)
+2025-07-15T18:35:26.054997+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_optimization_recommendations
+2025-07-15T18:35:26.055423+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T18:35:26.055525+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:368 | ScrollFrameRateMonitor initialized with target 60.0 fps
+2025-07-15T18:35:26.055770+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T18:35:26.056152+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_record_good_frames
+2025-07-15T18:35:26.056228+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:368 | ScrollFrameRateMonitor initialized with target 60.0 fps
+2025-07-15T18:35:26.056895+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_record_good_frames
+2025-07-15T18:35:26.057316+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_record_poor_frames
+2025-07-15T18:35:26.057398+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:368 | ScrollFrameRateMonitor initialized with target 60.0 fps
+2025-07-15T18:35:26.057750+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_record_poor_frames
+2025-07-15T18:35:26.058172+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_quality_adjustment_disable
+2025-07-15T18:35:26.058243+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:368 | ScrollFrameRateMonitor initialized with target 60.0 fps
+2025-07-15T18:35:26.058492+0100 | DEBUG | src.tektra.gui.scroll_performance_optimizer:set_quality_adjustment_enabled:465 | Quality adjustment disabled
+2025-07-15T18:35:26.058893+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_quality_adjustment_disable
+2025-07-15T18:35:26.059464+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_reset_statistics
+2025-07-15T18:35:26.059566+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:368 | ScrollFrameRateMonitor initialized with target 60.0 fps
+2025-07-15T18:35:26.059875+0100 | DEBUG | src.tektra.gui.scroll_performance_optimizer:reset_statistics:453 | Frame rate statistics reset
+2025-07-15T18:35:26.059988+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_reset_statistics
+2025-07-15T18:35:26.060341+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_message_addition_with_scrolling
+2025-07-15T18:35:26.061453+0100 | INFO | src.tektra.gui.smooth_scroll_container:__init__:419 | ConversationScrollManager initialized
+2025-07-15T18:35:26.464236+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:_simulate_bounce_effect:533 | Bounce effect simulated
+2025-07-15T18:35:26.565584+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:on_new_message:441 | Auto-scrolled to new user message
+2025-07-15T18:35:26.968240+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:_simulate_bounce_effect:533 | Bounce effect simulated
+2025-07-15T18:35:27.069575+0100 | DEBUG | src.tektra.gui.smooth_scroll_container:on_new_message:441 | Auto-scrolled to new assistant message
+2025-07-15T18:35:27.070928+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_message_addition_with_scrolling
+2025-07-15T18:35:27.072812+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_performance_optimization_integration
+2025-07-15T18:35:27.073272+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:83 | ScrollPerformanceOptimizer initialized with target 60.0 fps
+2025-07-15T18:35:27.073466+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:__init__:368 | ScrollFrameRateMonitor initialized with target 60.0 fps
+2025-07-15T18:35:27.073592+0100 | INFO | src.tektra.gui.scroll_performance_optimizer:_increase_optimization_level:283 | Increased optimization level to 1 (FPS: 25.0)
+2025-07-15T18:35:27.074058+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_performance_optimization_integration
+2025-07-15T18:35:27.076247+0100 | ERROR | tests.conftest:pytest_sessionfinish:325 | ❌ Tests failed with exit status: 1
+2025-07-15T18:35:27.076339+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

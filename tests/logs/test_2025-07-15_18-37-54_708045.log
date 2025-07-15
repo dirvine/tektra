@@ -1,0 +1,43 @@
+2025-07-15T18:37:54.712697+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T18:37:54.713700+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T18:37:54.722421+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T18:37:54.722755+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T18:37:54.722801+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T18:37:54.723252+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T18:37:54.723294+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T18:37:54.726844+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T18:37:54.728428+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T18:37:54.795434+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T18:37:54.795598+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T18:37:54.803203+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T18:37:54.803687+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T18:37:54.805631+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T18:37:54.914190+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:97 | No event loop running, scroll monitoring will start later
+2025-07-15T18:37:54.914366+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:99 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:37:54.915097+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T18:37:54.916414+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_add_item
+2025-07-15T18:37:54.917098+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:97 | No event loop running, scroll monitoring will start later
+2025-07-15T18:37:54.917136+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:99 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:37:54.951676+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_add_item
+2025-07-15T18:37:54.952136+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_virtual_mode_activation
+2025-07-15T18:37:54.952639+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:97 | No event loop running, scroll monitoring will start later
+2025-07-15T18:37:54.952678+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:99 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:37:54.962592+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_virtual_mode_activation
+2025-07-15T18:37:54.963019+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_remove_item
+2025-07-15T18:37:54.963509+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:97 | No event loop running, scroll monitoring will start later
+2025-07-15T18:37:54.963541+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:99 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:37:54.973291+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_remove_item
+2025-07-15T18:37:54.973699+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_clear_items
+2025-07-15T18:37:54.974162+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:97 | No event loop running, scroll monitoring will start later
+2025-07-15T18:37:54.974193+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:99 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:37:54.983934+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_clear_items
+2025-07-15T18:37:54.984317+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_scroll_to_bottom
+2025-07-15T18:37:54.984754+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:97 | No event loop running, scroll monitoring will start later
+2025-07-15T18:37:54.984789+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:99 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:37:54.993902+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_scroll_to_bottom
+2025-07-15T18:37:54.994310+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_performance_stats
+2025-07-15T18:37:54.994750+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:97 | No event loop running, scroll monitoring will start later
+2025-07-15T18:37:54.994780+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:99 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:37:55.003981+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_performance_stats
+2025-07-15T18:37:55.004783+0100 | ERROR | tests.conftest:pytest_sessionfinish:325 | ❌ Tests failed with exit status: 1
+2025-07-15T18:37:55.004833+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

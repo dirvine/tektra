@@ -1,0 +1,113 @@
+2025-07-15T18:39:56.594881+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T18:39:56.595964+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T18:39:56.690029+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T18:39:56.690236+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T18:39:56.690295+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T18:39:56.690747+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T18:39:56.690790+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T18:39:56.694572+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T18:39:56.696763+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T18:39:56.704098+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T18:39:56.704241+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T18:39:56.712923+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T18:39:56.713474+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T18:39:56.715745+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T18:39:56.716240+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:105 | No event loop running, scroll monitoring will start later
+2025-07-15T18:39:56.716281+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:107 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:39:56.716572+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T18:39:56.717951+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_add_item
+2025-07-15T18:39:56.718305+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:105 | No event loop running, scroll monitoring will start later
+2025-07-15T18:39:56.718356+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:107 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:39:56.718687+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 0, total items: 1
+2025-07-15T18:39:56.718823+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 1, total items: 2
+2025-07-15T18:39:56.718972+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 2, total items: 3
+2025-07-15T18:39:56.719155+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 3, total items: 4
+2025-07-15T18:39:56.719376+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 4, total items: 5
+2025-07-15T18:39:56.719547+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_add_item
+2025-07-15T18:39:56.720001+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_virtual_mode_activation
+2025-07-15T18:39:56.720304+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:105 | No event loop running, scroll monitoring will start later
+2025-07-15T18:39:56.720353+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:107 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:39:56.720667+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 0, total items: 1
+2025-07-15T18:39:56.720812+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 1, total items: 2
+2025-07-15T18:39:56.720931+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 2, total items: 3
+2025-07-15T18:39:56.721045+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 3, total items: 4
+2025-07-15T18:39:56.721157+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 4, total items: 5
+2025-07-15T18:39:56.721268+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 5, total items: 6
+2025-07-15T18:39:56.721380+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 6, total items: 7
+2025-07-15T18:39:56.721538+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 7, total items: 8
+2025-07-15T18:39:56.721655+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 8, total items: 9
+2025-07-15T18:39:56.721673+0100 | INFO | src.tektra.gui.virtual_scroll_manager:_enable_virtual_mode:277 | Virtual scrolling enabled with 10 items
+2025-07-15T18:39:56.721825+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 9, total items: 10
+2025-07-15T18:39:56.721952+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 10, total items: 11
+2025-07-15T18:39:56.722078+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 11, total items: 12
+2025-07-15T18:39:56.722139+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 12, total items: 13
+2025-07-15T18:39:56.722213+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 13, total items: 14
+2025-07-15T18:39:56.722272+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 14, total items: 15
+2025-07-15T18:39:56.722408+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_virtual_mode_activation
+2025-07-15T18:39:56.722759+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_remove_item
+2025-07-15T18:39:56.722958+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:105 | No event loop running, scroll monitoring will start later
+2025-07-15T18:39:56.722985+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:107 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:39:56.723204+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 0, total items: 1
+2025-07-15T18:39:56.723308+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 1, total items: 2
+2025-07-15T18:39:56.723408+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 2, total items: 3
+2025-07-15T18:39:56.723508+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 3, total items: 4
+2025-07-15T18:39:56.723612+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 4, total items: 5
+2025-07-15T18:39:56.724175+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:remove_item:166 | Removed item 2, total items: 4
+2025-07-15T18:39:56.724285+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_remove_item
+2025-07-15T18:39:56.724609+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_clear_items
+2025-07-15T18:39:56.724819+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:105 | No event loop running, scroll monitoring will start later
+2025-07-15T18:39:56.724843+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:107 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:39:56.725062+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 0, total items: 1
+2025-07-15T18:39:56.725167+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 1, total items: 2
+2025-07-15T18:39:56.725268+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 2, total items: 3
+2025-07-15T18:39:56.725368+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 3, total items: 4
+2025-07-15T18:39:56.725473+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 4, total items: 5
+2025-07-15T18:39:56.725498+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:clear_items:185 | Cleared all virtual scroll items
+2025-07-15T18:39:56.725603+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_clear_items
+2025-07-15T18:39:56.725923+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_scroll_to_bottom
+2025-07-15T18:39:56.726127+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:105 | No event loop running, scroll monitoring will start later
+2025-07-15T18:39:56.726152+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:107 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:39:56.726376+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 0, total items: 1
+2025-07-15T18:39:56.726486+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 1, total items: 2
+2025-07-15T18:39:56.726632+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 2, total items: 3
+2025-07-15T18:39:56.726743+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 3, total items: 4
+2025-07-15T18:39:56.726853+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 4, total items: 5
+2025-07-15T18:39:56.726965+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 5, total items: 6
+2025-07-15T18:39:56.727082+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 6, total items: 7
+2025-07-15T18:39:56.727207+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 7, total items: 8
+2025-07-15T18:39:56.727328+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 8, total items: 9
+2025-07-15T18:39:56.727346+0100 | INFO | src.tektra.gui.virtual_scroll_manager:_enable_virtual_mode:277 | Virtual scrolling enabled with 10 items
+2025-07-15T18:39:56.727519+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 9, total items: 10
+2025-07-15T18:39:56.727653+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 10, total items: 11
+2025-07-15T18:39:56.727789+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 11, total items: 12
+2025-07-15T18:39:56.728095+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 12, total items: 13
+2025-07-15T18:39:56.728356+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 13, total items: 14
+2025-07-15T18:39:56.728598+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 14, total items: 15
+2025-07-15T18:39:56.728792+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 15, total items: 16
+2025-07-15T18:39:56.728953+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 16, total items: 17
+2025-07-15T18:39:56.729131+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 17, total items: 18
+2025-07-15T18:39:56.729219+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 18, total items: 19
+2025-07-15T18:39:56.729303+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 19, total items: 20
+2025-07-15T18:39:56.729624+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_scroll_to_bottom
+2025-07-15T18:39:56.730116+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_performance_stats
+2025-07-15T18:39:56.730448+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:__init__:105 | No event loop running, scroll monitoring will start later
+2025-07-15T18:39:56.730496+0100 | INFO | src.tektra.gui.virtual_scroll_manager:__init__:107 | VirtualScrollManager initialized with threshold 10
+2025-07-15T18:39:56.730843+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 0, total items: 1
+2025-07-15T18:39:56.730962+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 1, total items: 2
+2025-07-15T18:39:56.731072+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 2, total items: 3
+2025-07-15T18:39:56.731203+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 3, total items: 4
+2025-07-15T18:39:56.731365+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 4, total items: 5
+2025-07-15T18:39:56.731492+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 5, total items: 6
+2025-07-15T18:39:56.731617+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 6, total items: 7
+2025-07-15T18:39:56.731737+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 7, total items: 8
+2025-07-15T18:39:56.731882+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 8, total items: 9
+2025-07-15T18:39:56.731904+0100 | INFO | src.tektra.gui.virtual_scroll_manager:_enable_virtual_mode:277 | Virtual scrolling enabled with 10 items
+2025-07-15T18:39:56.732079+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 9, total items: 10
+2025-07-15T18:39:56.732340+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 10, total items: 11
+2025-07-15T18:39:56.732549+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 11, total items: 12
+2025-07-15T18:39:56.732632+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 12, total items: 13
+2025-07-15T18:39:56.732700+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 13, total items: 14
+2025-07-15T18:39:56.732786+0100 | DEBUG | src.tektra.gui.virtual_scroll_manager:add_item:135 | Added item 14, total items: 15
+2025-07-15T18:39:56.732981+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_performance_stats
+2025-07-15T18:39:56.733802+0100 | INFO | tests.conftest:pytest_sessionfinish:323 | ✅ All tests completed successfully
+2025-07-15T18:39:56.733838+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

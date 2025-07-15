@@ -1,0 +1,87 @@
+2025-07-15T20:07:22.709648+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T20:07:22.710579+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T20:07:22.801178+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T20:07:22.801355+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T20:07:22.801402+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T20:07:22.801810+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T20:07:22.801850+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T20:07:22.805180+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T20:07:22.806511+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T20:07:22.812916+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T20:07:22.813023+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T20:07:22.820660+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T20:07:22.821171+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T20:07:22.825801+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T20:07:22.852294+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T20:07:22.853343+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization_with_animation_manager
+2025-07-15T20:07:22.862323+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization_with_animation_manager
+2025-07-15T20:07:22.862733+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_enhanced_styles_creation
+2025-07-15T20:07:22.871597+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_enhanced_styles_creation
+2025-07-15T20:07:22.872033+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_headers
+2025-07-15T20:07:22.881002+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_headers
+2025-07-15T20:07:22.881407+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_code_blocks
+2025-07-15T20:07:22.889939+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_code_blocks
+2025-07-15T20:07:22.890316+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_tables
+2025-07-15T20:07:22.899038+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_tables
+2025-07-15T20:07:22.899449+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_lists
+2025-07-15T20:07:22.908298+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_lists
+2025-07-15T20:07:22.908702+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_quotes
+2025-07-15T20:07:22.917380+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_quotes
+2025-07-15T20:07:22.917779+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_paragraphs
+2025-07-15T20:07:22.926245+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_paragraphs
+2025-07-15T20:07:22.926630+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_code_block_without_language
+2025-07-15T20:07:22.935540+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_code_block_without_language
+2025-07-15T20:07:22.935927+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_code_block_with_language
+2025-07-15T20:07:22.944454+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_code_block_with_language
+2025-07-15T20:07:22.944899+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_header
+2025-07-15T20:07:22.953731+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_header
+2025-07-15T20:07:22.954135+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_paragraph
+2025-07-15T20:07:22.962933+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_paragraph
+2025-07-15T20:07:22.963353+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_list
+2025-07-15T20:07:22.972185+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_list
+2025-07-15T20:07:22.972594+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_quote
+2025-07-15T20:07:22.981413+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_quote
+2025-07-15T20:07:22.981824+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_table
+2025-07-15T20:07:22.990493+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_table
+2025-07-15T20:07:22.990855+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_table_empty
+2025-07-15T20:07:22.999434+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_table_empty
+2025-07-15T20:07:22.999850+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_process_inline_formatting
+2025-07-15T20:07:23.008239+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_process_inline_formatting
+2025-07-15T20:07:23.008676+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_apply_syntax_highlighting_python
+2025-07-15T20:07:23.017428+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_apply_syntax_highlighting_python
+2025-07-15T20:07:23.017810+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_apply_syntax_highlighting_no_language
+2025-07-15T20:07:23.026807+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_apply_syntax_highlighting_no_language
+2025-07-15T20:07:23.027174+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_apply_syntax_highlighting_unknown_language
+2025-07-15T20:07:23.035562+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_apply_syntax_highlighting_unknown_language
+2025-07-15T20:07:23.035938+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_copy_to_clipboard_success
+2025-07-15T20:07:23.044370+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_copy_to_clipboard_success
+2025-07-15T20:07:23.044751+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_copy_to_clipboard_failure
+2025-07-15T20:07:23.053064+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_copy_to_clipboard_failure
+2025-07-15T20:07:23.053414+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_handle_copy_code_success
+2025-07-15T20:07:23.061720+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_handle_copy_code_success
+2025-07-15T20:07:23.062149+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_handle_copy_code_failure
+2025-07-15T20:07:23.070998+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_handle_copy_code_failure
+2025-07-15T20:07:23.071394+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_markdown_complete
+2025-07-15T20:07:23.080217+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_markdown_complete
+2025-07-15T20:07:23.080596+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_simple_message_with_markdown
+2025-07-15T20:07:23.088768+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_simple_message_with_markdown
+2025-07-15T20:07:23.089145+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_simple_message_plain_text
+2025-07-15T20:07:23.097566+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_simple_message_plain_text
+2025-07-15T20:07:23.097934+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_clear_interactive_elements
+2025-07-15T20:07:23.106344+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_clear_interactive_elements
+2025-07-15T20:07:23.106699+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_interactive_element_count
+2025-07-15T20:07:23.115119+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_interactive_element_count
+2025-07-15T20:07:23.115505+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_markdown_renderer
+2025-07-15T20:07:23.125182+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_markdown_renderer
+2025-07-15T20:07:23.125546+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_markdown_renderer_with_animation_manager
+2025-07-15T20:07:23.135242+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_markdown_renderer_with_animation_manager
+2025-07-15T20:07:23.135613+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_enhanced_markdown_renderer
+2025-07-15T20:07:23.145185+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_enhanced_markdown_renderer
+2025-07-15T20:07:23.145553+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_enhanced_markdown_renderer_with_animation_manager
+2025-07-15T20:07:23.155343+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_enhanced_markdown_renderer_with_animation_manager
+2025-07-15T20:07:23.155761+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_code_block_with_animation_manager
+2025-07-15T20:07:23.164601+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_code_block_with_animation_manager
+2025-07-15T20:07:23.164930+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_complex_markdown_rendering
+2025-07-15T20:07:23.173704+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_complex_markdown_rendering
+2025-07-15T20:07:23.175026+0100 | ERROR | tests.conftest:pytest_sessionfinish:325 | ❌ Tests failed with exit status: 1
+2025-07-15T20:07:23.175069+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

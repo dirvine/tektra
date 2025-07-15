@@ -10,7 +10,7 @@ authors = [
 ]
 license = {text = "AGPL-3.0 OR Commercial"}
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.13"
 keywords = ["ai", "assistant", "voice", "multimodal", "briefcase", "unmute", "qwen"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -31,60 +31,77 @@ dependencies = [
     # Core Briefcase and GUI
     "briefcase>=0.3.17",
     "toga>=0.4.0",
-    # AI and ML - Core (minimal set for clean build)
+    
+    # AI and ML - Core components for embedded models
     "transformers>=4.36.0",
     "torch>=2.1.0",
     "accelerate>=0.25.0",
     "protobuf>=3.20.0",
     "torchvision>=0.16.0",
+    "huggingface-hub>=0.20.0",
+    
     # Vision processing
     "pillow>=10.0.0",
     "numpy>=1.24.0",
-    # Unmute integration - WebSocket and HTTP clients
-    "websockets>=12.0",
-    "aiohttp>=3.9.0",
-    "httpx>=0.25.0",
-    # Docker integration for Unmute services
-    "docker>=7.0.0",
+    
     # Document processing
     "python-docx>=0.8.11",
     "pypdf>=3.0.1",
-    # Agent system
-    "smolagents>=0.1.0", # SmolAgents framework for AI agents
-    "croniter>=1.3.0", # For scheduled agents
-    "aiosqlite>=0.19.0", # For agent registry
-    # Memory system
-    "memoryos>=0.1.13", # MemOS for agent memory capabilities
-    # Utilities and data handling
+    
+    # Data handling and utilities
     "aiofiles>=23.2.1",
     "pydantic>=2.5.0",
+    "aiosqlite>=0.19.0",
+    
+    # HTTP client for model downloads
+    "aiohttp>=3.8.0",
+    "websockets>=11.0.0",
+    
     # Utility libraries
     "python-dotenv>=1.0.0",
     "loguru>=0.7.0",
     "pyyaml>=6.0",
+    "lz4>=4.0.0",
+    "psutil>=5.9.0",
+    
+    # Development and testing
     "pytest>=8.4.1",
     "pytest-asyncio>=1.0.0",
     "pytest-mock>=3.14.1",
-    "hypothesis>=6.135.26",
-    "duckduckgo-search>=8.1.1",
 ]
 
 [project.optional-dependencies]
+audio = [
+    # Audio processing dependencies (optional)
+    "sounddevice>=0.4.6",
+    "scipy>=1.11.0",
+    "librosa>=0.10.0",
+    "pyaudio>=0.2.11",
+]
+
+memory = [
+    # Memory system with MemOS (optional)
+    "memos>=0.1.13",
+]
+
 full = [
     # Heavy ML dependencies (optional for development)
     "bitsandbytes>=0.41.0; platform_machine != 'arm64'",
     "sentencepiece>=0.1.99",
     "sentence-transformers>=2.2.2",
     "faiss-cpu>=1.7.4",
-    "chromadb>=0.4.18",
     
     # Audio processing for microphone input
-    "pyaudio>=0.2.11",
     "sounddevice>=0.4.6",
+    "scipy>=1.11.0",
+    "librosa>=0.10.0",
+    "pyaudio>=0.2.11",
+    
+    # Memory system
+    "memos>=0.1.13",
     
     # Vision processing
     "opencv-python>=4.8.0",
-    "torchvision>=0.16.0",
     
     # Additional utilities
     "python-multipart>=0.0.6",
@@ -158,8 +175,7 @@ requires = [
     "portaudio19-dev",     # PortAudio development headers
 ]
 system_requires = [
-    "docker",              # Docker for Unmute services
-    "docker-compose",      # Docker Compose for service orchestration
+    # No external dependencies - all models embedded
 ]
 
 [tool.briefcase.app.tektra.windows]

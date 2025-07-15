@@ -15,6 +15,8 @@ from loguru import logger
 from toga.style import Pack
 from toga.style.pack import COLUMN, ROW
 
+from .animations.animation_manager import AnimationManager
+
 
 class ProgressDialog:
     """
@@ -28,7 +30,7 @@ class ProgressDialog:
     - Cancel button for long operations
     """
     
-    def __init__(self, app: toga.App, title: str = "Loading...", cancellable: bool = True):
+    def __init__(self, app: toga.App, title: str = "Loading...", cancellable: bool = True, animation_manager: Optional[AnimationManager] = None):
         """
         Initialize progress dialog.
         
@@ -36,6 +38,7 @@ class ProgressDialog:
             app: The main Toga application
             title: Dialog title
             cancellable: Whether to show cancel button
+            animation_manager: Animation manager for micro-interactions
         """
         self.app = app
         self.title = title
@@ -44,6 +47,10 @@ class ProgressDialog:
         self.start_time = datetime.now()
         self.bytes_downloaded = 0
         self.total_bytes = 0
+        self.animation_manager = animation_manager or AnimationManager()
+        
+        # Track interactive elements for micro-interactions
+        self.interactive_elements = {}
         
         # Create dialog window
         self.window = toga.Window(title=title)
@@ -197,6 +204,21 @@ class ProgressDialog:
                     padding=10
                 )
             )
+            
+            # Set up micro-interactions for cancel button
+            self._setup_button_micro_interactions(
+                self.cancel_button,
+                "cancel_button",
+                {
+                    "hover_scale": 1.05,
+                    "press_scale": 0.95,
+                    "hover_duration": 0.15,
+                    "press_duration": 0.1,
+                    "spring_back_duration": 0.2,
+                    "enable_spring_back": True
+                }
+            )
+            
             button_box.add(self.cancel_button)
         
         # Spacer
@@ -206,6 +228,20 @@ class ProgressDialog:
         
         # Set window content
         self.window.content = main_box
+    
+    def _setup_button_micro_interactions(self, button: toga.Button, button_id: str, config: dict = None):
+        """Set up micro-interactions for a button."""
+        try:
+            micro_manager = self.animation_manager.micro_interaction_manager
+            element_id = micro_manager.setup_button_interactions(
+                button,
+                button_id=button_id,
+                interaction_config=config
+            )
+            self.interactive_elements[button_id] = element_id
+            logger.debug(f"Set up micro-interactions for button: {button_id}")
+        except Exception as e:
+            logger.debug(f"Could not set up micro-interactions for {button_id}: {e}")
         
     def show(self):
         """Show the progress dialog."""

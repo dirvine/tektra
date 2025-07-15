@@ -1,0 +1,92 @@
+2025-07-15T13:29:51.414244+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T13:29:51.415289+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T13:29:51.490993+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T13:29:51.491179+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T13:29:51.491228+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T13:29:51.491582+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T13:29:51.491625+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T13:29:51.495251+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T13:29:51.496385+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T13:29:51.502524+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T13:29:51.502636+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T13:29:51.509610+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T13:29:51.510152+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T13:29:51.513063+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T13:29:51.655749+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.656485+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T13:29:51.657255+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_widget_structure
+2025-07-15T13:29:51.660671+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.731731+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_widget_structure
+2025-07-15T13:29:51.732350+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_character_count_update
+2025-07-15T13:29:51.738491+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.741133+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:320 | Auto-expanding input from 40 to 60
+2025-07-15T13:29:51.742142+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_character_count_update
+2025-07-15T13:29:51.742752+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_focus_animations
+2025-07-15T13:29:51.746134+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.746644+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_focus_animations
+2025-07-15T13:29:51.747100+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_enter_key_handling
+2025-07-15T13:29:51.751353+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.856763+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_enter_key_handling
+2025-07-15T13:29:51.857419+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_send_button_state_management
+2025-07-15T13:29:51.862851+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.872027+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_send_button_state_management
+2025-07-15T13:29:51.872766+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_auto_expanding_input
+2025-07-15T13:29:51.879311+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.881370+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:320 | Auto-expanding input from 40 to 100
+2025-07-15T13:29:51.881866+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:320 | Auto-expanding input from 100 to 40
+2025-07-15T13:29:51.908428+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_auto_expanding_input
+2025-07-15T13:29:51.908984+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_voice_recording_feedback
+2025-07-15T13:29:51.913701+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.917986+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_voice_recording_feedback
+2025-07-15T13:29:51.918494+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_button_press_animations
+2025-07-15T13:29:51.923172+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:51.924026+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_button_press_animations
+2025-07-15T13:29:51.924581+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_message_sending_flow
+2025-07-15T13:29:51.928051+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:52.031838+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_message_sending_flow
+2025-07-15T13:29:52.032493+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_input_validation
+2025-07-15T13:29:52.038695+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:52.040671+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_input_validation
+2025-07-15T13:29:52.041368+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_feature_enabling
+2025-07-15T13:29:52.046396+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:52.047133+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_feature_enabling
+2025-07-15T13:29:52.047746+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_utility_methods
+2025-07-15T13:29:52.052208+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:52.052524+0100 | DEBUG | src.tektra.gui.enhanced_input_field:set_text:548 | No event loop running, skipping async input change handler
+2025-07-15T13:29:52.052749+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_utility_methods
+2025-07-15T13:29:52.053336+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_callback_error_handling
+2025-07-15T13:29:52.057606+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:52.163605+0100 | ERROR | src.tektra.gui.enhanced_input_field:_send_message:407 | Error in message send callback: Test error
+2025-07-15T13:29:52.164085+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_callback_error_handling
+2025-07-15T13:29:52.164733+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_character_limit_enforcement
+2025-07-15T13:29:52.170725+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:52.171675+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:320 | Auto-expanding input from 40 to 60
+2025-07-15T13:29:52.173119+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_character_limit_enforcement
+2025-07-15T13:29:52.173780+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_integration_with_chat_panel
+2025-07-15T13:29:52.174428+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T13:29:52.174503+0100 | INFO | src.tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T13:29:52.191550+0100 | INFO | src.tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T13:29:52.192204+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T13:29:52.192283+0100 | DEBUG | src.tektra.gui.typing_indicator:__init__:346 | TypingIndicatorManager initialized
+2025-07-15T13:29:52.195823+0100 | DEBUG | src.tektra.gui.typing_indicator:__init__:49 | TypingIndicator initialized
+2025-07-15T13:29:52.195880+0100 | DEBUG | src.tektra.gui.typing_indicator:create_indicator:361 | Created typing indicator: main
+2025-07-15T13:29:52.218740+0100 | DEBUG | src.tektra.gui.chat_panel:add_message:193 | Added assistant message: 👋 Welcome to Tektra AI Assistant!
+
+I'm initializin...
+2025-07-15T13:29:52.223159+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:29:52.223308+0100 | INFO | src.tektra.gui.chat_panel:__init__:76 | Chat panel initialized with enhanced message rendering
+2025-07-15T13:29:52.225588+0100 | DEBUG | src.tektra.gui.chat_panel:add_message:193 | Added system message: 🎤 Voice features enabled! Click the microphone to ...
+2025-07-15T13:29:52.227934+0100 | DEBUG | src.tektra.gui.chat_panel:add_message:193 | Added system message: 📎 File upload enabled! Click the paperclip to anal...
+2025-07-15T13:29:52.228008+0100 | INFO | src.tektra.gui.animations.performance_monitor:start_monitoring_loop:180 | Starting performance monitoring loop
+2025-07-15T13:29:52.228869+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_integration_with_chat_panel
+2025-07-15T13:29:52.339073+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_start_animation:298 | Started fade_in animation 8281bd2e-a83e-4c96-9089-20130a1632ac
+2025-07-15T13:29:52.440309+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_start_animation:298 | Started scale_in animation 94d8325e-f91a-4b59-afb0-460ece68f82e
+2025-07-15T13:29:52.547472+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_start_animation:298 | Started slide_in animation 8221d278-97d0-4300-b933-a53f2a359890
+2025-07-15T13:29:52.651761+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_start_animation:298 | Started fade_in animation 990b1ed9-17d0-4957-9b3e-24b151fbf4e3
+2025-07-15T13:29:52.756158+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_start_animation:298 | Started scale_in animation e8168f83-129f-4a56-9b1f-999d5c748c1f
+2025-07-15T13:29:52.862130+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_start_animation:298 | Started fade_in animation 4465e342-46c5-4e28-9770-dd941aa7dff7
+2025-07-15T13:29:52.969401+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_start_animation:298 | Started scale_in animation 5978d41a-3094-4072-9abc-448c83733bf9
+2025-07-15T13:29:52.969867+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_animation_loop:307 | Animation loop started
+2025-07-15T13:29:52.976698+0100 | ERROR | tests.conftest:pytest_sessionfinish:325 | ❌ Tests failed with exit status: 1
+2025-07-15T13:29:52.976954+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete
+2025-07-15T13:29:52.980396+0100 | DEBUG | src.tektra.gui.animations.transition_engine:_animation_loop:346 | Animation loop stopped

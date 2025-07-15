@@ -16,6 +16,13 @@ from toga.style.pack import COLUMN, ROW
 
 from .markdown_renderer import get_markdown_renderer
 from .themes import theme_manager
+from .message_bubble_renderer import get_message_bubble_renderer
+from .animations.animation_manager import AnimationManager
+from .typing_indicator import TypingIndicatorManager
+from .enhanced_input_field import EnhancedInputField
+from .smooth_scroll_container import SmoothScrollContainer, ConversationScrollManager
+from .virtual_scroll_manager import VirtualScrollManager
+from .scroll_performance_optimizer import ScrollPerformanceOptimizer, ScrollFrameRateMonitor
 
 
 class ChatPanel:
@@ -53,13 +60,36 @@ class ChatPanel:
         self.file_enabled = False
         self.is_voice_active = False
         
-        # Initialize markdown renderer
+        # Initialize renderers and animation system
+        self.animation_manager = AnimationManager()
         self.markdown_renderer = get_markdown_renderer()
+        self.message_bubble_renderer = get_message_bubble_renderer(self.animation_manager)
+        self.typing_indicator_manager = TypingIndicatorManager(self.animation_manager)
+        
+        # Initialize scroll performance optimization
+        self.scroll_performance_optimizer = ScrollPerformanceOptimizer(
+            target_fps=60.0,
+            performance_window=30,
+            optimization_threshold=45.0
+        )
+        self.frame_rate_monitor = ScrollFrameRateMonitor(target_fps=60.0)
+        
+        # Scroll management components (will be initialized in _build_messages_area)
+        self.smooth_scroll_container = None
+        self.conversation_scroll_manager = None
+        self.virtual_scroll_manager = None
+        
+        # Start animation performance monitoring (only if event loop is running)
+        try:
+            asyncio.create_task(self.animation_manager.start_performance_monitoring())
+        except RuntimeError:
+            # No event loop running, performance monitoring will start later
+            logger.debug("No event loop running, performance monitoring will start later")
         
         # Build the UI
         self.widget = self._build_interface()
         
-        logger.info("Chat panel initialized")
+        logger.info("Chat panel initialized with enhanced message rendering")
 
     def _build_interface(self) -> toga.Box:
         """Build the main chat interface."""
@@ -87,7 +117,7 @@ class ChatPanel:
         return main_container
 
     def _build_messages_area(self):
-        """Build the scrollable messages area."""
+        """Build the scrollable messages area with enhanced smooth scrolling."""
         theme = theme_manager.get_theme()
         colors = theme.colors
         spacing = theme.spacing
@@ -101,8 +131,12 @@ class ChatPanel:
             )
         )
         
-        # Scroll container
-        self.messages_scroll = toga.ScrollContainer(
+        # Create and add typing indicator
+        self.typing_indicator = self.typing_indicator_manager.create_indicator("main")
+        self.messages_container.add(self.typing_indicator.widget)
+        
+        # Create the base scroll container
+        base_scroll_container = toga.ScrollContainer(
             content=self.messages_container,
             style=Pack(
                 flex=1,
@@ -110,97 +144,184 @@ class ChatPanel:
             )
         )
         
+        # Initialize smooth scroll container with enhanced features
+        self.smooth_scroll_container = SmoothScrollContainer(
+            content=self.messages_container,
+            animation_manager=self.animation_manager,
+            style=Pack(flex=1, background_color=colors.surface),
+            enable_momentum=True,
+            momentum_decay=0.95,
+            auto_scroll_threshold=50.0
+        )
+        
+        # Initialize conversation scroll manager for chat-specific behaviors
+        self.conversation_scroll_manager = ConversationScrollManager(
+            smooth_scroll_container=self.smooth_scroll_container,
+            animation_manager=self.animation_manager
+        )
+        
+        # Initialize virtual scroll manager for large conversations
+        self.virtual_scroll_manager = VirtualScrollManager(
+            container=base_scroll_container,
+            item_renderer=self._render_virtual_message,
+            estimated_item_height=100,
+            buffer_size=5,
+            performance_threshold=100  # Enable virtual scrolling after 100 messages
+        )
+        
+        # Set up performance optimization callbacks
+        self._setup_performance_optimization()
+        
+        # Use the base scroll container as the main widget for now
+        # (The smooth scroll container will be integrated more deeply in a full implementation)
+        self.messages_scroll = base_scroll_container
+        
         # Add welcome message
         self._add_welcome_message()
 
-    def _build_input_area(self) -> toga.Box:
-        """Build the input area at the bottom."""
+    def _setup_performance_optimization(self):
+        """Set up performance optimization callbacks and monitoring."""
+        # Add optimization callbacks
+        self.scroll_performance_optimizer.add_optimization_callback(
+            "reduce_animations", self._reduce_animation_complexity
+        )
+        self.scroll_performance_optimizer.add_optimization_callback(
+            "enable_virtual_scrolling", self._enable_virtual_scrolling_mode
+        )
+        self.scroll_performance_optimizer.add_optimization_callback(
+            "batch_render", self._enable_batch_rendering
+        )
+        
+        # Start performance monitoring loop
+        asyncio.create_task(self._performance_monitoring_loop())
+        
+        logger.debug("Performance optimization callbacks set up")
+
+    def _render_virtual_message(self, message_data: dict) -> toga.Widget:
+        """
+        Render a message for virtual scrolling.
+        
+        Args:
+            message_data: Message data dictionary
+            
+        Returns:
+            Rendered message widget
+        """
+        try:
+            # Use the enhanced message bubble renderer
+            return self.message_bubble_renderer.render_message_bubble(
+                message_data, 
+                theme=theme_manager.get_theme(),
+                animate=False  # No animations in virtual mode for performance
+            )
+        except Exception as e:
+            logger.error(f"Error rendering virtual message: {e}")
+            # Fallback to simple rendering
+            return self._render_simple_message_widget(message_data)
+
+    def _render_simple_message_widget(self, message: dict) -> toga.Widget:
+        """
+        Render a simple message widget for fallback cases.
+        
+        Args:
+            message: Message data dictionary
+            
+        Returns:
+            Simple message widget
+        """
         theme = theme_manager.get_theme()
         colors = theme.colors
         spacing = theme.spacing
-        typography = theme.typography
         
-        input_container = toga.Box(
+        # Simple container
+        container = toga.Box(
             style=Pack(
-                direction=ROW,
-                padding=spacing["md"],
-                background_color=colors.surface,
+                direction=COLUMN,
+                padding=spacing["sm"],
+                margin_bottom=spacing["xs"],
+                background_color=colors.surface
             )
         )
         
-        # Text input (auto-expanding)
-        self.text_input = toga.TextInput(
+        # Simple label
+        role_prefix = {
+            "user": "👤 You: ",
+            "assistant": "🤖 Tektra: ",
+            "system": "ℹ️ System: "
+        }.get(message["role"], "")
+        
+        label = toga.Label(
+            f"{role_prefix}{message['content']}",
+            style=Pack(
+                font_size=14,
+                color=colors.text_primary
+            )
+        )
+        container.add(label)
+        
+        return container
+
+    async def _performance_monitoring_loop(self):
+        """Monitor performance and record metrics."""
+        try:
+            while True:
+                # Record frame metrics
+                frame_info = self.frame_rate_monitor.record_frame()
+                
+                # Record metrics in the performance optimizer
+                self.scroll_performance_optimizer.record_frame_metrics(
+                    frame_time=frame_info["frame_time"] / 1000.0,  # Convert ms to seconds
+                    rendered_items=len(self.messages),
+                    scroll_velocity=0.0  # Would be actual scroll velocity in full implementation
+                )
+                
+                # Sleep for next frame
+                await asyncio.sleep(1.0 / 60.0)  # 60fps monitoring
+                
+        except asyncio.CancelledError:
+            logger.debug("Performance monitoring loop cancelled")
+        except Exception as e:
+            logger.error(f"Error in performance monitoring loop: {e}")
+
+    def _reduce_animation_complexity(self):
+        """Reduce animation complexity for better performance."""
+        if self.animation_manager:
+            self.animation_manager.set_reduced_motion(True)
+            logger.debug("Reduced animation complexity for performance")
+
+    def _enable_virtual_scrolling_mode(self):
+        """Enable virtual scrolling mode for large conversations."""
+        if self.virtual_scroll_manager and len(self.messages) > 50:
+            # Transfer existing messages to virtual scroll manager
+            for message in self.messages:
+                self.virtual_scroll_manager.add_item(message)
+            logger.debug("Enabled virtual scrolling mode")
+
+    def _enable_batch_rendering(self):
+        """Enable batch rendering for better performance."""
+        # This would implement batched message rendering
+        # For now, it's a placeholder
+        logger.debug("Enabled batch rendering mode")
+
+    def _build_input_area(self) -> toga.Box:
+        """Build the enhanced input area at the bottom."""
+        # Create the enhanced input field
+        self.enhanced_input = EnhancedInputField(
+            animation_manager=self.animation_manager,
+            on_message_send=self._handle_enhanced_message_send,
+            on_voice_toggle=self._handle_enhanced_voice_toggle,
+            on_file_upload=self._handle_enhanced_file_upload,
             placeholder="Type your message...",
-            style=Pack(
-                flex=1,
-                padding=spacing["sm"],
-                font_size=typography["body2"]["size"],
-                background_color=colors.background,
-                margin=(0, spacing["sm"], 0, 0)
-            ),
-            on_change=self._on_input_change
+            max_characters=4000
         )
         
-        # Set up enter key handling
-        self.text_input.on_confirm = self._on_enter_pressed
+        # Store references to the internal components for compatibility
+        self.text_input = self.enhanced_input.text_input
+        self.send_button = self.enhanced_input.send_button
+        self.voice_button = self.enhanced_input.voice_button
+        self.file_button = self.enhanced_input.file_button
         
-        input_container.add(self.text_input)
-        
-        # Action buttons
-        buttons_container = toga.Box(
-            style=Pack(direction=ROW)
-        )
-        
-        # Voice button
-        self.voice_button = toga.Button(
-            "🎤",
-            on_press=self._on_voice_button_pressed,
-            style=Pack(
-                width=40,
-                height=40,
-                margin=(0, spacing["xs"], 0, 0),
-                background_color=colors.surface,
-                color=colors.primary,
-                font_size=16
-            ),
-            enabled=False
-        )
-        buttons_container.add(self.voice_button)
-        
-        # File upload button
-        self.file_button = toga.Button(
-            "📎",
-            on_press=self._on_file_button_pressed,
-            style=Pack(
-                width=40,
-                height=40,
-                margin=(0, spacing["xs"], 0, 0),
-                background_color=colors.surface,
-                color=colors.primary,
-                font_size=16
-            ),
-            enabled=False
-        )
-        buttons_container.add(self.file_button)
-        
-        # Send button
-        self.send_button = toga.Button(
-            "Send",
-            on_press=self._on_send_button_pressed,
-            style=Pack(
-                padding=(spacing["sm"], spacing["md"]),
-                background_color=colors.primary,
-                color="#ffffff",
-                font_size=typography["button"]["size"],
-                font_weight=typography["button"]["weight"]
-            ),
-            enabled=False
-        )
-        buttons_container.add(self.send_button)
-        
-        input_container.add(buttons_container)
-        
-        return input_container
+        return self.enhanced_input.widget
 
     def _add_welcome_message(self):
         """Add initial welcome message."""
@@ -219,7 +340,7 @@ class ChatPanel:
 
     def add_message(self, role: str, content: str, timestamp: Optional[datetime] = None):
         """
-        Add a message to the chat.
+        Add a message to the chat with enhanced scrolling behavior.
         
         Args:
             role: 'user', 'assistant', or 'system'
@@ -236,155 +357,106 @@ class ChatPanel:
         }
         
         self.messages.append(message)
-        self._render_message(message)
         
-        # Scroll to bottom
-        self._scroll_to_bottom()
+        # Add to virtual scroll manager if enabled
+        if self.virtual_scroll_manager and len(self.messages) > self.virtual_scroll_manager.performance_threshold:
+            self.virtual_scroll_manager.add_item(message)
+        else:
+            # Render normally for smaller conversations
+            self._render_message(message)
+        
+        # Handle scrolling with conversation scroll manager
+        asyncio.create_task(self._handle_new_message_scroll(role))
         
         logger.debug(f"Added {role} message: {content[:50]}...")
 
-    def _get_message_bubble_style(self, role: str) -> dict:
-        """Get the style dictionary for a message bubble based on role."""
-        theme = theme_manager.get_theme()
-        colors = theme.colors
-        borders = theme.borders
+    async def _handle_new_message_scroll(self, role: str):
+        """
+        Handle scrolling behavior when a new message is added.
         
-        if role == "user":
-            return {
-                "background_color": colors.primary,
-                "margin": (0, 0, 0, 50)
-            }
-        elif role == "assistant":
-            return {
-                "background_color": colors.card,
-                "margin": (0, 50, 0, 0)
-            }
-        else:  # system
-            return {
-                "background_color": colors.surface,
-                "margin": (0, 50, 0, 50)
-            }
-    
+        Args:
+            role: Role of the message sender
+        """
+        try:
+            if self.conversation_scroll_manager:
+                # Use the conversation scroll manager for intelligent scrolling
+                await self.conversation_scroll_manager.on_new_message(role, animate=True)
+            else:
+                # Fallback to basic scroll to bottom
+                self._scroll_to_bottom()
+        except Exception as e:
+            logger.error(f"Error handling new message scroll: {e}")
+
     def _render_message(self, message: dict):
-        """Render a single message in the chat with markdown support."""
+        """Render a single message using the enhanced message bubble renderer."""
+        try:
+            # Use the enhanced message bubble renderer
+            message_widget = self.message_bubble_renderer.render_message_bubble(
+                message, 
+                theme=theme_manager.get_theme(),
+                animate=True
+            )
+            
+            # Add to messages container
+            self.messages_container.add(message_widget)
+            
+        except Exception as e:
+            logger.error(f"Error rendering message with enhanced renderer: {e}")
+            # Fallback to simple rendering
+            self._render_message_fallback(message)
+    
+    def _render_message_fallback(self, message: dict):
+        """Fallback message rendering for error cases."""
         theme = theme_manager.get_theme()
         colors = theme.colors
         spacing = theme.spacing
-        borders = theme.borders
         
-        # Outer container for alignment
-        outer_container = toga.Box(
-            style=Pack(
-                direction=ROW,
-                flex=1,
-                margin_bottom=spacing["sm"]
-            )
-        )
-        
-        # Add spacer for right alignment (user messages)
-        if message["role"] == "user":
-            spacer = toga.Box(style=Pack(flex=1))
-            outer_container.add(spacer)
-        
-        # Message bubble container with modern styling
-        bubble_style = self._get_message_bubble_style(message["role"])
-        message_container = toga.Box(
+        # Simple container
+        container = toga.Box(
             style=Pack(
                 direction=COLUMN,
-                padding=spacing["md"],
-                width=600,
-                **bubble_style
+                padding=spacing["sm"],
+                margin_bottom=spacing["xs"],
+                background_color=colors.surface
             )
         )
         
-        # Role and timestamp header
-        if message["role"] != "system":
-            header = toga.Box(style=Pack(direction=ROW, margin_bottom=5))
-            
-            # Role with emoji
-            role_emoji = "👤" if message["role"] == "user" else "🤖"
-            role_name = "You" if message["role"] == "user" else "Tektra"
-            
-            role_label = toga.Label(
-                f"{role_emoji} {role_name}",
-                style=Pack(
-                    font_weight="bold",
-                    font_size=theme.typography["caption"]["size"],
-                    color=(
-                        "#ffffff" if message["role"] == "user"
-                        else colors.primary
-                    )
-                )
-            )
-            header.add(role_label)
-            
-            # Add timestamp
-            time_str = message["timestamp"].strftime("%H:%M")
-            time_label = toga.Label(
-                time_str,
-                style=Pack(
-                    font_size=theme.typography["caption"]["size"] - 2,
-                    color=(
-                        "rgba(255, 255, 255, 0.7)" if message["role"] == "user"
-                        else colors.text_secondary
-                    ),
-                    margin=(0, 0, 0, spacing["sm"])
-                )
-            )
-            header.add(time_label)
-            
-            message_container.add(header)
+        # Simple label
+        role_prefix = {
+            "user": "👤 You: ",
+            "assistant": "🤖 Tektra: ",
+            "system": "ℹ️ System: "
+        }.get(message["role"], "")
         
-        # Message content with markdown rendering
-        if message["role"] == "system":
-            # System messages are simple
-            content_label = toga.Label(
-                f"ℹ️ {message['content']}",
-                style=Pack(
-                    font_size=theme.typography["caption"]["size"],
-                    color=colors.text_secondary,
-                )
+        label = toga.Label(
+            f"{role_prefix}{message['content']}",
+            style=Pack(
+                font_size=14,
+                color=colors.text_primary
             )
-            message_container.add(content_label)
-        else:
-            # Use markdown renderer for user and assistant messages
-            try:
-                markdown_content = self.markdown_renderer.render_simple_message(
-                    message["content"], 
-                    message["role"]
-                )
-                message_container.add(markdown_content)
-            except Exception as e:
-                # Fallback to plain text if markdown rendering fails
-                logger.warning(f"Markdown rendering failed: {e}")
-                content_label = toga.Label(
-                    message["content"],
-                    style=Pack(
-                        font_size=theme.typography["body1"]["size"],
-                        color=(
-                            "#ffffff" if message["role"] == "user"
-                            else colors.text_primary
-                        ),
-                    )
-                )
-                message_container.add(content_label)
-        
-        # Add message container to outer container
-        outer_container.add(message_container)
-        
-        # Add spacer for left alignment (assistant messages)
-        if message["role"] == "assistant":
-            spacer = toga.Box(style=Pack(flex=1))
-            outer_container.add(spacer)
+        )
+        container.add(label)
         
         # Add to messages container
-        self.messages_container.add(outer_container)
+        self.messages_container.add(container)
 
     def _scroll_to_bottom(self):
-        """Scroll the messages area to the bottom."""
-        # Note: Toga doesn't have direct scroll control yet
-        # This is a placeholder for future implementation
-        pass
+        """Scroll the messages area to the bottom with smooth animation."""
+        try:
+            # Use the conversation scroll manager for intelligent scrolling
+            if self.conversation_scroll_manager:
+                # This will be handled by the conversation scroll manager
+                # when new messages are added
+                pass
+            elif self.smooth_scroll_container:
+                # Fallback to direct smooth scroll container
+                self.smooth_scroll_container.scroll_to_bottom(smooth=True)
+            else:
+                # Final fallback - Toga doesn't have direct scroll control
+                # This would need platform-specific implementation
+                logger.debug("Scroll to bottom requested (limited Toga support)")
+        except Exception as e:
+            logger.error(f"Error scrolling to bottom: {e}")
 
     def _on_input_change(self, widget):
         """Handle text input changes."""
@@ -450,38 +522,78 @@ class ChatPanel:
             logger.error(f"Error uploading file: {e}")
             self.add_message("system", f"File upload error: {e}")
 
+    # Enhanced input field handlers
+    async def _handle_enhanced_message_send(self, message: str):
+        """Handle message sending from enhanced input field."""
+        # Add user message
+        self.add_message("user", message)
+        
+        # Send to handler
+        if self.on_message_send:
+            await self._handle_message_send(message)
+
+    async def _handle_enhanced_voice_toggle(self):
+        """Handle voice toggle from enhanced input field."""
+        await self._handle_voice_toggle()
+
+    async def _handle_enhanced_file_upload(self):
+        """Handle file upload from enhanced input field."""
+        await self._handle_file_upload()
+
     def enable_voice_features(self, enabled: bool):
         """Enable or disable voice features."""
         self.voice_enabled = enabled
-        self.voice_button.enabled = enabled
+        
+        # Enable in the enhanced input field
+        if hasattr(self, 'enhanced_input'):
+            self.enhanced_input.enable_voice_features(enabled)
+        else:
+            # Fallback for compatibility
+            self.voice_button.enabled = enabled
+            if enabled:
+                self.voice_button.style.background_color = "#e3f2fd"
+            else:
+                self.voice_button.style.background_color = "#eeeeee"
         
         if enabled:
-            self.voice_button.style.background_color = "#e3f2fd"
             self.add_message("system", "🎤 Voice features enabled! Click the microphone to start talking.")
-        else:
-            self.voice_button.style.background_color = "#eeeeee"
 
     def enable_file_features(self, enabled: bool):
         """Enable or disable file upload features."""
         self.file_enabled = enabled
-        self.file_button.enabled = enabled
+        
+        # Enable in the enhanced input field
+        if hasattr(self, 'enhanced_input'):
+            self.enhanced_input.enable_file_features(enabled)
+        else:
+            # Fallback for compatibility
+            self.file_button.enabled = enabled
+            if enabled:
+                self.file_button.style.background_color = "#e8f5e8"
+            else:
+                self.file_button.style.background_color = "#eeeeee"
         
         if enabled:
-            self.file_button.style.background_color = "#e8f5e8"
             self.add_message("system", "📎 File upload enabled! Click the paperclip to analyze files.")
-        else:
-            self.file_button.style.background_color = "#eeeeee"
 
     def update_voice_status(self, is_active: bool):
         """Update the voice status indicator."""
         self.is_voice_active = is_active
         
-        if is_active:
-            self.voice_button.text = "🔴"  # Recording
-            self.voice_button.style.background_color = "#ffebee"
+        # Update through enhanced input field if available
+        if hasattr(self, 'enhanced_input'):
+            # The enhanced input field handles its own voice status updates
+            # We just need to trigger the toggle if needed
+            if is_active != self.enhanced_input.is_voice_recording:
+                asyncio.create_task(self.enhanced_input._toggle_voice_recording())
         else:
-            self.voice_button.text = "🎤"  # Ready
-            self.voice_button.style.background_color = "#e3f2fd"
+            # Fallback for compatibility
+            if is_active:
+                self.voice_button.text = "🔴"  # Recording
+                self.voice_button.style.background_color = "#ffebee"
+            else:
+                self.voice_button.text = "🎤"  # Ready
+                self.voice_button.style.background_color = "#e3f2fd"
 
     def get_message_count(self) -> int:
         """Get the total number of messages."""
@@ -497,11 +609,33 @@ class ChatPanel:
         # Re-add welcome message
         self._add_welcome_message()
 
-    def show_typing_indicator(self, show: bool = True):
-        """Show or hide typing indicator."""
-        if show:
-            self.add_message("system", "🤖 Tektra is thinking...")
-        # Note: In a real implementation, this would show an animated typing indicator
+    async def show_typing_indicator(self, show: bool = True, message: str = "Tektra is thinking..."):
+        """
+        Show or hide the animated typing indicator.
+        
+        Args:
+            show: Whether to show or hide the indicator
+            message: Custom message to display with the indicator
+        """
+        try:
+            if show:
+                await self.typing_indicator_manager.show_indicator(
+                    indicator_id="main",
+                    message=message,
+                    delay=0.1  # Small delay to prevent flicker on quick responses
+                )
+                logger.debug(f"Typing indicator shown: {message}")
+            else:
+                await self.typing_indicator_manager.hide_indicator(
+                    indicator_id="main",
+                    delay=0.0  # Hide immediately
+                )
+                logger.debug("Typing indicator hidden")
+        except Exception as e:
+            logger.error(f"Error controlling typing indicator: {e}")
+            # Fallback: add a simple system message
+            if show:
+                self.add_message("system", f"🤖 {message}")
 
 
 class ChatManager:
@@ -536,7 +670,7 @@ class ChatManager:
         """
         try:
             # Show typing indicator
-            self.chat_panel.show_typing_indicator(True)
+            await self.chat_panel.show_typing_indicator(True)
             
             # Add to message history
             self.message_history.append({"role": "user", "content": message})
@@ -567,6 +701,9 @@ class ChatManager:
                     conversation_history=self.message_history
                 )
                 
+                # Hide typing indicator before showing response
+                await self.chat_panel.show_typing_indicator(False)
+                
                 # Add response to chat
                 self.chat_panel.add_message("assistant", response)
                 
@@ -583,12 +720,17 @@ class ChatManager:
                     logger.debug("Stored conversation turn in MemOS")
                     
             else:
+                # Hide typing indicator before showing fallback response
+                await self.chat_panel.show_typing_indicator(False)
+                
                 # Fallback response
                 response = "I'm still initializing my AI models. Please wait a moment and try again."
                 self.chat_panel.add_message("assistant", response)
                 
         except Exception as e:
             logger.error(f"Error processing user message: {e}")
+            # Hide typing indicator on error
+            await self.chat_panel.show_typing_indicator(False)
             error_msg = f"I encountered an error processing your message: {e}"
             self.chat_panel.add_message("assistant", error_msg)
 

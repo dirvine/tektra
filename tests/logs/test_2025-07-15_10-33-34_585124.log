@@ -1,0 +1,79 @@
+2025-07-15T10:33:34.589993+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T10:33:34.590971+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T10:33:34.598686+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T10:33:34.598856+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T10:33:34.598901+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T10:33:34.599242+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T10:33:34.599282+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T10:33:34.602677+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T10:33:34.603896+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T10:33:34.676105+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T10:33:34.676295+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T10:33:34.683898+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T10:33:34.684676+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T10:33:34.687893+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_renderer_initialization
+2025-07-15T10:33:34.688532+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.688850+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_renderer_initialization
+2025-07-15T10:33:34.689392+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_user_message_bubble
+2025-07-15T10:33:34.689667+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.816149+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_user_message_bubble
+2025-07-15T10:33:34.816798+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_assistant_message_bubble
+2025-07-15T10:33:34.817150+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.819193+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_assistant_message_bubble
+2025-07-15T10:33:34.819560+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_system_message_bubble
+2025-07-15T10:33:34.819791+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.820988+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_system_message_bubble
+2025-07-15T10:33:34.821352+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_role_based_styling
+2025-07-15T10:33:34.821573+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.821791+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_role_based_styling
+2025-07-15T10:33:34.822095+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_message_with_markdown_content
+2025-07-15T10:33:34.822357+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.834257+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_message_with_markdown_content
+2025-07-15T10:33:34.834622+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_message_without_markdown_content
+2025-07-15T10:33:34.834847+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.836599+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_message_without_markdown_content
+2025-07-15T10:33:34.836939+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_markdown_detection
+2025-07-15T10:33:34.837153+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.837364+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_markdown_detection
+2025-07-15T10:33:34.837662+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_role_info_retrieval
+2025-07-15T10:33:34.837853+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.838045+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_role_info_retrieval
+2025-07-15T10:33:34.838351+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_message_animation
+2025-07-15T10:33:34.838540+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.942973+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_message_animation
+2025-07-15T10:33:34.943967+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_message_caching
+2025-07-15T10:33:34.944295+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.946460+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_message_caching
+2025-07-15T10:33:34.946866+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_cache_management
+2025-07-15T10:33:34.947484+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.951896+0100 | DEBUG | src.tektra.gui.message_bubble_renderer:clear_cache:588 | Message cache cleared
+2025-07-15T10:33:34.952051+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_cache_management
+2025-07-15T10:33:34.952568+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_code_block_rendering
+2025-07-15T10:33:34.952813+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.967233+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_code_block_rendering
+2025-07-15T10:33:34.967834+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_manager_setting
+2025-07-15T10:33:34.968175+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.968656+0100 | INFO | src.tektra.gui.message_bubble_renderer:set_animation_manager:597 | Animation manager updated
+2025-07-15T10:33:34.968827+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_manager_setting
+2025-07-15T10:33:34.969237+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_status_indicators
+2025-07-15T10:33:34.969484+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.970291+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_status_indicators
+2025-07-15T10:33:34.970659+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_global_renderer_instance
+2025-07-15T10:33:34.970799+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.970941+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_global_renderer_instance
+2025-07-15T10:33:34.971246+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_global_renderer_with_animation_manager
+2025-07-15T10:33:34.971423+0100 | INFO | src.tektra.gui.message_bubble_renderer:set_animation_manager:597 | Animation manager updated
+2025-07-15T10:33:34.971548+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_global_renderer_with_animation_manager
+2025-07-15T10:33:34.972060+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_theme_integration
+2025-07-15T10:33:34.972651+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.975282+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_theme_integration
+2025-07-15T10:33:34.975712+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_with_missing_fields
+2025-07-15T10:33:34.975858+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.977740+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_with_missing_fields
+2025-07-15T10:33:34.978298+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_with_invalid_role
+2025-07-15T10:33:34.978540+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:45 | Message Bubble Renderer initialized
+2025-07-15T10:33:34.980065+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_with_invalid_role
+2025-07-15T10:33:34.980474+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_error_handling
+2025-07-15T10:33:34.983155+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_error_handling
+2025-07-15T10:33:34.985202+0100 | INFO | tests.conftest:pytest_sessionfinish:323 | ✅ All tests completed successfully
+2025-07-15T10:33:34.985257+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

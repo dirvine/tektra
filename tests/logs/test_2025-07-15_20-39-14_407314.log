@@ -1,0 +1,102 @@
+2025-07-15T20:39:14.412188+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T20:39:14.413137+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T20:39:14.501469+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T20:39:14.501765+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T20:39:14.501890+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T20:39:14.502486+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T20:39:14.502552+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T20:39:14.507126+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T20:39:14.508414+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T20:39:14.515455+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T20:39:14.515647+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T20:39:14.525440+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T20:39:14.526215+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T20:39:14.533069+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_init
+2025-07-15T20:39:14.554031+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_init
+2025-07-15T20:39:14.555330+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_detect_macos_light_theme
+2025-07-15T20:39:14.617531+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_detect_macos_light_theme
+2025-07-15T20:39:14.618186+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_detect_macos_dark_theme
+2025-07-15T20:39:14.618759+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_detect_macos_dark_theme
+2025-07-15T20:39:14.619204+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_detect_unknown_system
+2025-07-15T20:39:14.619509+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_detect_unknown_system
+2025-07-15T20:39:14.619907+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_add_remove_callbacks
+2025-07-15T20:39:14.634672+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_add_remove_callbacks
+2025-07-15T20:39:14.635607+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_monitoring_lifecycle
+2025-07-15T20:39:14.648625+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:start_monitoring:136 | Started system theme monitoring
+2025-07-15T20:39:14.850925+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:start_monitoring:157 | System theme monitoring stopped
+2025-07-15T20:39:14.852626+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_monitoring_lifecycle
+2025-07-15T20:39:14.854721+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_init
+2025-07-15T20:39:14.868777+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.869894+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_init
+2025-07-15T20:39:14.870809+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_register_unregister_widgets
+2025-07-15T20:39:14.883566+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.885572+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:register_widget:207 | Registered widget for theme transitions: Mock
+2025-07-15T20:39:14.885728+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:register_widget:207 | Registered widget for theme transitions: Mock
+2025-07-15T20:39:14.885804+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:unregister_widget:218 | Unregistered widget from theme transitions: Mock
+2025-07-15T20:39:14.886160+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_register_unregister_widgets
+2025-07-15T20:39:14.887086+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_add_remove_callbacks
+2025-07-15T20:39:14.900083+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.901154+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_add_remove_callbacks
+2025-07-15T20:39:14.901827+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_instant_theme_transition
+2025-07-15T20:39:14.914237+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.915798+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:transition_to_theme:277 | Starting theme transition from light to dark
+2025-07-15T20:39:14.915947+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:transition_to_theme:294 | Theme transition completed: light -> dark
+2025-07-15T20:39:14.916271+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_instant_theme_transition
+2025-07-15T20:39:14.917171+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animated_theme_transition
+2025-07-15T20:39:14.929163+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.930676+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:register_widget:207 | Registered widget for theme transitions: Mock
+2025-07-15T20:39:14.930727+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:transition_to_theme:277 | Starting theme transition from light to dark
+2025-07-15T20:39:14.931043+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:transition_to_theme:294 | Theme transition completed: light -> dark
+2025-07-15T20:39:14.931320+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animated_theme_transition
+2025-07-15T20:39:14.931991+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_transition_to_same_theme
+2025-07-15T20:39:14.942301+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.943297+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:transition_to_theme:258 | Already using theme: light
+2025-07-15T20:39:14.943535+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_transition_to_same_theme
+2025-07-15T20:39:14.944257+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_transition_to_invalid_theme
+2025-07-15T20:39:14.956175+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.957518+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_transition_to_invalid_theme
+2025-07-15T20:39:14.958179+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_accessibility_mode_disables_animation
+2025-07-15T20:39:14.969130+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.970138+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:set_accessibility_mode:447 | Theme transition accessibility mode enabled
+2025-07-15T20:39:14.970281+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:transition_to_theme:277 | Starting theme transition from light to dark
+2025-07-15T20:39:14.970364+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:transition_to_theme:294 | Theme transition completed: light -> dark
+2025-07-15T20:39:14.970616+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_accessibility_mode_disables_animation
+2025-07-15T20:39:14.971238+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_auto_system_theme_setting
+2025-07-15T20:39:14.981426+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:14.993714+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_auto_system_theme_setting
+2025-07-15T20:39:14.994355+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_transition_duration_setting
+2025-07-15T20:39:15.006318+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:15.007065+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:set_transition_duration:462 | Theme transition duration set to 0.5s
+2025-07-15T20:39:15.007101+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:set_transition_duration:462 | Theme transition duration set to 0.1s
+2025-07-15T20:39:15.007125+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:set_transition_duration:462 | Theme transition duration set to 2.0s
+2025-07-15T20:39:15.007301+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_transition_duration_setting
+2025-07-15T20:39:15.007949+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_theme_info
+2025-07-15T20:39:15.020475+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:15.021505+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_theme_info
+2025-07-15T20:39:15.022155+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_transition_state_tracking
+2025-07-15T20:39:15.033831+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:15.034609+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:cancel_all_transitions:493 | Cancelled 1 active theme transitions
+2025-07-15T20:39:15.034867+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_transition_state_tracking
+2025-07-15T20:39:15.035514+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_apply_theme_to_widgets
+2025-07-15T20:39:15.046471+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:15.048004+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:register_widget:207 | Registered widget for theme transitions: Mock
+2025-07-15T20:39:15.048070+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:register_widget:207 | Registered widget for theme transitions: Mock
+2025-07-15T20:39:15.048096+0100 | DEBUG | src.tektra.gui.animations.theme_transition_manager:register_widget:207 | Registered widget for theme transitions: Mock
+2025-07-15T20:39:15.048555+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_apply_theme_to_widgets
+2025-07-15T20:39:15.049407+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_color_transition_creation
+2025-07-15T20:39:15.049956+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_color_transition_creation
+2025-07-15T20:39:15.050355+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_transition_state_creation
+2025-07-15T20:39:15.050562+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_transition_state_creation
+2025-07-15T20:39:15.050881+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_theme_transition_manager_first_call
+2025-07-15T20:39:15.061629+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:15.061923+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:get_theme_transition_manager:538 | Global theme transition manager created
+2025-07-15T20:39:15.062513+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_theme_transition_manager_first_call
+2025-07-15T20:39:15.063178+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_integration_with_animation_manager
+2025-07-15T20:39:15.075243+0100 | INFO | src.tektra.gui.animations.animation_manager:__init__:41 | Animation Manager initialized
+2025-07-15T20:39:15.085495+0100 | INFO | src.tektra.gui.animations.theme_transition_manager:__init__:196 | Theme Transition Manager initialized
+2025-07-15T20:39:15.086404+0100 | INFO | src.tektra.gui.animations.animation_manager:animate_theme_transition:184 | Animated theme transition from light to dark
+2025-07-15T20:39:15.087108+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_integration_with_animation_manager
+2025-07-15T20:39:15.088082+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_theme_manager_callback_integration
+2025-07-15T20:39:15.088473+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_theme_manager_callback_integration
+2025-07-15T20:39:15.090028+0100 | ERROR | tests.conftest:pytest_sessionfinish:325 | ❌ Tests failed with exit status: 1
+2025-07-15T20:39:15.090079+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

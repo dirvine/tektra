@@ -1,0 +1,155 @@
+2025-07-15T20:15:56.668007+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T20:15:56.668960+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T20:15:56.677272+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T20:15:56.677442+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T20:15:56.677486+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T20:15:56.677894+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T20:15:56.677934+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T20:15:56.681202+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T20:15:56.682320+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T20:15:56.741215+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T20:15:56.741379+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T20:15:56.749665+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T20:15:56.750268+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T20:15:56.754936+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T20:15:56.755455+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.755723+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.755993+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T20:15:56.756610+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization_with_animation_manager
+2025-07-15T20:15:56.756939+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.757260+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.757442+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization_with_animation_manager
+2025-07-15T20:15:56.757810+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_enhanced_styles_creation
+2025-07-15T20:15:56.758109+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.758367+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.758540+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_enhanced_styles_creation
+2025-07-15T20:15:56.758906+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_headers
+2025-07-15T20:15:56.759192+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.759860+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.760097+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_headers
+2025-07-15T20:15:56.760657+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_code_blocks
+2025-07-15T20:15:56.761014+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.761264+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.761468+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_code_blocks
+2025-07-15T20:15:56.761812+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_tables
+2025-07-15T20:15:56.762081+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.762368+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.762536+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_tables
+2025-07-15T20:15:56.762860+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_lists
+2025-07-15T20:15:56.763113+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.763340+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.763575+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_lists
+2025-07-15T20:15:56.763890+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_quotes
+2025-07-15T20:15:56.764144+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.764408+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.764557+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_quotes
+2025-07-15T20:15:56.764865+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_parse_blocks_paragraphs
+2025-07-15T20:15:56.765120+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.765367+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.765535+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_parse_blocks_paragraphs
+2025-07-15T20:15:56.765862+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_code_block_without_language
+2025-07-15T20:15:56.766139+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.766419+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.886090+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_code_block_without_language
+2025-07-15T20:15:56.886935+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_code_block_with_language
+2025-07-15T20:15:56.887352+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.887681+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.914670+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_code_block_with_language
+2025-07-15T20:15:56.915211+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_header
+2025-07-15T20:15:56.915560+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.915822+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.920867+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_header
+2025-07-15T20:15:56.921317+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_paragraph
+2025-07-15T20:15:56.921633+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.922241+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.929907+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_paragraph
+2025-07-15T20:15:56.930412+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_list
+2025-07-15T20:15:56.930745+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.930998+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.932160+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_list
+2025-07-15T20:15:56.932539+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_quote
+2025-07-15T20:15:56.932856+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.933222+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.934179+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_quote
+2025-07-15T20:15:56.934565+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_table
+2025-07-15T20:15:56.934862+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.935098+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.937649+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_table
+2025-07-15T20:15:56.938151+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_table_empty
+2025-07-15T20:15:56.938458+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.938699+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.939034+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_table_empty
+2025-07-15T20:15:56.939406+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_process_inline_formatting
+2025-07-15T20:15:56.939697+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.939962+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.940132+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_process_inline_formatting
+2025-07-15T20:15:56.940487+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_apply_syntax_highlighting_python
+2025-07-15T20:15:56.940809+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.941046+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.941309+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_apply_syntax_highlighting_python
+2025-07-15T20:15:56.941655+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_apply_syntax_highlighting_no_language
+2025-07-15T20:15:56.941938+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.942163+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.942309+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_apply_syntax_highlighting_no_language
+2025-07-15T20:15:56.942831+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_apply_syntax_highlighting_unknown_language
+2025-07-15T20:15:56.943163+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.943859+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.946992+0100 | DEBUG | src.tektra.gui.markdown_renderer:_apply_syntax_highlighting:559 | Could not highlight code for language 'unknown_lang': no lexer for alias 'unknown_lang' found
+2025-07-15T20:15:56.947114+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_apply_syntax_highlighting_unknown_language
+2025-07-15T20:15:56.947538+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_copy_to_clipboard_success
+2025-07-15T20:15:56.947852+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.948119+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.949371+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_copy_to_clipboard_success
+2025-07-15T20:15:56.949865+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_copy_to_clipboard_failure
+2025-07-15T20:15:56.950189+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.950491+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.951073+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_copy_to_clipboard_failure
+2025-07-15T20:15:56.951507+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_handle_copy_code_success
+2025-07-15T20:15:56.951808+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:56.952094+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:58.953864+0100 | INFO | src.tektra.gui.markdown_renderer:_handle_copy_code:595 | Code copied to clipboard (9 characters)
+2025-07-15T20:15:58.955773+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_handle_copy_code_success
+2025-07-15T20:15:58.958098+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_handle_copy_code_failure
+2025-07-15T20:15:58.959365+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:58.960286+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.963538+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_handle_copy_code_failure
+2025-07-15T20:15:59.965497+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_markdown_complete
+2025-07-15T20:15:59.966131+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.966499+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.975112+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_markdown_complete
+2025-07-15T20:15:59.975721+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_simple_message_with_markdown
+2025-07-15T20:15:59.976118+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.976445+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.977854+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_simple_message_with_markdown
+2025-07-15T20:15:59.978347+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_render_simple_message_plain_text
+2025-07-15T20:15:59.978728+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.979145+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.979881+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_render_simple_message_plain_text
+2025-07-15T20:15:59.980759+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_clear_interactive_elements
+2025-07-15T20:15:59.981232+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.981569+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.981741+0100 | DEBUG | src.tektra.gui.markdown_renderer:clear_interactive_elements:751 | Interactive elements cleared
+2025-07-15T20:15:59.981893+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_clear_interactive_elements
+2025-07-15T20:15:59.982423+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_interactive_element_count
+2025-07-15T20:15:59.982863+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.983175+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.983415+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_interactive_element_count
+2025-07-15T20:15:59.983953+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_markdown_renderer
+2025-07-15T20:15:59.984478+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.984737+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_markdown_renderer
+2025-07-15T20:15:59.985340+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_markdown_renderer_with_animation_manager
+2025-07-15T20:15:59.985674+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_markdown_renderer_with_animation_manager
+2025-07-15T20:15:59.986137+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_enhanced_markdown_renderer
+2025-07-15T20:15:59.986573+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.986743+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_enhanced_markdown_renderer
+2025-07-15T20:15:59.987138+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_get_enhanced_markdown_renderer_with_animation_manager
+2025-07-15T20:15:59.987531+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.987650+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_get_enhanced_markdown_renderer_with_animation_manager
+2025-07-15T20:15:59.988006+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_code_block_with_animation_manager
+2025-07-15T20:15:59.988353+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:15:59.990535+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_code_block_with_animation_manager
+2025-07-15T20:15:59.990963+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_complex_markdown_rendering
+2025-07-15T20:15:59.991348+0100 | DEBUG | src.tektra.gui.markdown_renderer:__init__:59 | Enhanced Markdown Renderer initialized
+2025-07-15T20:16:00.012181+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_complex_markdown_rendering
+2025-07-15T20:16:00.013209+0100 | INFO | tests.conftest:pytest_sessionfinish:323 | ✅ All tests completed successfully
+2025-07-15T20:16:00.013271+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

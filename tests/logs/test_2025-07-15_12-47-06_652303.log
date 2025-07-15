@@ -1,0 +1,174 @@
+2025-07-15T12:47:06.657195+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T12:47:06.658239+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T12:47:06.673532+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_default_config
+2025-07-15T12:47:06.674061+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_default_config
+2025-07-15T12:47:06.674642+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_config_validation
+2025-07-15T12:47:06.674875+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_config_validation
+2025-07-15T12:47:06.675203+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T12:47:06.675274+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:06.675536+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T12:47:06.675845+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_frame_time_recording
+2025-07-15T12:47:06.675905+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:06.676092+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_frame_time_recording
+2025-07-15T12:47:06.676382+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_fps_calculation
+2025-07-15T12:47:06.676436+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:06.676610+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_fps_calculation
+2025-07-15T12:47:06.676962+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_dropped_frame_detection
+2025-07-15T12:47:06.677047+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:06.677268+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_dropped_frame_detection
+2025-07-15T12:47:06.677610+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_performance_recommendations
+2025-07-15T12:47:06.677670+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:06.778846+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_performance_recommendations
+2025-07-15T12:47:06.779574+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_should_reduce_animations
+2025-07-15T12:47:06.779745+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:06.885644+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_should_reduce_animations
+2025-07-15T12:47:06.886564+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T12:47:06.886751+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:06.886889+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:06.887236+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T12:47:06.887786+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_fade_in_animation
+2025-07-15T12:47:06.887904+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:06.887982+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:06.990750+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started fade_in animation ea2b516a-ec69-46d4-be8e-df4b5ecf945d
+2025-07-15T12:47:06.991367+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:307 | Animation loop started
+2025-07-15T12:47:07.115433+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:346 | Animation loop stopped
+2025-07-15T12:47:07.193655+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_fade_in_animation
+2025-07-15T12:47:07.195935+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_slide_in_animation
+2025-07-15T12:47:07.196287+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:07.196531+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:07.303321+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started slide_in animation 4be42032-1350-433b-9222-4640d7cae58e
+2025-07-15T12:47:07.303509+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:307 | Animation loop started
+2025-07-15T12:47:07.303947+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_slide_in_animation
+2025-07-15T12:47:07.305009+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_scale_in_animation
+2025-07-15T12:47:07.305177+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:07.305294+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:07.305572+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:346 | Animation loop stopped
+2025-07-15T12:47:07.408882+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started scale_in animation a641b85f-8c41-4b70-9297-1d8a1f6e176b
+2025-07-15T12:47:07.409065+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:307 | Animation loop started
+2025-07-15T12:47:07.409844+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_scale_in_animation
+2025-07-15T12:47:07.411205+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_cancel_animation
+2025-07-15T12:47:07.411413+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:07.411515+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:07.517487+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started fade_in animation 24d68eb5-1384-4270-8e37-bb9b15e97f28
+2025-07-15T12:47:07.518190+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:307 | Animation loop started
+2025-07-15T12:47:07.518753+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:346 | Animation loop stopped
+2025-07-15T12:47:07.519236+0100 | DEBUG | tektra.gui.animations.transition_engine:cancel_animation:205 | Cancelled animation 24d68eb5-1384-4270-8e37-bb9b15e97f28
+2025-07-15T12:47:07.520319+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_cancel_animation
+2025-07-15T12:47:07.522182+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_pause_resume_animation
+2025-07-15T12:47:07.522316+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:07.522398+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:07.627883+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started fade_in animation d9a2e7af-1009-4ffd-b9a4-535caee2285b
+2025-07-15T12:47:07.628498+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:307 | Animation loop started
+2025-07-15T12:47:07.628974+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:346 | Animation loop stopped
+2025-07-15T12:47:07.629481+0100 | DEBUG | tektra.gui.animations.transition_engine:pause_animation:221 | Paused animation d9a2e7af-1009-4ffd-b9a4-535caee2285b
+2025-07-15T12:47:07.629563+0100 | DEBUG | tektra.gui.animations.transition_engine:resume_animation:237 | Resumed animation d9a2e7af-1009-4ffd-b9a4-535caee2285b
+2025-07-15T12:47:07.630697+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_pause_resume_animation
+2025-07-15T12:47:07.633270+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_reduced_motion_mode
+2025-07-15T12:47:07.634525+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:07.634691+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:07.635006+0100 | INFO | tektra.gui.animations.transition_engine:set_reduced_motion:249 | Reduced motion enabled
+2025-07-15T12:47:07.635095+0100 | INFO | tektra.gui.animations.transition_engine:set_reduced_motion:249 | Reduced motion disabled
+2025-07-15T12:47:07.635420+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_reduced_motion_mode
+2025-07-15T12:47:07.635917+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T12:47:07.635998+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:07.636040+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:07.662588+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:07.664277+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T12:47:07.665100+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_message_animation
+2025-07-15T12:47:07.665247+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:07.665309+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:07.675957+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:07.779911+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started slide_in animation 8cff081c-d25b-4511-8e35-9f2ae861e2b6
+2025-07-15T12:47:07.780212+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:307 | Animation loop started
+2025-07-15T12:47:07.986530+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started scale_in animation 457ff0fe-b4af-4eb9-a822-bf5846fada21
+2025-07-15T12:47:08.090337+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started fade_in animation 225f6205-0c55-4dba-9c83-6a7598536edd
+2025-07-15T12:47:08.195264+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started scale_in animation f1113409-8d42-4c15-a373-96c85dff2df4
+2025-07-15T12:47:08.296766+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started slide_in animation f3226fb9-ac78-4554-85ad-76e75624c8fa
+2025-07-15T12:47:08.298498+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_message_animation
+2025-07-15T12:47:08.300532+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_button_press_animation
+2025-07-15T12:47:08.300873+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:08.301031+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:08.317434+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:08.423734+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started scale_out animation 5ea347c5-fa5b-4524-9468-d107bd455c65
+2025-07-15T12:47:08.423990+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:307 | Animation loop started
+2025-07-15T12:47:08.630134+0100 | DEBUG | tektra.gui.animations.transition_engine:_start_animation:298 | Started scale_in animation 00a629f9-e274-4b41-92a6-cc1fc2451a39
+2025-07-15T12:47:08.631731+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_button_press_animation
+2025-07-15T12:47:08.634481+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_global_animation_toggle
+2025-07-15T12:47:08.634853+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:08.635071+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:08.655157+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:08.656741+0100 | INFO | tektra.gui.animations.animation_manager:set_global_animations_enabled:234 | Global animations disabled
+2025-07-15T12:47:08.656886+0100 | INFO | tektra.gui.animations.animation_manager:set_global_animations_enabled:234 | Global animations enabled
+2025-07-15T12:47:08.657254+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_global_animation_toggle
+2025-07-15T12:47:08.658081+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_reduced_motion_toggle
+2025-07-15T12:47:08.658268+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:08.658330+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:08.673940+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:08.674780+0100 | INFO | tektra.gui.animations.transition_engine:set_reduced_motion:249 | Reduced motion enabled
+2025-07-15T12:47:08.674877+0100 | INFO | tektra.gui.animations.animation_manager:set_reduced_motion:224 | Reduced motion enabled
+2025-07-15T12:47:08.675158+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_reduced_motion_toggle
+2025-07-15T12:47:08.675929+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_presets
+2025-07-15T12:47:08.676114+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:08.676179+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:08.688206+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:08.689188+0100 | DEBUG | tektra.gui.animations.animation_manager:add_animation_preset:269 | Added animation preset: custom
+2025-07-15T12:47:08.689261+0100 | INFO | tektra.gui.animations.transition_engine:set_reduced_motion:249 | Reduced motion enabled
+2025-07-15T12:47:08.689322+0100 | INFO | tektra.gui.animations.animation_manager:set_reduced_motion:224 | Reduced motion enabled
+2025-07-15T12:47:08.689357+0100 | INFO | tektra.gui.animations.animation_manager:set_global_animations_enabled:234 | Global animations enabled
+2025-07-15T12:47:08.689394+0100 | INFO | tektra.gui.animations.animation_manager:apply_animation_preset:294 | Applied animation preset: performance
+2025-07-15T12:47:08.689428+0100 | WARNING | tektra.gui.animations.animation_manager:apply_animation_preset:282 | Animation preset not found: non-existent
+2025-07-15T12:47:08.689663+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_presets
+2025-07-15T12:47:08.690299+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_performance_summary
+2025-07-15T12:47:08.690452+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:08.690500+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:08.722998+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:08.934863+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_performance_summary
+2025-07-15T12:47:08.936139+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_cancel_all_animations
+2025-07-15T12:47:08.936365+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:08.936478+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:08.938628+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:346 | Animation loop stopped
+2025-07-15T12:47:08.938903+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:346 | Animation loop stopped
+2025-07-15T12:47:08.938982+0100 | DEBUG | tektra.gui.animations.transition_engine:_animation_loop:346 | Animation loop stopped
+2025-07-15T12:47:08.958980+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:08.960091+0100 | INFO | tektra.gui.animations.animation_manager:cancel_all_animations:253 | Cancelled 0 active animations
+2025-07-15T12:47:08.960480+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_cancel_all_animations
+2025-07-15T12:47:08.961373+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_integration
+2025-07-15T12:47:08.962053+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:08.962125+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:08.962163+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:08.962193+0100 | INFO | tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T12:47:08.976516+0100 | INFO | tektra.gui.animations.animation_manager:__init__:38 | Animation Manager initialized
+2025-07-15T12:47:08.977704+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_integration
+2025-07-15T12:47:08.978785+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_default_config
+2025-07-15T12:47:08.979167+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_default_config
+2025-07-15T12:47:08.979636+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_config_validation
+2025-07-15T12:47:08.979879+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_config_validation
+2025-07-15T12:47:08.980444+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_types
+2025-07-15T12:47:08.980783+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_types
+2025-07-15T12:47:08.981255+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_easing_functions
+2025-07-15T12:47:08.981502+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_easing_functions
+2025-07-15T12:47:08.981871+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_default_animations
+2025-07-15T12:47:08.982510+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_default_animations
+2025-07-15T12:47:08.983372+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_reduced_motion_animations
+2025-07-15T12:47:08.983721+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_reduced_motion_animations
+2025-07-15T12:47:08.984177+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_state_creation
+2025-07-15T12:47:08.984478+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_state_creation
+2025-07-15T12:47:08.984863+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_progress_calculation
+2025-07-15T12:47:09.090385+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_progress_calculation
+2025-07-15T12:47:09.091146+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_with_delay
+2025-07-15T12:47:09.091569+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_with_delay
+2025-07-15T12:47:09.092008+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_metrics_initialization
+2025-07-15T12:47:09.092252+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_metrics_initialization
+2025-07-15T12:47:09.092634+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_frame_time_recording
+2025-07-15T12:47:09.092886+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_frame_time_recording
+2025-07-15T12:47:09.093253+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_dropped_frame_detection
+2025-07-15T12:47:09.093534+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_dropped_frame_detection
+2025-07-15T12:47:09.094148+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_frame_time_limit
+2025-07-15T12:47:09.094454+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_frame_time_limit
+2025-07-15T12:47:09.094918+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_easing_functions
+2025-07-15T12:47:09.095257+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_easing_functions
+2025-07-15T12:47:09.095674+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_performance_monitor_basic
+2025-07-15T12:47:09.095837+0100 | INFO | tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T12:47:09.302771+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_performance_monitor_basic
+2025-07-15T12:47:09.305206+0100 | INFO | tests.conftest:pytest_sessionfinish:323 | ✅ All tests completed successfully
+2025-07-15T12:47:09.305382+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

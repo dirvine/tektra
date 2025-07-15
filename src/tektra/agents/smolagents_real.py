@@ -16,6 +16,7 @@ Key Features:
 import asyncio
 import json
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -57,6 +58,107 @@ try:
 except ImportError as e:
     logger.error(f"Failed to import SmolAgents: {e}")
     SMOLAGENTS_AVAILABLE = False
+    
+    # Create mock classes for graceful degradation
+    class CodeAgent:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class Tool:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class CodeAgentError(Exception):
+        pass
+    
+    class AgentError(Exception):
+        pass
+
+
+class SmolAgentsManager:
+    """
+    Manager for SmolAgents integration.
+    
+    Handles creation and management of SmolAgents-based AI agents.
+    """
+    
+    def __init__(self, qwen_backend=None):
+        """Initialize SmolAgents manager."""
+        self.qwen_backend = qwen_backend
+        self.available = SMOLAGENTS_AVAILABLE
+        self.agents = {}
+        
+        if not self.available:
+            logger.warning("SmolAgents not available - using fallback implementations")
+    
+    async def create_agent(self, agent_config: dict) -> str:
+        """Create a new agent."""
+        agent_id = str(uuid.uuid4())[:8]
+        
+        if self.available:
+            # Create real SmolAgent
+            try:
+                agent = TektraCodeAgent(
+                    qwen_backend=self.qwen_backend,
+                    system_prompt=agent_config.get("system_prompt", "You are a helpful AI assistant."),
+                    tools=agent_config.get("tools", []),
+                    max_iterations=agent_config.get("max_iterations", 10)
+                )
+                self.agents[agent_id] = agent
+                logger.info(f"Created SmolAgent: {agent_id}")
+            except Exception as e:
+                logger.error(f"Failed to create SmolAgent: {e}")
+                raise AgentError(f"Agent creation failed: {e}")
+        else:
+            # Create mock agent
+            self.agents[agent_id] = {
+                "id": agent_id,
+                "config": agent_config,
+                "status": "ready"
+            }
+            logger.info(f"Created mock agent: {agent_id}")
+        
+        return agent_id
+    
+    async def execute_agent(self, agent_id: str, task: str) -> str:
+        """Execute a task with an agent."""
+        if agent_id not in self.agents:
+            raise AgentError(f"Agent not found: {agent_id}")
+        
+        agent = self.agents[agent_id]
+        
+        if self.available and hasattr(agent, 'execute'):
+            try:
+                return await agent.execute(task)
+            except Exception as e:
+                logger.error(f"Agent execution failed: {e}")
+                raise AgentError(f"Execution failed: {e}")
+        else:
+            # Mock execution
+            return f"Mock agent {agent_id} would execute: {task}"
+    
+    def list_agents(self) -> list:
+        """List all agents."""
+        return [
+            {
+                "id": agent_id,
+                "status": "ready" if self.available else "mock",
+                "available": self.available
+            }
+            for agent_id in self.agents.keys()
+        ]
+    
+    async def cleanup(self):
+        """Clean up agents."""
+        for agent_id, agent in self.agents.items():
+            if hasattr(agent, 'cleanup'):
+                try:
+                    await agent.cleanup()
+                except Exception as e:
+                    logger.error(f"Error cleaning up agent {agent_id}: {e}")
+        
+        self.agents.clear()
+        logger.info("SmolAgents manager cleaned up")
 
 
 class QwenModelAdapter:

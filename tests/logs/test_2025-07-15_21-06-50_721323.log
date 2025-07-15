@@ -1,0 +1,182 @@
+2025-07-15T21:06:50.726103+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T21:06:50.727011+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T21:06:50.812389+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T21:06:50.812567+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T21:06:50.812614+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T21:06:50.812968+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T21:06:50.813009+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T21:06:50.816990+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T21:06:50.818253+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T21:06:50.824664+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T21:06:50.824774+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T21:06:50.834264+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T21:06:50.834858+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T21:06:50.837778+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T21:06:50.838026+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:50.838102+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:50.838366+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T21:06:50.838956+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_optimization_profiles
+2025-07-15T21:06:50.839041+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:50.839095+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:50.839282+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_optimization_profiles
+2025-07-15T21:06:50.839619+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_config_optimization
+2025-07-15T21:06:50.839695+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:50.839746+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:50.839842+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> high
+2025-07-15T21:06:50.941298+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: high -> performance
+2025-07-15T21:06:51.044462+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_config_optimization
+2025-07-15T21:06:51.046930+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_skipping_logic
+2025-07-15T21:06:51.047107+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.047221+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.047437+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> balanced
+2025-07-15T21:06:51.047498+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> performance
+2025-07-15T21:06:51.047533+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: performance -> fallback
+2025-07-15T21:06:51.047727+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_skipping_logic
+2025-07-15T21:06:51.048408+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_queuing
+2025-07-15T21:06:51.048532+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.048617+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.048827+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: fade_in
+2025-07-15T21:06:51.048860+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: slide_in
+2025-07-15T21:06:51.048884+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_0
+2025-07-15T21:06:51.048903+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_1
+2025-07-15T21:06:51.048921+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_2
+2025-07-15T21:06:51.048939+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_3
+2025-07-15T21:06:51.048956+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_4
+2025-07-15T21:06:51.048973+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_5
+2025-07-15T21:06:51.048990+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_6
+2025-07-15T21:06:51.049006+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_7
+2025-07-15T21:06:51.049022+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_8
+2025-07-15T21:06:51.049037+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_9
+2025-07-15T21:06:51.049054+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_10
+2025-07-15T21:06:51.049070+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_11
+2025-07-15T21:06:51.049085+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_12
+2025-07-15T21:06:51.049100+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_13
+2025-07-15T21:06:51.049115+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_14
+2025-07-15T21:06:51.049130+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_15
+2025-07-15T21:06:51.049147+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_16
+2025-07-15T21:06:51.049161+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_17
+2025-07-15T21:06:51.049176+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_18
+2025-07-15T21:06:51.049191+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_19
+2025-07-15T21:06:51.049213+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_20
+2025-07-15T21:06:51.049229+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_21
+2025-07-15T21:06:51.049245+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_22
+2025-07-15T21:06:51.049260+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_23
+2025-07-15T21:06:51.049276+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_24
+2025-07-15T21:06:51.049291+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_25
+2025-07-15T21:06:51.049306+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_26
+2025-07-15T21:06:51.049321+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_27
+2025-07-15T21:06:51.049336+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_28
+2025-07-15T21:06:51.049351+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_29
+2025-07-15T21:06:51.049366+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_30
+2025-07-15T21:06:51.049381+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_31
+2025-07-15T21:06:51.049396+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_32
+2025-07-15T21:06:51.049410+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_33
+2025-07-15T21:06:51.049425+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_34
+2025-07-15T21:06:51.049440+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_35
+2025-07-15T21:06:51.049455+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_36
+2025-07-15T21:06:51.049470+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_37
+2025-07-15T21:06:51.049484+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_38
+2025-07-15T21:06:51.049499+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_39
+2025-07-15T21:06:51.049514+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_40
+2025-07-15T21:06:51.049529+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_41
+2025-07-15T21:06:51.049544+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_42
+2025-07-15T21:06:51.049559+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_43
+2025-07-15T21:06:51.049574+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_44
+2025-07-15T21:06:51.049589+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_45
+2025-07-15T21:06:51.049604+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_46
+2025-07-15T21:06:51.049619+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_47
+2025-07-15T21:06:51.049634+0100 | WARNING | src.tektra.gui.animations.performance_optimizer:queue_animation:196 | Animation queue full, dropping animation
+2025-07-15T21:06:51.049676+0100 | WARNING | src.tektra.gui.animations.performance_optimizer:queue_animation:196 | Animation queue full, dropping animation
+2025-07-15T21:06:51.049703+0100 | WARNING | src.tektra.gui.animations.performance_optimizer:queue_animation:196 | Animation queue full, dropping animation
+2025-07-15T21:06:51.049862+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_queuing
+2025-07-15T21:06:51.050476+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_queue_processing
+2025-07-15T21:06:51.050608+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.050705+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.051204+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> minimal
+2025-07-15T21:06:51.051296+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: unknown
+2025-07-15T21:06:51.051322+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: unknown
+2025-07-15T21:06:51.051385+0100 | ERROR | src.tektra.gui.animations.performance_optimizer:process_animation_queue:235 | Error processing queued animation: object Mock can't be used in 'await' expression
+2025-07-15T21:06:51.051443+0100 | ERROR | src.tektra.gui.animations.performance_optimizer:process_animation_queue:235 | Error processing queued animation: object Mock can't be used in 'await' expression
+2025-07-15T21:06:51.051643+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_queue_processing
+2025-07-15T21:06:51.052197+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_stale_animation_cleanup
+2025-07-15T21:06:51.052298+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.052361+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.052704+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:process_animation_queue:224 | Skipping stale queued animation
+2025-07-15T21:06:51.052882+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_stale_animation_cleanup
+2025-07-15T21:06:51.053502+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_profile_switching
+2025-07-15T21:06:51.053596+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.053660+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.053784+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> high
+2025-07-15T21:06:51.053825+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: high -> fallback
+2025-07-15T21:06:51.053853+0100 | ERROR | src.tektra.gui.animations.performance_optimizer:switch_to_profile:283 | Unknown optimization profile: nonexistent
+2025-07-15T21:06:51.053986+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_profile_switching
+2025-07-15T21:06:51.054394+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_auto_optimization
+2025-07-15T21:06:51.054475+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.054533+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.054803+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: high -> performance
+2025-07-15T21:06:51.054860+0100 | INFO | src.tektra.gui.animations.performance_optimizer:auto_optimize_performance:265 | Auto-optimized: high -> performance
+2025-07-15T21:06:51.055027+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_auto_optimization
+2025-07-15T21:06:51.055545+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_optimization_cooldown
+2025-07-15T21:06:51.055648+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.055732+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.055985+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> high
+2025-07-15T21:06:51.056041+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: high -> fallback
+2025-07-15T21:06:51.056069+0100 | INFO | src.tektra.gui.animations.performance_optimizer:auto_optimize_performance:265 | Auto-optimized: high -> fallback
+2025-07-15T21:06:51.056094+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: fallback -> high
+2025-07-15T21:06:51.056125+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: high -> fallback
+2025-07-15T21:06:51.056150+0100 | INFO | src.tektra.gui.animations.performance_optimizer:auto_optimize_performance:265 | Auto-optimized: high -> fallback
+2025-07-15T21:06:51.056289+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_optimization_cooldown
+2025-07-15T21:06:51.056697+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_memory_usage_tracking
+2025-07-15T21:06:51.056777+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.056836+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.056949+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> minimal
+2025-07-15T21:06:51.057089+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_memory_usage_tracking
+2025-07-15T21:06:51.057486+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_optimization_callbacks
+2025-07-15T21:06:51.057563+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.057619+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.057729+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> performance
+2025-07-15T21:06:51.057769+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: performance -> high
+2025-07-15T21:06:51.057892+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_optimization_callbacks
+2025-07-15T21:06:51.058276+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_optimization_summary
+2025-07-15T21:06:51.058353+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.058409+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.058517+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> performance
+2025-07-15T21:06:51.058559+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test
+2025-07-15T21:06:51.058696+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_optimization_summary
+2025-07-15T21:06:51.059075+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_recommended_profile
+2025-07-15T21:06:51.059150+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.059205+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.059502+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_recommended_profile
+2025-07-15T21:06:51.059890+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animation_queue_clearing
+2025-07-15T21:06:51.059966+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.060022+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.060139+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_0
+2025-07-15T21:06:51.060161+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_1
+2025-07-15T21:06:51.060179+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_2
+2025-07-15T21:06:51.060195+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_3
+2025-07-15T21:06:51.060211+0100 | DEBUG | src.tektra.gui.animations.performance_optimizer:queue_animation:201 | Animation queued: test_4
+2025-07-15T21:06:51.060228+0100 | INFO | src.tektra.gui.animations.performance_optimizer:clear_animation_queue:352 | Cleared 5 queued animations
+2025-07-15T21:06:51.060356+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animation_queue_clearing
+2025-07-15T21:06:51.060731+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_optimization_history_tracking
+2025-07-15T21:06:51.060799+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.060878+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.061125+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> fallback
+2025-07-15T21:06:51.061175+0100 | INFO | src.tektra.gui.animations.performance_optimizer:auto_optimize_performance:265 | Auto-optimized: balanced -> fallback
+2025-07-15T21:06:51.061327+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_optimization_history_tracking
+2025-07-15T21:06:51.061772+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_optimization_loop
+2025-07-15T21:06:51.061859+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.061929+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.062162+0100 | INFO | src.tektra.gui.animations.performance_optimizer:enable_optimization:346 | Performance optimization enabled
+2025-07-15T21:06:51.062240+0100 | INFO | src.tektra.gui.animations.performance_optimizer:start_optimization_loop:362 | Starting performance optimization loop
+2025-07-15T21:06:51.167800+0100 | INFO | src.tektra.gui.animations.performance_optimizer:switch_to_profile:299 | Switched optimization profile: balanced -> high
+2025-07-15T21:06:51.168420+0100 | INFO | src.tektra.gui.animations.performance_optimizer:auto_optimize_performance:265 | Auto-optimized: balanced -> high
+2025-07-15T21:06:51.168827+0100 | INFO | src.tektra.gui.animations.performance_optimizer:enable_optimization:346 | Performance optimization disabled
+2025-07-15T21:06:51.170340+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_optimization_loop
+2025-07-15T21:06:51.172981+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_enable_disable_optimization
+2025-07-15T21:06:51.173455+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:102 | Enhanced UI Performance Monitor initialized
+2025-07-15T21:06:51.173742+0100 | INFO | src.tektra.gui.animations.performance_optimizer:__init__:60 | Performance Optimizer initialized
+2025-07-15T21:06:51.174386+0100 | INFO | src.tektra.gui.animations.performance_optimizer:enable_optimization:346 | Performance optimization enabled
+2025-07-15T21:06:51.174561+0100 | INFO | src.tektra.gui.animations.performance_optimizer:enable_optimization:346 | Performance optimization disabled
+2025-07-15T21:06:51.175039+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_enable_disable_optimization
+2025-07-15T21:06:51.176553+0100 | INFO | tests.conftest:pytest_sessionfinish:323 | ✅ All tests completed successfully
+2025-07-15T21:06:51.176601+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

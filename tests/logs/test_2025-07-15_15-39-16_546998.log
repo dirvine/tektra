@@ -1,0 +1,128 @@
+2025-07-15T15:39:16.551570+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T15:39:16.552480+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T15:39:16.560380+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T15:39:16.560539+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T15:39:16.560583+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T15:39:16.560912+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T15:39:16.560952+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T15:39:16.564603+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T15:39:16.565830+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T15:39:16.626480+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T15:39:16.626641+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T15:39:16.633826+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T15:39:16.634436+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T15:39:16.639299+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_initialization
+2025-07-15T15:39:16.639808+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.639996+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_initialization
+2025-07-15T15:39:16.640556+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_setup_button_interactions
+2025-07-15T15:39:16.640761+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.641077+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_button_interactions:94 | Set up button interactions for: test_button
+2025-07-15T15:39:16.641189+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_setup_button_interactions
+2025-07-15T15:39:16.641519+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_setup_button_interactions_auto_id
+2025-07-15T15:39:16.641685+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.641958+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_button_interactions:94 | Set up button interactions for: button_5514801328
+2025-07-15T15:39:16.642072+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_setup_button_interactions_auto_id
+2025-07-15T15:39:16.642452+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_setup_input_interactions
+2025-07-15T15:39:16.642603+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.642976+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_input_interactions:136 | Set up input interactions for: test_input
+2025-07-15T15:39:16.643096+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_setup_input_interactions
+2025-07-15T15:39:16.643424+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_setup_hover_effects
+2025-07-15T15:39:16.643703+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.644162+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_hover_effects:176 | Set up hover effects for: test_hover
+2025-07-15T15:39:16.644310+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_setup_hover_effects
+2025-07-15T15:39:16.644670+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_setup_focus_indicators
+2025-07-15T15:39:16.644822+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.645079+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_focus_indicators:217 | Set up focus indicators for: test_focus
+2025-07-15T15:39:16.645178+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_setup_focus_indicators
+2025-07-15T15:39:16.645474+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animate_button_press
+2025-07-15T15:39:16.645616+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.646097+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_button_interactions:94 | Set up button interactions for: test_button
+2025-07-15T15:39:16.646356+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:_apply_press_styling:573 | Could not apply press styling: 'ColorScheme' object has no attribute 'surface_variant'
+2025-07-15T15:39:16.646750+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animate_button_press
+2025-07-15T15:39:16.647235+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animate_button_press_nonexistent
+2025-07-15T15:39:16.647439+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.647697+0100 | WARNING | src.tektra.gui.animations.micro_interaction_manager:animate_button_press:228 | Button not found for animation: nonexistent_button
+2025-07-15T15:39:16.647849+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animate_button_press_nonexistent
+2025-07-15T15:39:16.648206+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animate_hover_enter
+2025-07-15T15:39:16.648370+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.648710+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_hover_effects:176 | Set up hover effects for: test_hover
+2025-07-15T15:39:16.648824+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:_apply_hover_styling:586 | Could not apply hover styling: 'ColorScheme' object has no attribute 'surface_bright'
+2025-07-15T15:39:16.648985+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animate_hover_enter
+2025-07-15T15:39:16.649336+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animate_hover_exit
+2025-07-15T15:39:16.649570+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.650006+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_hover_effects:176 | Set up hover effects for: test_hover
+2025-07-15T15:39:16.650314+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animate_hover_exit
+2025-07-15T15:39:16.650740+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animate_focus_enter
+2025-07-15T15:39:16.650923+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.651354+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_focus_indicators:217 | Set up focus indicators for: test_focus
+2025-07-15T15:39:16.651454+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:_apply_focus_styling:600 | Could not apply focus styling: 'ColorScheme' object has no attribute 'primary_container'
+2025-07-15T15:39:16.651627+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animate_focus_enter
+2025-07-15T15:39:16.651987+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_animate_focus_exit
+2025-07-15T15:39:16.652151+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.652484+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_focus_indicators:217 | Set up focus indicators for: test_focus
+2025-07-15T15:39:16.652731+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_animate_focus_exit
+2025-07-15T15:39:16.653116+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_pulse_attention
+2025-07-15T15:39:16.653288+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.653628+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_hover_effects:176 | Set up hover effects for: test_pulse
+2025-07-15T15:39:16.858376+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_pulse_attention
+2025-07-15T15:39:16.861458+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_handle_button_press_with_callback
+2025-07-15T15:39:16.862571+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.863485+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_button_interactions:94 | Set up button interactions for: test_button
+2025-07-15T15:39:16.864265+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_handle_button_press_with_callback
+2025-07-15T15:39:16.865422+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_handle_button_press_with_sync_callback
+2025-07-15T15:39:16.865966+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.866854+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_button_interactions:94 | Set up button interactions for: test_button
+2025-07-15T15:39:16.867477+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_handle_button_press_with_sync_callback
+2025-07-15T15:39:16.868249+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_cleanup_element
+2025-07-15T15:39:16.868582+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.869139+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_button_interactions:94 | Set up button interactions for: test_button
+2025-07-15T15:39:16.869209+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:cleanup_element:503 | Cleaned up element: test_button
+2025-07-15T15:39:16.869358+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_cleanup_element
+2025-07-15T15:39:16.870782+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_cleanup_all
+2025-07-15T15:39:16.871190+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.871801+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_button_interactions:94 | Set up button interactions for: test_button
+2025-07-15T15:39:16.871881+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_input_interactions:136 | Set up input interactions for: test_input
+2025-07-15T15:39:16.871939+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:cleanup_element:503 | Cleaned up element: test_button
+2025-07-15T15:39:16.871966+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:cleanup_element:503 | Cleaned up element: test_input
+2025-07-15T15:39:16.871985+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:cleanup_all:510 | Cleaned up all micro-interactions
+2025-07-15T15:39:16.872166+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_cleanup_all
+2025-07-15T15:39:16.872838+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_capture_style_state
+2025-07-15T15:39:16.873143+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.873803+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_capture_style_state
+2025-07-15T15:39:16.874375+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_capture_style_state_with_missing_attributes
+2025-07-15T15:39:16.874550+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.874984+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_capture_style_state_with_missing_attributes
+2025-07-15T15:39:16.875361+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_cancel_animation
+2025-07-15T15:39:16.875552+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.876308+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_cancel_animation
+2025-07-15T15:39:16.877127+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_cancel_animation_already_done
+2025-07-15T15:39:16.877466+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.878488+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_cancel_animation_already_done
+2025-07-15T15:39:16.879098+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_integration_with_animation_manager
+2025-07-15T15:39:16.879199+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T15:39:16.879266+0100 | INFO | src.tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T15:39:16.906358+0100 | INFO | src.tektra.gui.animations.animation_manager:__init__:41 | Animation Manager initialized
+2025-07-15T15:39:16.907276+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.907512+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_integration_with_animation_manager
+2025-07-15T15:39:16.908136+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_lazy_initialization
+2025-07-15T15:39:16.908255+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T15:39:16.908308+0100 | INFO | src.tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T15:39:16.923063+0100 | INFO | src.tektra.gui.animations.animation_manager:__init__:41 | Animation Manager initialized
+2025-07-15T15:39:16.924239+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.924574+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_lazy_initialization
+2025-07-15T15:39:16.925458+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_button_interaction_configuration_defaults
+2025-07-15T15:39:16.925660+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T15:39:16.925725+0100 | INFO | src.tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T15:39:16.939066+0100 | INFO | src.tektra.gui.animations.animation_manager:__init__:41 | Animation Manager initialized
+2025-07-15T15:39:16.939536+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.940695+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_button_interactions:94 | Set up button interactions for: button_5515287088
+2025-07-15T15:39:16.940978+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_button_interaction_configuration_defaults
+2025-07-15T15:39:16.941610+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_input_interaction_configuration_defaults
+2025-07-15T15:39:16.941721+0100 | INFO | src.tektra.gui.animations.performance_monitor:__init__:34 | UI Performance Monitor initialized
+2025-07-15T15:39:16.941789+0100 | INFO | src.tektra.gui.animations.transition_engine:__init__:34 | Transition Engine initialized
+2025-07-15T15:39:16.951558+0100 | INFO | src.tektra.gui.animations.animation_manager:__init__:41 | Animation Manager initialized
+2025-07-15T15:39:16.951897+0100 | INFO | src.tektra.gui.animations.micro_interaction_manager:__init__:43 | Micro-interaction manager initialized
+2025-07-15T15:39:16.952677+0100 | DEBUG | src.tektra.gui.animations.micro_interaction_manager:setup_input_interactions:136 | Set up input interactions for: input_5515286992
+2025-07-15T15:39:16.952884+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_input_interaction_configuration_defaults
+2025-07-15T15:39:16.953812+0100 | INFO | tests.conftest:pytest_sessionfinish:323 | ✅ All tests completed successfully
+2025-07-15T15:39:16.953850+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

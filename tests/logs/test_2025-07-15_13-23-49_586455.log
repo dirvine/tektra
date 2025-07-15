@@ -1,0 +1,26 @@
+2025-07-15T13:23:49.591231+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T13:23:49.592139+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T13:23:49.599806+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T13:23:49.599928+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T13:23:49.599970+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T13:23:49.600306+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T13:23:49.600343+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T13:23:49.603746+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T13:23:49.605232+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T13:23:49.666610+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T13:23:49.666825+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T13:23:49.674252+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T13:23:49.674795+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T13:23:49.677225+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_auto_expanding_input
+2025-07-15T13:23:49.828010+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:79 | Enhanced input field initialized
+2025-07-15T13:23:49.831282+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:313 | Auto-expansion calculation: lines=1, char_lines=1, estimated=1, new_height=40, current=40
+2025-07-15T13:23:49.833616+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:313 | Auto-expansion calculation: lines=1, char_lines=4, estimated=4, new_height=100, current=40
+2025-07-15T13:23:49.833654+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:322 | Auto-expanding input from 40 to 100 (lines=1, char_lines=4, estimated=4)
+2025-07-15T13:23:49.834246+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:313 | Auto-expansion calculation: lines=1, char_lines=1, estimated=1, new_height=40, current=100
+2025-07-15T13:23:49.834289+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:322 | Auto-expanding input from 100 to 40 (lines=1, char_lines=1, estimated=1)
+2025-07-15T13:23:49.834817+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:313 | Auto-expansion calculation: lines=1, char_lines=1, estimated=1, new_height=40, current=40
+2025-07-15T13:23:49.835033+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:313 | Auto-expansion calculation: lines=1, char_lines=1, estimated=1, new_height=40, current=40
+2025-07-15T13:23:49.835196+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_handle_auto_expansion:313 | Auto-expansion calculation: lines=1, char_lines=1, estimated=1, new_height=40, current=40
+2025-07-15T13:23:49.861402+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_auto_expanding_input
+2025-07-15T13:23:49.862659+0100 | ERROR | tests.conftest:pytest_sessionfinish:325 | ❌ Tests failed with exit status: 1
+2025-07-15T13:23:49.862709+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

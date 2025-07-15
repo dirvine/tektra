@@ -14,6 +14,8 @@ The memory system enables:
 from .memory_config import MemoryConfig
 from .memory_manager import TektraMemoryManager
 from .memory_types import MemoryContext, MemoryEntry, MemoryType
+from .conversation_memory import ConversationMemory
+from .memos_integration import TektraMemOSIntegration
 
 __all__ = [
     "TektraMemoryManager",
@@ -21,4 +23,6 @@ __all__ = [
     "MemoryType",
     "MemoryEntry",
     "MemoryContext",
+    "ConversationMemory",
+    "TektraMemOSIntegration",
 ]

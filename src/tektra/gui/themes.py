@@ -221,6 +221,9 @@ class ThemeManager:
         self.current_theme_name = initial_theme
         self.current_theme = self.themes[initial_theme]
         
+        # Theme change callbacks for transition manager integration
+        self.theme_change_callbacks = []
+        
     def get_theme(self) -> Theme:
         """Get the current theme."""
         return self.current_theme
@@ -233,10 +236,42 @@ class ThemeManager:
             theme_name: "light" or "dark"
         """
         if theme_name in self.themes:
+            old_theme_name = self.current_theme_name
             self.current_theme_name = theme_name
             self.current_theme = self.themes[theme_name]
+            
+            # Notify callbacks
+            for callback in self.theme_change_callbacks:
+                try:
+                    callback(old_theme_name, theme_name)
+                except Exception as e:
+                    # Import logger here to avoid circular imports
+                    try:
+                        from loguru import logger
+                        logger.error(f"Error in theme change callback: {e}")
+                    except ImportError:
+                        pass
         else:
             raise ValueError(f"Unknown theme: {theme_name}")
+    
+    def add_theme_change_callback(self, callback):
+        """
+        Add a callback to be called when theme changes.
+        
+        Args:
+            callback: Function to call with (old_theme, new_theme)
+        """
+        self.theme_change_callbacks.append(callback)
+    
+    def remove_theme_change_callback(self, callback):
+        """
+        Remove a theme change callback.
+        
+        Args:
+            callback: Function to remove
+        """
+        if callback in self.theme_change_callbacks:
+            self.theme_change_callbacks.remove(callback)
             
     def get_style(self, element: str) -> Dict[str, Any]:
         """

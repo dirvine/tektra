@@ -18,15 +18,15 @@ from loguru import logger
 
 from ..voice import VoiceConversationPipeline
 from .multimodal import MultimodalProcessor
-from .qwen_backend import QwenBackend
+from .simple_llm import SimpleLLM
 
 
 class QueryRoute(Enum):
     """Query routing destinations."""
 
     UNMUTE_VOICE = "unmute_voice"  # Natural conversation via Unmute
-    QWEN_ANALYTICAL = "qwen_analytical"  # Complex reasoning via Qwen
-    QWEN_VISION = "qwen_vision"  # Vision tasks via Qwen-VL
+    SIMPLE_LLM = "simple_llm"  # Text reasoning via Simple LLM
+    MULTIMODAL = "multimodal"  # Vision/file tasks via multimodal processor
     MIXED = "mixed"  # Use both systems strategically
     ERROR = "error"  # Routing error
 
@@ -238,21 +238,24 @@ class SmartRouter:
 
     def __init__(
         self,
-        qwen_backend: QwenBackend,
+        llm_backend: SimpleLLM,
         voice_pipeline: VoiceConversationPipeline,
         multimodal_processor: MultimodalProcessor | None = None,
+        conversation_memory=None,
     ):
         """
         Initialize smart router.
 
         Args:
-            qwen_backend: Qwen backend for analytical tasks
+            llm_backend: Simple LLM backend for analytical tasks
             voice_pipeline: Voice pipeline for conversational tasks
             multimodal_processor: Optional multimodal processor
+            conversation_memory: Optional MemOS conversation memory
         """
-        self.qwen_backend = qwen_backend
+        self.llm_backend = llm_backend
         self.voice_pipeline = voice_pipeline
         self.multimodal_processor = multimodal_processor or MultimodalProcessor()
+        self.conversation_memory = conversation_memory
 
         # Query classifier
         self.classifier = QueryClassifier()
@@ -260,8 +263,8 @@ class SmartRouter:
         # Routing statistics
         self.routing_stats = {
             "total_queries": 0,
-            "unmute_routed": 0,
-            "qwen_routed": 0,
+            "llm_routed": 0,
+            "multimodal_routed": 0,
             "mixed_routed": 0,
             "routing_errors": 0,
             "avg_decision_time": 0.0,
@@ -342,12 +345,12 @@ class SmartRouter:
         # Special cases first
         if context.has_image or context.image_data or scores["vision"] > 0.5:
             return RoutingResult(
-                route=QueryRoute.QWEN_VISION,
+                route=QueryRoute.MULTIMODAL,
                 confidence=max(0.7, scores["vision"]),
-                reasoning="Query involves image analysis - routed to Qwen-VL",
+                reasoning="Query involves image analysis - routed to multimodal processor",
                 processing_type="sync",
                 estimated_response_time=5.0,
-                recommended_model="qwen-vl",
+                recommended_model="multimodal",
                 context_used=["image_data", "vision_patterns"],
             )
 
@@ -380,12 +383,12 @@ class SmartRouter:
                 confidence = min(1.0, confidence + self.config["voice_bias"])
 
             return RoutingResult(
-                route=QueryRoute.UNMUTE_VOICE,
+                route=QueryRoute.SIMPLE_LLM,
                 confidence=confidence,
-                reasoning=f"Conversational query (score: {max_score:.2f}) - routed to Unmute",
+                reasoning=f"Conversational query (score: {max_score:.2f}) - routed to Simple LLM",
                 processing_type="async",
                 estimated_response_time=1.0,
-                recommended_model="unmute-llm",
+                recommended_model="simple-llm",
                 context_used=[
                     "conversational_patterns",
                     "voice_input" if context.is_voice_input else None,
@@ -397,12 +400,12 @@ class SmartRouter:
             and max_score > self.config["confidence_threshold"]
         ):
             return RoutingResult(
-                route=QueryRoute.QWEN_ANALYTICAL,
+                route=QueryRoute.SIMPLE_LLM,
                 confidence=max_score,
-                reasoning=f"Analytical query (score: {max_score:.2f}) - routed to Qwen",
+                reasoning=f"Analytical query (score: {max_score:.2f}) - routed to Simple LLM",
                 processing_type="sync",
                 estimated_response_time=3.0,
-                recommended_model="qwen-text",
+                recommended_model="simple-llm",
                 context_used=["analytical_patterns"],
             )
 
@@ -410,12 +413,12 @@ class SmartRouter:
         if context.is_voice_input or max_score < 0.4:
             # Default to conversational for voice or low-confidence queries
             return RoutingResult(
-                route=QueryRoute.UNMUTE_VOICE,
+                route=QueryRoute.SIMPLE_LLM,
                 confidence=0.5,
-                reasoning="Low confidence or voice input - defaulting to conversational",
+                reasoning="Low confidence or voice input - defaulting to Simple LLM",
                 processing_type="async",
                 estimated_response_time=1.0,
-                recommended_model="unmute-llm",
+                recommended_model="simple-llm",
                 context_used=[
                     "default_logic",
                     "voice_input" if context.is_voice_input else "low_confidence",
@@ -424,12 +427,12 @@ class SmartRouter:
         else:
             # Default to analytical for text input
             return RoutingResult(
-                route=QueryRoute.QWEN_ANALYTICAL,
+                route=QueryRoute.SIMPLE_LLM,
                 confidence=0.5,
-                reasoning="Text input with unclear intent - defaulting to analytical",
+                reasoning="Text input with unclear intent - defaulting to Simple LLM",
                 processing_type="sync",
                 estimated_response_time=3.0,
-                recommended_model="qwen-text",
+                recommended_model="simple-llm",
                 context_used=["default_logic", "text_input"],
             )
 
@@ -439,14 +442,11 @@ class SmartRouter:
         """Execute the routing decision and get response."""
 
         try:
-            if routing.route == QueryRoute.UNMUTE_VOICE:
-                return await self._handle_unmute_query(context)
+            if routing.route == QueryRoute.SIMPLE_LLM:
+                return await self._handle_simple_llm_query(context)
 
-            elif routing.route == QueryRoute.QWEN_ANALYTICAL:
-                return await self._handle_qwen_analytical(context)
-
-            elif routing.route == QueryRoute.QWEN_VISION:
-                return await self._handle_qwen_vision(context)
+            elif routing.route == QueryRoute.MULTIMODAL:
+                return await self._handle_multimodal_query(context)
 
             elif routing.route == QueryRoute.MIXED:
                 return await self._handle_mixed_query(context)
@@ -490,59 +490,46 @@ class SmartRouter:
         else:
             return f"I received your message: '{context.query_text}'. I'm currently in limited mode while my AI systems initialize. This includes downloading large language models which may take a few minutes. Please try again soon for full AI capabilities!"
 
-    async def _handle_unmute_query(self, context: QueryContext) -> str:
-        """Handle query via Unmute voice system."""
+    async def _handle_simple_llm_query(self, context: QueryContext) -> str:
+        """Handle query via Simple LLM."""
         try:
-            # Send to Unmute for processing
-            success = await self.voice_pipeline.send_text_message(context.query_text)
+            # Check if Simple LLM backend is initialized
+            if not self.llm_backend or not self.llm_backend.is_initialized:
+                raise RuntimeError("Simple LLM backend not initialized")
 
-            if success:
-                return "Processing via voice conversation system..."  # Actual response comes via callbacks
-            else:
-                raise RuntimeError("Failed to send message to Unmute")
-
-        except Exception as e:
-            logger.error(f"Error in Unmute processing: {e}")
-            raise
-
-    async def _handle_qwen_analytical(self, context: QueryContext) -> str:
-        """Handle analytical query via Qwen."""
-        try:
-            # Check if Qwen backend is initialized
-            if not self.qwen_backend or not self.qwen_backend.is_initialized:
-                raise RuntimeError("Qwen backend not initialized")
-
-            # Prepare context for Qwen
-            qwen_context = {
+            # Prepare context for Simple LLM
+            llm_context = {
                 "conversation_history": context.conversation_history,
                 "session_context": context.session_context,
             }
 
             # Process file attachments if any
             if context.file_attachments:
-                qwen_context["attachments"] = await self._process_attachments(
+                llm_context["attachments"] = await self._process_attachments(
                     context.file_attachments
                 )
 
             # Generate response
-            response = await self.qwen_backend.generate_response(
-                context.query_text, qwen_context
+            response = await self.llm_backend.process_message(
+                message=context.query_text,
+                context=llm_context,
+                conversation_history=context.conversation_history
             )
             return response
 
         except Exception as e:
-            logger.error(f"Error in Qwen analytical processing: {e}")
+            logger.error(f"Error in Simple LLM processing: {e}")
             raise
 
-    async def _handle_qwen_vision(self, context: QueryContext) -> str:
-        """Handle vision query via Qwen-VL."""
+    async def _handle_multimodal_query(self, context: QueryContext) -> str:
+        """Handle multimodal query via multimodal processor."""
         try:
             if not (context.has_image or context.image_data):
-                raise ValueError("Vision query but no image data provided")
+                raise ValueError("Multimodal query but no image data provided")
 
             # Process the image
             if context.image_data:
-                response = await self.qwen_backend.process_vision_query(
+                response = await self.multimodal_processor.process_vision_query(
                     context.query_text, context.image_data
                 )
             else:
@@ -558,34 +545,43 @@ class SmartRouter:
 
                 # Use the first image
                 image_data = image_attachments[0]["image"]
-                response = await self.qwen_backend.process_vision_query(
+                response = await self.multimodal_processor.process_vision_query(
                     context.query_text, image_data
                 )
 
             return response
 
         except Exception as e:
-            logger.error(f"Error in Qwen vision processing: {e}")
+            logger.error(f"Error in multimodal processing: {e}")
             raise
 
     async def _handle_mixed_query(self, context: QueryContext) -> str:
         """Handle mixed query using both systems strategically."""
         try:
-            # Start with conversational acknowledgment via Unmute
-            await self.voice_pipeline.send_text_message(
-                f"Let me analyze that for you: {context.query_text}"
+            # For mixed queries, use Simple LLM with enhanced context
+            enhanced_context = context.session_context.copy() if context.session_context else {}
+            enhanced_context["mixed_query"] = True
+            enhanced_context["requires_detailed_analysis"] = True
+            
+            # Create enhanced query context
+            enhanced_query_context = QueryContext(
+                query_text=f"Please provide a detailed analysis: {context.query_text}",
+                has_image=context.has_image,
+                image_data=context.image_data,
+                file_attachments=context.file_attachments,
+                is_voice_input=context.is_voice_input,
+                conversation_history=context.conversation_history,
+                session_context=enhanced_context
             )
 
-            # Then process with Qwen for detailed analysis
-            analytical_response = await self._handle_qwen_analytical(context)
-
-            # Return the analytical response (Unmute response comes via callbacks)
-            return analytical_response
+            # Process with Simple LLM
+            response = await self._handle_simple_llm_query(enhanced_query_context)
+            return response
 
         except Exception as e:
             logger.error(f"Error in mixed query processing: {e}")
-            # Fallback to analytical only
-            return await self._handle_qwen_analytical(context)
+            # Fallback to simple LLM only
+            return await self._handle_simple_llm_query(context)
 
     async def _process_attachments(
         self, attachments: list[dict[str, Any]]
@@ -621,10 +617,10 @@ class SmartRouter:
 
     def _update_stats(self, route: QueryRoute, decision_time: float):
         """Update routing statistics."""
-        if route == QueryRoute.UNMUTE_VOICE:
-            self.routing_stats["unmute_routed"] += 1
-        elif route in [QueryRoute.QWEN_ANALYTICAL, QueryRoute.QWEN_VISION]:
-            self.routing_stats["qwen_routed"] += 1
+        if route == QueryRoute.SIMPLE_LLM:
+            self.routing_stats["llm_routed"] += 1
+        elif route == QueryRoute.MULTIMODAL:
+            self.routing_stats["multimodal_routed"] += 1
         elif route == QueryRoute.MIXED:
             self.routing_stats["mixed_routed"] += 1
 
@@ -641,8 +637,8 @@ class SmartRouter:
 
         return {
             **self.routing_stats,
-            "unmute_percentage": self.routing_stats["unmute_routed"] / total * 100,
-            "qwen_percentage": self.routing_stats["qwen_routed"] / total * 100,
+            "llm_percentage": self.routing_stats["llm_routed"] / total * 100,
+            "multimodal_percentage": self.routing_stats["multimodal_routed"] / total * 100,
             "mixed_percentage": self.routing_stats["mixed_routed"] / total * 100,
             "error_rate": self.routing_stats["routing_errors"] / total * 100,
             "config": self.config.copy(),
@@ -652,6 +648,67 @@ class SmartRouter:
         """Update router configuration."""
         self.config.update(new_config)
         logger.info(f"Router configuration updated: {new_config}")
+
+    async def process_message(
+        self, 
+        message: str, 
+        context: dict = None, 
+        conversation_history: list = None
+    ) -> str:
+        """
+        Simple interface for processing messages.
+        
+        Args:
+            message: The user's message
+            context: Optional context information
+            conversation_history: Optional conversation history
+            
+        Returns:
+            str: The response
+        """
+        try:
+            # Create query context
+            query_context = QueryContext(
+                query_text=message,
+                conversation_history=conversation_history or [],
+                session_context=context or {}
+            )
+            
+            # For now, route everything to the Simple LLM with memory enhancement
+            if self.llm_backend and self.llm_backend.is_initialized:
+                # Enhance context with memory if available
+                enhanced_context = context.copy() if context else {}
+                
+                # Add memory context to the LLM prompt if available
+                if (self.conversation_memory and 
+                    enhanced_context.get("memory_context")):
+                    
+                    # Prepend memory context to the message for better AI responses
+                    memory_context = enhanced_context["memory_context"]
+                    enhanced_message = f"""Based on our previous conversations:
+{memory_context}
+
+Current question: {message}"""
+                    
+                    logger.debug("Enhanced message with MemOS context")
+                    
+                    return await self.llm_backend.process_message(
+                        message=enhanced_message,
+                        context=enhanced_context,
+                        conversation_history=conversation_history
+                    )
+                else:
+                    return await self.llm_backend.process_message(
+                        message=message,
+                        context=enhanced_context,
+                        conversation_history=conversation_history
+                    )
+            else:
+                return "I'm still initializing. Please wait a moment and try again."
+                
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+            return f"I encountered an error: {e}"
 
     async def cleanup(self):
         """Cleanup router resources."""

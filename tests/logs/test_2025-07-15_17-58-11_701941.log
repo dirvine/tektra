@@ -1,0 +1,24 @@
+2025-07-15T17:58:11.706786+0100 | INFO | tests.conftest:pytest_configure:280 | 🧪 Configuring Tektra Test Suite
+2025-07-15T17:58:11.707779+0100 | INFO | tests.conftest:pytest_sessionstart:312 | 🚀 Starting Tektra Test Session
+2025-07-15T17:58:11.792292+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:59 | Failed to import SmolAgents: cannot import name 'LiteLLMModel' from 'smolagents' (unknown location)
+2025-07-15T17:58:11.792464+0100 | ERROR | src.tektra.agents.smolagents_real:<module>:828 | SmolAgents not available - this should not happen in production
+2025-07-15T17:58:11.792508+0100 | WARNING | src.tektra.agents.builder:<module>:31 | Real SmolAgents failed, falling back to mock
+2025-07-15T17:58:11.792888+0100 | INFO | src.tektra.agents.smolagents_mock:<module>:135 | Using real SmolAgents library
+2025-07-15T17:58:11.792932+0100 | INFO | src.tektra.agents.builder:<module>:38 | SmolAgents integration loaded successfully
+2025-07-15T17:58:11.796816+0100 | WARNING | src.tektra.memory.memos_integration:<module>:30 | MemOS not available: No module named 'memos'. Using fallback memory system.
+2025-07-15T17:58:11.798470+0100 | WARNING | src.tektra.ai.qwen_backend:<module>:45 | UI integration not available - progress events will not be emitted
+2025-07-15T17:58:11.805289+0100 | WARNING | src.tektra.data.vector_db:<module>:22 | FAISS not available - using mock vector database
+2025-07-15T17:58:11.805400+0100 | WARNING | src.tektra.data.vector_db:<module>:30 | Sentence transformers not available - using mock embeddings
+2025-07-15T17:58:11.812570+0100 | WARNING | src.tektra.app:<module>:45 | Voice pipeline not available: No module named 'pyaudio'
+2025-07-15T17:58:11.813150+0100 | ERROR | src.tektra.voice.unmute_embedded:<module>:40 | Failed to import Unmute components: No module named 'msgpack'
+2025-07-15T17:58:11.817173+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_button_press_animations
+2025-07-15T17:58:11.965583+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_setup_micro_interactions:296 | Micro-interactions set up for enhanced input field
+2025-07-15T17:58:11.965896+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:82 | Enhanced input field initialized with micro-interactions
+2025-07-15T17:58:11.976867+0100 | DEBUG | src.tektra.gui.enhanced_input_field:_setup_micro_interactions:296 | Micro-interactions set up for enhanced input field
+2025-07-15T17:58:11.976956+0100 | INFO | src.tektra.gui.enhanced_input_field:__init__:82 | Enhanced input field initialized with micro-interactions
+2025-07-15T17:58:11.977499+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_button_press_animations
+2025-07-15T17:58:11.978857+0100 | DEBUG | tests.conftest:pytest_runtest_setup:332 | 🧪 Setting up test: test_global_renderer_with_animation_manager
+2025-07-15T17:58:11.979319+0100 | INFO | src.tektra.gui.message_bubble_renderer:__init__:48 | Message Bubble Renderer initialized
+2025-07-15T17:58:11.979529+0100 | DEBUG | tests.conftest:pytest_runtest_teardown:337 | 🧹 Tearing down test: test_global_renderer_with_animation_manager
+2025-07-15T17:58:11.980435+0100 | INFO | tests.conftest:pytest_sessionfinish:323 | ✅ All tests completed successfully
+2025-07-15T17:58:11.980478+0100 | INFO | tests.conftest:pytest_sessionfinish:327 | 🎯 Tektra Test Session Complete

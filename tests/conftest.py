@@ -39,9 +39,12 @@ try:
     from tektra.core.tektra_system import TektraSystem, TektraSystemConfig
     from tektra.config.production_config import ProductionConfig, create_development_config
     from tektra.security.context import SecurityContext, SecurityLevel
+    TEKTRA_IMPORTS_AVAILABLE = True
 except ImportError:
     # Fallback for legacy imports
-    pass
+    TEKTRA_IMPORTS_AVAILABLE = False
+    ProductionConfig = None
+    create_development_config = None
 
 # Global variables to cache expensive resources
 _qwen_backend = None
@@ -358,8 +361,11 @@ def temp_dir() -> Generator[Path, None, None]:
 
 
 @pytest.fixture
-def test_config() -> ProductionConfig:
+def test_config():
     """Create a test configuration."""
+    if not TEKTRA_IMPORTS_AVAILABLE or create_development_config is None:
+        return None
+        
     try:
         config = create_development_config()
         
@@ -377,15 +383,18 @@ def test_config() -> ProductionConfig:
 
 
 @pytest.fixture
-def tektra_config(test_config) -> TektraSystemConfig:
+def tektra_config(test_config):
     """Create Tektra system configuration for testing."""
+    if not TEKTRA_IMPORTS_AVAILABLE or TektraSystemConfig is None:
+        return None
+        
     if test_config:
         return test_config.to_tektra_config()
     return None
 
 
 @pytest.fixture
-async def tektra_system(tektra_config) -> AsyncGenerator[TektraSystem, None]:
+async def tektra_system(tektra_config):
     """Create and initialize a Tektra system for testing."""
     if not tektra_config:
         pytest.skip("Tektra system configuration not available")
@@ -416,7 +425,7 @@ async def tektra_system(tektra_config) -> AsyncGenerator[TektraSystem, None]:
 
 
 @pytest.fixture
-def security_context() -> SecurityContext:
+def security_context():
     """Create a security context for testing."""
     try:
         return SecurityContext(
@@ -430,7 +439,7 @@ def security_context() -> SecurityContext:
 
 
 @pytest.fixture
-def high_security_context() -> SecurityContext:
+def high_security_context():
     """Create a high security context for testing."""
     try:
         return SecurityContext(
@@ -444,7 +453,7 @@ def high_security_context() -> SecurityContext:
 
 
 @pytest.fixture
-def low_security_context() -> SecurityContext:
+def low_security_context():
     """Create a low security context for testing."""
     try:
         return SecurityContext(
